@@ -7,6 +7,16 @@ library(tidyverse)
 library(ggprism)  # for pretty prism-like plots
 library(viridis)
 library(plater)  # for plate data import
+plate_files = c("JS-B2-79 plater 1.csv",
+                "JS-B2-79 plater 2.csv",
+                "JS-B2-79 plater 3.csv",
+                "JS-B2-79 plater 4.csv",
+                "JS-B2-79 plater 5.csv")
+plate_names = c("Dasatinib",
+                "DasatiLink-1",
+                "Ponatinib",
+                "PonatiLink-1",
+                "Asciminib")
 plater_data <- read_plate("JS-B2-79 plater test.csv") %>%
   filter(drug != "N/A") %>%
   # drop 0 values for plotting and curve fitting
@@ -30,3 +40,4 @@ plater_data.summary %>% ggplot(aes(x = log.conc, y = CTG_normalized, color = cel
     labs(x = "Log [compound] (M)",
          y = "Relative cell viability (%)",
          title = "Dasatinib")
+ggsave("plots/xxx.pdf", width = 5, height = 4)
