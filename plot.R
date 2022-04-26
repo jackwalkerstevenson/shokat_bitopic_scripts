@@ -23,27 +23,28 @@ plater_data <- read_plates(plate_files, plate_names) %>%
   # note this is only OK because normalization is happening in Excel
   filter(concentration != 0) %>%
   mutate(log.conc = log10(concentration/1e6))  # convert conc from µM to M
-for(p in distinct(plater_data["Plate"]))
-  {print(str_glue("working on plate {p}"))
+
+for(p in distinct(plater_data["Plate"])$Plate){
+  print(str_glue("working on plate {p}"))
   plate.summary <- plater_data %>%
-    group_by(Plate, cell_line, concentration) %>%
+    filter(Plate == p) %>%
+    group_by(cell_line, concentration) %>%
     summarize(
       sem = sd(CTG_normalized, na.rm = TRUE)/sqrt(n()),
       CTG_normalized = mean(CTG_normalized),
       log.conc = log.conc
     )
-  
-  }
-
-
-
-plate.summary %>% ggplot(aes(x = log.conc, y = CTG_normalized, color = cell_line))+
+  print(str_glue("Done creating summary for plate {p}"))
+  plate.summary %>% ggplot(aes(x = log.conc, y = CTG_normalized, color = cell_line))+
     geom_point()+
     geom_errorbar(aes(ymax = CTG_normalized+sem, ymin = CTG_normalized-sem))+
     geom_smooth(method = "drm", method.args = list(fct = L.4()), se = FALSE)+
     theme_prism()+
     scale_color_manual(values = c("darkred","black"))+
+    scale_y_continuous(breaks = c(0,25,50,75,100))+
     labs(x = "Log [compound] (M)",
          y = "Relative cell viability (%)",
-         title = "Dasatinib")
-#ggsave("plots/xxx.pdf", width = 5, height = 4)
+         title = p)
+  ggsave(str_glue("plots/{p}.pdf"), width = 5, height = 4)
+  print(str_glue("done plotting plate {p}"))
+  }
