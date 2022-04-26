@@ -17,21 +17,27 @@ plate_names = c("Dasatinib",
                 "Ponatinib",
                 "PonatiLink-1",
                 "Asciminib")
-plater_data <- read_plate("JS-B2-79 plater test.csv") %>%
+plater_data <- read_plates(plate_files, plate_names) %>%
   filter(drug != "N/A") %>%
   # drop 0 values for plotting and curve fitting
   # note this is only OK because normalization is happening in Excel
   filter(concentration != 0) %>%
   mutate(log.conc = log10(concentration/1e6))  # convert conc from µM to M
-plater_data.summary <- plater_data %>%
-    group_by(cell_line, concentration) %>%
+for(p in distinct(plater_data["Plate"]))
+  {print(str_glue("working on plate {p}"))
+  plate.summary <- plater_data %>%
+    group_by(Plate, cell_line, concentration) %>%
     summarize(
       sem = sd(CTG_normalized, na.rm = TRUE)/sqrt(n()),
       CTG_normalized = mean(CTG_normalized),
-      log.conc = log.conc,
+      log.conc = log.conc
     )
+  
+  }
 
-plater_data.summary %>% ggplot(aes(x = log.conc, y = CTG_normalized, color = cell_line))+
+
+
+plate.summary %>% ggplot(aes(x = log.conc, y = CTG_normalized, color = cell_line))+
     geom_point()+
     geom_errorbar(aes(ymax = CTG_normalized+sem, ymin = CTG_normalized-sem))+
     geom_smooth(method = "drm", method.args = list(fct = L.4()), se = FALSE)+
@@ -40,4 +46,4 @@ plater_data.summary %>% ggplot(aes(x = log.conc, y = CTG_normalized, color = cel
     labs(x = "Log [compound] (M)",
          y = "Relative cell viability (%)",
          title = "Dasatinib")
-ggsave("plots/xxx.pdf", width = 5, height = 4)
+#ggsave("plots/xxx.pdf", width = 5, height = 4)
