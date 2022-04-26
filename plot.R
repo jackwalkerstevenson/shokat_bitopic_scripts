@@ -41,7 +41,9 @@ for(p in distinct(plater_data["Plate"])$Plate){
     geom_smooth(method = "drm", method.args = list(fct = L.4()), se = FALSE)+
     theme_prism()+
     scale_color_manual(values = c("darkred","black"))+
-    scale_y_continuous(breaks = c(0,25,50,75,100))+
+    scale_x_continuous(limits = c(-10,-5))+
+    scale_y_continuous(breaks = c(0,25,50,75,100),
+                       limits = c(0,NA))+
     labs(x = "Log [compound] (M)",
          y = "Relative cell viability (%)",
          title = p)
