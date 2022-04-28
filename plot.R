@@ -75,15 +75,16 @@ for (cpd in distinct(plate_data["compound"])$compound){
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem))+
       # use drm method from drc package to fit dose response curve
       geom_smooth(method = "drm", method.args = list(fct = L.4()), se = FALSE)+
-      theme_prism()+ # make it look like prism
       scale_color_manual(values = c("black","darkred"))+
       scale_x_continuous(limits = c(-10,-5))+
       scale_y_continuous(breaks = c(0,25,50,75,100),
                          limits = c(0,NA))+
+      theme_prism()+ # make it look like prism
+      theme(plot.background = element_blank())+
       labs(x = "Log [compound] (M)",
            y = "Relative cell viability (%)",
            title = cpd)
   # save plot with manually optimized aspect ratio
-  ggsave(str_glue("plots/{cpd}.pdf"), width = 5, height = 4)
+  ggsave(str_glue("plots/{cpd}.pdf"), width = 5, height = 4, bg = "transparent")
   print(str_glue("done plotting compound {cpd}"))
   }
