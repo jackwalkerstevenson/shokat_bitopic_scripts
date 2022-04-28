@@ -50,7 +50,11 @@ plate_data <- read_plates(plate_files, plate_names) %>%
 # analyze and plot data for each compound--------------------------------------
 for (cpd in distinct(plate_data["compound"])$compound){
   print(str_glue("working on compound: {cpd}"))
+  # get cell lines in import order
+  cell_line_factors <- unique(plate_data[["cell_line"]])
   plate.summary <- plate_data %>%
+    # set factors so cell lines get plotted and colored in input order
+    mutate(cell_line = fct_relevel(cell_line, cell_line_factors)) %>%
     filter(compound == cpd) %>% # get data from one compound to work with
     group_by(cell_line, conc) %>%  # get set of replicates for each condition
     # create summary table for plotting
@@ -61,9 +65,7 @@ for (cpd in distinct(plate_data["compound"])$compound){
       mean_read = mean(read_norm),
       # carry concentration through for plotting
       log.conc = log.conc
-      ) %>%
-    # todo: factors so cell lines get plotted and colored in input order
-    mutate(cell_line = fct_relevel(cell_line, c("K562 wt", "K562 T315I")))
+      )
 
   # plot data and fit dose response curve
   plate.summary %>%
@@ -74,7 +76,7 @@ for (cpd in distinct(plate_data["compound"])$compound){
       # use drm method from drc package to fit dose response curve
       geom_smooth(method = "drm", method.args = list(fct = L.4()), se = FALSE)+
       theme_prism()+ # make it look like prism
-      scale_color_manual(values = c("darkred","black"))+
+      scale_color_manual(values = c("black","darkred"))+
       scale_x_continuous(limits = c(-10,-5))+
       scale_y_continuous(breaks = c(0,25,50,75,100),
                          limits = c(0,NA))+
