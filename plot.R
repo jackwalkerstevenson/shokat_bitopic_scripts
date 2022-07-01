@@ -33,8 +33,8 @@ library(ggprism)  # for pretty prism-like plots
 library(plater)  # for tidy importing of plate data
 
 # specify names of input files and import data---------------------------------
-plate_files = c("filename1.csv",
-                "filename2.csv")
+plate_files = c("JS-B2-79 plater 1.csv",
+                "JS-B2-79 plater 2.csv")
 plate_names = seq(1,length(plate_files))  # create plate IDs
 plate_data <- read_plates(plate_files, plate_names) %>%
   # drop empty wells
@@ -65,6 +65,8 @@ for (cpd in distinct(plate_data["compound"])$compound){
       )
 
   # plot data and fit dose response curve
+  xmin = -11
+  xmax = -6
   plate.summary %>%
     ggplot(aes(x = log.conc, y = mean_read, color = cell_line))+
       geom_point()+
@@ -73,15 +75,15 @@ for (cpd in distinct(plate_data["compound"])$compound){
       # use drm method from drc package to fit dose response curve
       geom_smooth(method = "drm", method.args = list(fct = L.4()), se = FALSE)+
       scale_color_manual(values = c("black","darkred"))+
-      scale_x_continuous(limits = c(-10,-5))+
-      scale_y_continuous(breaks = c(0,25,50,75,100),
-                         limits = c(0,NA))+
+      coord_cartesian(xlim = c(xmin, xmax), ylim = c(0, NA))+
+      scale_x_continuous(breaks = seq(xmin, xmax))+
+      scale_y_continuous(breaks = c(0,25,50,75,100))+
       theme_prism()+ # make it look like prism
       theme(plot.background = element_blank())+
       labs(x = "Log [compound] (M)",
            y = "Relative cell viability (%)",
            title = cpd)
   # save plot with manually optimized aspect ratio
-  ggsave(str_glue("plots/{cpd}.pdf"), width = 5, height = 4, bg = "transparent")
+  ggsave(str_glue("plots output/{cpd}.pdf"), width = 5, height = 4, bg = "transparent")
   print(str_glue("done plotting compound {cpd}"))
   }
