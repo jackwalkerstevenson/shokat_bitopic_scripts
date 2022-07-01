@@ -1,7 +1,7 @@
 #' ---
 #'title: "plateplotr"
 #'author: "Jack Stevenson"
-#'date: "2022-04-26"
+#'date: "2022-07-01"
 #' ---
 #'plateplotr generates dose-response plots from plate reader data.
 #' 
@@ -33,11 +33,8 @@ library(ggprism)  # for pretty prism-like plots
 library(plater)  # for tidy importing of plate data
 
 # specify names of input files and import data---------------------------------
-plate_files = c("JS-B2-79 plater 1.csv",
-                "JS-B2-79 plater 2.csv",
-                "JS-B2-79 plater 3.csv",
-                "JS-B2-79 plater 4.csv",
-                "JS-B2-79 plater 5.csv")
+plate_files = c("filename1.csv",
+                "filename2.csv")
 plate_names = seq(1,length(plate_files))  # create plate IDs
 plate_data <- read_plates(plate_files, plate_names) %>%
   # drop empty wells
