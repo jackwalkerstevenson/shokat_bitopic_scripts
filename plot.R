@@ -33,8 +33,8 @@ library(ggprism)  # for pretty prism-like plots
 library(plater)  # for tidy importing of plate data
 
 # specify names of input files and import data---------------------------------
-plate_files = c("JS-B2-79 plater 1.csv",
-                "JS-B2-79 plater 2.csv")
+plate_files = c("filename1.csv",
+                "filename2_etc.csv")
 plate_names = seq(1,length(plate_files))  # create plate IDs
 plate_data <- read_plates(plate_files, plate_names) %>%
   # drop empty wells
@@ -65,8 +65,9 @@ for (cpd in distinct(plate_data["compound"])$compound){
       )
 
   # plot data and fit dose response curve
-  xmin = -11
-  xmax = -6
+  # manually set x-axis limits for now
+  xmin = -10
+  xmax = -5
   plate.summary %>%
     ggplot(aes(x = log.conc, y = mean_read, color = cell_line))+
       geom_point()+
@@ -75,7 +76,9 @@ for (cpd in distinct(plate_data["compound"])$compound){
       # use drm method from drc package to fit dose response curve
       geom_smooth(method = "drm", method.args = list(fct = L.4()), se = FALSE)+
       scale_color_manual(values = c("black","darkred"))+
+      # set plot limits without trimming values
       coord_cartesian(xlim = c(xmin, xmax), ylim = c(0, NA))+
+      # set axis ticks
       scale_x_continuous(breaks = seq(xmin, xmax))+
       scale_y_continuous(breaks = c(0,25,50,75,100))+
       theme_prism()+ # make it look like prism
