@@ -33,8 +33,9 @@ library(ggprism)  # for pretty prism-like plots
 library(plater)  # for tidy importing of plate data
 
 # specify names of input files and import data---------------------------------
-plate_files = c("filename1.csv",
-                "filename2_etc.csv")
+plate_files = c("CSVs/SP-B1-01 Asciminib Read 2.csv",
+                "CSVs/SP-B1-01 Ponatinib Read 2.csv",
+                "CSVs/SP-B1-01 PonatiLink-1-20 Read 2.csv")
 plate_names = seq(1,length(plate_files))  # create plate IDs
 plate_data <- read_plates(plate_files, plate_names) %>%
   # drop empty wells
@@ -65,28 +66,24 @@ for (cpd in distinct(plate_data["compound"])$compound){
       )
 
   # plot data and fit dose response curve
-  # manually set x-axis limits for now
-  xmin = -10
-  xmax = -5
   plate.summary %>%
-    ggplot(aes(x = log.conc, y = mean_read, color = cell_line))+
-      geom_point()+
+    ggplot(aes(x = log.conc, y = mean_read, color = cell_line)) +
+      geom_point() +
       # error bars = mean plus or minus standard error
-      geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem))+
+      geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem)) +
       # use drm method from drc package to fit dose response curve
-      geom_smooth(method = "drm", method.args = list(fct = L.4()), se = FALSE)+
-      scale_color_manual(values = c("black","darkred"))+
-      # set plot limits without trimming values
-      coord_cartesian(xlim = c(xmin, xmax), ylim = c(0, NA))+
-      # set axis ticks
-      scale_x_continuous(breaks = seq(xmin, xmax))+
-      scale_y_continuous(breaks = c(0,25,50,75,100))+
-      theme_prism()+ # make it look like prism
-      theme(plot.background = element_blank())+
+      geom_smooth(method = "drm", method.args = list(fct = L.4()), se = FALSE) +
+      scale_color_manual(values = c("black","darkred")) +
+      scale_x_continuous(breaks = ) +
+      scale_y_continuous(breaks = c(0,25,50,75,100)) +
+      coord_cartesian(xlim = c(-11,-5),
+                      ylim = c(0,NA)) +
+      theme_prism() + # make it look like prism
+      theme(plot.background = element_blank()) +
       labs(x = "Log [compound] (M)",
            y = "Relative cell viability (%)",
            title = cpd)
   # save plot with manually optimized aspect ratio
-  ggsave(str_glue("plots output/{cpd}.pdf"), width = 5, height = 4, bg = "transparent")
-  print(str_glue("done plotting compound {cpd}"))
+  ggsave(str_glue("Plot Output/{cpd}.png"), width = 5, height = 4, bg = "transparent")
+  print(str_glue("Done plotting compound {cpd}"))
   }
