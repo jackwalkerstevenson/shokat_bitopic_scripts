@@ -33,10 +33,10 @@ library(ggprism)  # for pretty prism-like plots
 library(plater)  # for tidy importing of plate data
 
 # specify names of input files and import data---------------------------------
-plate_files = c("CSVs/SP-B1-01 Asciminib Read 2.csv",
-                "CSVs/SP-B1-01 Ponatinib Read 2.csv",
-                "CSVs/SP-B1-01 PonatiLink-1-20 Read 2.csv")
-plate_names = seq(1,length(plate_files))  # create plate IDs
+plate_files <- c("filename.csv",
+                 "filename.csv",
+                 "filename.csv")
+plate_names <- seq(1,length(plate_files))  # create plate IDs
 plate_data <- read_plates(plate_files, plate_names) %>%
   # drop empty wells
   filter(compound != "N/A") %>%
@@ -45,16 +45,23 @@ plate_data <- read_plates(plate_files, plate_names) %>%
   filter(conc != 0) %>%
   mutate(log.conc = log10(conc/1e6))  # convert conc from µM to M
 
+# set factors so cell lines get plotted and colored in input order
+cell_line_factors <- distinct(plate_data, cell_line)$cell_line
+plate_data <- plate_data %>% 
+  mutate(cell_line = fct_relevel(cell_line, levels(cell_line_factors)))
+
+# Automatically determines x-axis limits so data can be visualised more consistently
+x_limits <- c(floor(min(plate_data$log.conc)), ceiling(max(plate_data$log.conc)))
+
+# x_limits <- c(NA,NA) # Manual override of x-axis limits
+
 # analyze and plot data for each compound--------------------------------------
+
 for (cpd in distinct(plate_data["compound"])$compound){
   print(str_glue("working on compound: {cpd}"))
-  # get cell lines in import order
-  cell_line_factors <- unique(plate_data[["cell_line"]])
-  plate.summary <- plate_data %>%
-    # set factors so cell lines get plotted and colored in input order
-    mutate(cell_line = fct_relevel(cell_line, cell_line_factors)) %>%
+  plate.summary <- plate_data%>%
     filter(compound == cpd) %>% # get data from one compound to work with
-    group_by(cell_line, conc) %>%  # get set of replicates for each condition
+    group_by(cell_line, conc) %>% # get set of replicates for each condition
     # create summary table for plotting
     summarize(
       # standard error for error bars = standard deviation / square root of n
@@ -66,7 +73,7 @@ for (cpd in distinct(plate_data["compound"])$compound){
       )
 
   # plot data and fit dose response curve
-  plate.summary %>%
+  plate.summary %>% 
     ggplot(aes(x = log.conc, y = mean_read, color = cell_line)) +
       geom_point() +
       # error bars = mean plus or minus standard error
@@ -76,7 +83,7 @@ for (cpd in distinct(plate_data["compound"])$compound){
       scale_color_manual(values = c("black","darkred")) +
       scale_x_continuous(breaks = ) +
       scale_y_continuous(breaks = c(0,25,50,75,100)) +
-      coord_cartesian(xlim = c(-11,-5),
+      coord_cartesian(xlim = x_limits,
                       ylim = c(0,NA)) +
       theme_prism() + # make it look like prism
       theme(plot.background = element_blank()) +
