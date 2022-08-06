@@ -44,14 +44,20 @@ plate_data <- read_plates(plate_files, plate_names) %>%
   filter(conc != 0) %>%
   mutate(log.conc = log10(conc/1e6))  # convert conc from µM to M
 
+# set factors so cell lines get plotted and colored in input order
+cell_line_factors <- distinct(plate_data, cell_line)$cell_line
+plate_data <- plate_data %>% 
+  mutate(cell_line = fct_relevel(cell_line, levels(cell_line_factors)))
+
+# automatically determine x-axis limits for consistent limits between compounds
+x_limits <- c(floor(min(plate_data$log.conc)), ceiling(max(plate_data$log.conc)))
+
+# x_limits <- c(NA,NA) # Manual override of x-axis limits
+
 # analyze and plot data for each compound--------------------------------------
 for (cpd in distinct(plate_data["compound"])$compound){
   print(str_glue("working on compound: {cpd}"))
-  # get cell lines in import order
-  cell_line_factors <- unique(plate_data[["cell_line"]])
   plate.summary <- plate_data %>%
-    # set factors so cell lines get plotted and colored in input order
-    mutate(cell_line = fct_relevel(cell_line, cell_line_factors)) %>%
     filter(compound == cpd) %>% # get data from one compound to work with
     group_by(cell_line, conc) %>%  # get set of replicates for each condition
     # create summary table for plotting
@@ -65,9 +71,6 @@ for (cpd in distinct(plate_data["compound"])$compound){
       )
 
   # plot data and fit dose response curve
-  # manually set x-axis limits for now
-  xmin = -10
-  xmax = -5
   plate.summary %>%
     ggplot(aes(x = log.conc, y = mean_read, color = cell_line))+
       geom_point()+
@@ -76,11 +79,12 @@ for (cpd in distinct(plate_data["compound"])$compound){
       # use drm method from drc package to fit dose response curve
       geom_smooth(method = "drm", method.args = list(fct = L.4()), se = FALSE)+
       scale_color_manual(values = c("black","darkred"))+
-      # set plot limits without trimming values
-      coord_cartesian(xlim = c(xmin, xmax), ylim = c(0, NA))+
       # set axis ticks
-      scale_x_continuous(breaks = seq(xmin, xmax))+
-      scale_y_continuous(breaks = c(0,25,50,75,100))+
+      scale_x_continuous(breaks = ) +
+      scale_y_continuous(breaks = c(0,25,50,75,100)) +
+      # set axis limits from global values
+      coord_cartesian(xlim = x_limits,
+                      ylim = c(0,NA)) +
       theme_prism()+ # make it look like prism
       theme(plot.background = element_blank())+
       labs(x = "Log [compound] (M)",
