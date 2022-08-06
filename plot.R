@@ -47,7 +47,7 @@ plate_data <- read_plates(plate_files, plate_names) %>%
 # set factors so cell lines get plotted and colored in input order
 cell_line_factors <- distinct(plate_data, cell_line)$cell_line
 plate_data <- plate_data %>% 
-  mutate(cell_line = fct_relevel(cell_line, levels(cell_line_factors)))
+  mutate(cell_line = fct_relevel(cell_line, cell_line_factors))
 
 # automatically determine x-axis limits for consistent limits between compounds
 x_limits <- c(floor(min(plate_data$log.conc)), ceiling(max(plate_data$log.conc)))
