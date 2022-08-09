@@ -31,39 +31,39 @@ library(drc)  # for dose response curves
 library(tidyverse) # for tidy data handling
 library(ggprism)  # for pretty prism-like plots
 library(plater)  # for tidy importing of plate data
-library(viridis)
+library(viridis) # for color schemes
 
 # specify names of input files and import data---------------------------------
-plate_files = c("JS-B2-80 plater 1.csv",
-                "JS-B2-80 plater 2.csv",
-                "JS-B2-80 plater 3.csv",
-                "JS-B2-80 plater 4.csv",
-                "JS-B2-80 plater 5.csv",
-                "JS-B2-80 plater 6.csv",
-                "JS-B2-80 plater 7.csv",
-                "JS-B2-80 plater 8.csv")
+# note the order compounds are imported is the order they will be plotted
+plate_files = c("JS-B2-80 plater 1 ponatinib.csv",
+                "JS-B2-80 plater 2 asciminib.csv",
+                "JS-B2-80 plater 8 pona-asc.csv",
+                "JS-B2-80 plater 3 PonatiLink-1-12.csv",
+                "JS-B2-80 plater 4 PonatiLink-1-16.csv",
+                "JS-B2-80 plater 5 PonatiLink-1-20.csv",
+                "JS-B2-80 plater 7 PonatiLink-1-24.csv")
 plate_names = seq(1,length(plate_files))  # create plate IDs
-plate_data <- read_plates(plate_files, plate_names) %>%
-  # drop empty wells
-  filter(compound != "N/A") %>%
+plate_data <- read_plates(plate_files, plate_names) %>% # import with plater
+  filter(compound != "N/A") %>% # drop empty wells
   # drop 0 values before plotting and curve fitting
   # note this is only OK because normalization happens before import
   filter(conc != 0) %>%
-  mutate(log.conc = log10(conc/1e6))  # convert conc from µM to M
-
+  mutate(log.conc = log10(conc/1e6))  # convert conc µM to M and log transform
+# set global parameters for all plots------------------------------------------
 # set factors so cell lines get plotted and colored in input order
 cell_line_factors <- distinct(plate_data, cell_line)$cell_line
+compound_factors <- distinct(plate_data, compound)$compound
 plate_data <- plate_data %>% 
-  mutate(cell_line = fct_relevel(cell_line, cell_line_factors))
+  mutate(cell_line = fct_relevel(cell_line, cell_line_factors)) %>%
+  mutate(compound = fct_relevel(compound, compound_factors))
 
 # automatically determine x-axis limits for consistent limits between compounds
 x_limits <- c(floor(min(plate_data$log.conc)), ceiling(max(plate_data$log.conc)))
-
 # x_limits <- c(NA,NA) # Manual override of x-axis limits
 
-# analyze and plot data for each compound--------------------------------------
+# plot data for each compound--------------------------------------
 for (cpd in distinct(plate_data["compound"])$compound){
-  print(str_glue("working on compound: {cpd}"))
+  print(str_glue("working on compound {cpd}"))
   plate.summary <- plate_data %>%
     filter(compound == cpd) %>% # get data from one compound to work with
     group_by(cell_line, conc) %>%  # get set of replicates for each condition
@@ -93,88 +93,53 @@ for (cpd in distinct(plate_data["compound"])$compound){
       coord_cartesian(xlim = x_limits,
                       ylim = c(0,NA)) +
       theme_prism()+ # make it look like prism
-      theme(plot.background = element_blank())+
+      theme(plot.background = element_blank()) +
       labs(x = "Log [compound] (M)",
            y = "Relative cell viability (%)",
            title = cpd)
+  
   # save plot with manually optimized aspect ratio
   ggsave(str_glue("plots output/{cpd}.pdf"), width = 5, height = 4, bg = "transparent")
   print(str_glue("done plotting compound {cpd}"))
 }
-# plot PonatiLink-1 series on same graph
-PL_series = c("PonatiLink-1-12 (SP-C1-04)",
-              "PonatiLink-1-16 (SP-C1-11)",
-              "PonatiLink-1-20 (JS-C1-05)",
-              "PonatiLink-1-24 (SP-C1-12)",
-              "ponatinib")
+# plot data for each cell line (currently error bar problem)-------------------------------------------------
 alpha_val <- 1
 mako_start <- 0.9
 mako_end <- 0.3
-# plot wt only--------------------------------------------------------
-plate_data %>%
-  filter(compound %in% PL_series) %>%
-  filter(cell_line == "K562 wt") %>%
-  group_by(compound, conc) %>%  # get set of replicates for each condition
-  # create summary table for plotting
-  summarize(
-    # standard error for error bars = standard deviation / square root of n
-    sem = sd(read_norm, na.rm = TRUE)/sqrt(n()),
-    # get mean normalized readout value for plotting
-    mean_read = mean(read_norm),
-    # carry concentration through for plotting
-    log.conc = log.conc
-  ) %>%
-  ggplot(aes(x = log.conc, y = mean_read, color = compound))+
-  geom_point()+
-  # error bars = mean plus or minus standard error
-  geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem))+
-  # use drm method from drc package to fit dose response curve
-  geom_smooth(method = "drm", method.args = list(fct = L.4()), se = FALSE)+
-  # set axis ticks
-  scale_x_continuous(breaks = ) +
-  scale_y_continuous(breaks = c(0,25,50,75,100)) +
-  # set axis limits from global values
-  coord_cartesian(xlim = x_limits,
-                  ylim = c(0,NA)) +
-  theme_prism()+ # make it look like prism
-  scale_color_viridis(option = "mako", discrete = TRUE, begin = mako_start, end = mako_end)+
-  theme(plot.background = element_blank())+
-  labs(x = "Log [compound] (M)",
-       y = "Relative cell viability (%)",
-       title = "K562 wt")
-ggsave("plots output/K562 wt.pdf", width = 6, height = 4, bg = "transparent")
-# plot T315I only------------------------------------------------------
-plate_data %>%
-  filter(compound %in% PL_series) %>%
-  filter(cell_line == "K562 T315I") %>%
-  group_by(compound, conc) %>%  # get set of replicates for each condition
-  # create summary table for plotting
-  summarize(
-    # standard error for error bars = standard deviation / square root of n
-    sem = sd(read_norm, na.rm = TRUE)/sqrt(n()),
-    # get mean normalized readout value for plotting
-    mean_read = mean(read_norm),
-    # carry concentration through for plotting
-    log.conc = log.conc
-  ) %>%
-  ggplot(aes(x = log.conc, y = mean_read, color = compound))+
-  geom_point(alpha = alpha_val)+
-  # error bars = mean plus or minus standard error
-  geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem), alpha = alpha_val)+
-  # use drm method from drc package to fit dose response curve
-  geom_smooth(method = "drm", method.args = list(fct = L.4()), se = FALSE)+
-  #this is what you have to do to get alpha on the lines, but then they are thin
-  #stat_smooth(geom = 'line',method = "drm", method.args = list(fct = L.4()), se = FALSE)+
-  # set axis ticks
-  scale_x_continuous(breaks = ) +
-  scale_y_continuous(breaks = c(0,25,50,75,100)) +
-  # set axis limits from global values
-  coord_cartesian(xlim = x_limits,
-                  ylim = c(0,NA)) +
-  theme_prism()+ # make it look like prism
-  scale_color_viridis(option = "mako", discrete = TRUE, begin = mako_start, end = mako_end)+
-  theme(plot.background = element_blank())+
-  labs(x = "Log [compound] (M)",
-       y = "Relative cell viability (%)",
-       title = "K562 T315I")
-ggsave("plots output/K562 T315I.pdf", width = 6, height = 4, bg = "transparent")
+viridis_start <- 1
+viridis_end <- 0
+for (c_line in distinct(plate_data["cell_line"])$cell_line){
+  print(str_glue("working on cell line {c_line}"))
+  plate_data %>%
+    filter(cell_line == c_line) %>%
+    group_by(compound, conc) %>% # group into replicates for each condition
+    summarize(
+      # standard error for error bars = standard deviation / square root of n
+      sem = sd(read_norm, na.rm = TRUE)/sqrt(n()),
+      # get mean normalized readout value for plotting
+      mean_read = mean(read_norm),
+      # carry concentration through for plotting
+      log.conc = log.conc) %>%
+    ggplot(aes(x = log.conc, y = mean_read, color = compound))+
+    geom_point()+
+    # error bars = mean plus or minus standard error
+    geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem))+
+    # use drm method from drc package to fit dose response curve
+    geom_smooth(method = "drm", method.args = list(fct = L.4()), se = FALSE)+
+    #this is what you have to do to get alpha on the lines, but then they are thin
+    #stat_smooth(geom = 'line',method = "drm", method.args = list(fct = L.4()), se = FALSE)+ 
+    # set axis ticks
+    scale_x_continuous() +
+    scale_y_continuous(breaks = c(0,25,50,75,100)) +
+    coord_cartesian(xlim = x_limits, # set x axis limits from global values
+                    ylim = c(0,NA)) + # set y axis limit locally
+    theme_prism()+ # make it look fancy like prism
+    theme(plot.background = element_blank())+ # need for transparent background
+    scale_color_viridis(option = "viridis", discrete = TRUE, begin = viridis_start, end = viridis_end)+
+    #scale_color_viridis(option = "mako", discrete = TRUE, begin = mako_start, end = mako_end)+
+    labs(x = "Log [compound] (M)",
+         y = "Relative cell viability (%)",
+         title = c_line)
+  ggsave(str_glue("plots output/{c_line}.pdf"), width = 6, height = 4, bg = "transparent")
+  print(str_glue("done plotting cell line {c_line}"))
+}
