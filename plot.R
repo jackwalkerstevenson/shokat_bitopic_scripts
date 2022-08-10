@@ -145,7 +145,7 @@ plate_data %>%
   ggplot(aes(x = log.conc, y = mean_read, color = compound)) +
   geom_point() +
   # error bars = mean plus or minus standard error
-  geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
+  geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
   # use drm method from drc package to fit dose response curve
   geom_line(aes(linetype = cell_line), stat = "smooth", method = "drm", method.args = list(fct = L.4()),
             se = FALSE, size = 1, alpha = alpha_val) +
