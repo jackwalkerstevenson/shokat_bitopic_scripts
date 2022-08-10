@@ -96,9 +96,9 @@ for (cpd in distinct(plate_data["compound"])$compound){
   print(str_glue("done plotting compound {cpd}"))
 }
 # plot data for each cell line-------------------------------------------------
-alpha_val <- .7
-viridis_start <- 1
-viridis_end <- 0
+alpha_val <- .8
+viridis_start <- 0
+viridis_end <- 1
 for (c_line in distinct(plate_data["cell_line"])$cell_line){
   print(str_glue("working on cell line {c_line}"))
   plate_data %>%
@@ -113,7 +113,7 @@ for (c_line in distinct(plate_data["cell_line"])$cell_line){
     ggplot(aes(x = log.conc, y = mean_read, color = compound)) +
     geom_point() +
     # error bars = mean plus or minus standard error
-    geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
+    geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
     # use drm method from drc package to fit dose response curve
     geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
               se = FALSE, size = 1, alpha = alpha_val) +
@@ -130,3 +130,33 @@ for (c_line in distinct(plate_data["cell_line"])$cell_line){
   ggsave(str_glue("plots output/{c_line}.pdf"), width = 7, height = 5, bg = "transparent")
   print(str_glue("done plotting cell line {c_line}"))
 }
+# plot data for all cell lines at once-----------------------------------------
+alpha_val <- .8
+viridis_start <- 0
+viridis_end <- 1
+plate_data %>%
+  group_by(cell_line, compound, log.conc) %>% # group into replicates for each condition
+  summarize(
+    # standard error for error bars = standard deviation / square root of n
+    sem = sd(read_norm, na.rm = TRUE)/sqrt(n()),
+    mean_read = mean(read_norm), # mean normalized readout value for plotting
+    w = 0.1 * n() # necessary for consistent error bar widths across plots
+  ) %>%
+  ggplot(aes(x = log.conc, y = mean_read, color = compound)) +
+  geom_point() +
+  # error bars = mean plus or minus standard error
+  geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
+  # use drm method from drc package to fit dose response curve
+  geom_line(aes(linetype = cell_line), stat = "smooth", method = "drm", method.args = list(fct = L.4()),
+            se = FALSE, size = 1, alpha = alpha_val) +
+  scale_x_continuous() + # automatic x axis ticks
+  scale_y_continuous(breaks = c(0,25,50,75,100)) + # manual y axis ticks
+  coord_cartesian(xlim = x_limits, # set x axis zoom from global values
+                  ylim = c(0,NA)) + # set y axis zoom locally
+  theme_prism() + # make it look fancy like prism
+  theme(plot.background = element_blank()) + # need for transparent background
+  scale_color_viridis(option = "viridis", discrete = TRUE, begin = viridis_start, end = viridis_end) +
+  labs(x = "log [compound] (M)",
+       y = "relative cell viability (%)",
+       title = "All data")
+  ggsave(str_glue("plots output/all_data.pdf"), width = 7, height = 5, bg = "transparent")
