@@ -68,34 +68,34 @@ plate_summarize <- function(x){
             w = 0.1 * n() # necessary for consistent error bar widths across plots
   )
 }
-ggplot_test <- function(){
-  
-}
-# plot data for each compound--------------------------------------------------
-for (cpd in distinct(plate_data["compound"])$compound){
-  print(str_glue("working on compound {cpd}"))
-  plate_data %>%
-    filter(compound == cpd) %>% # get data from one compound to work with
-    group_by(cell_line, log.conc) %>%  # get set of replicates for each condition
-    # create summary table for plotting
-    plate_summarize() %>%
-    ggplot(aes(x = log.conc, y = mean_read, color = cell_line)) +
-    geom_point() +
-    # error bars = mean plus or minus standard error
-    geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
-    # use drm method from drc package to fit dose response curve
-    geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
-              se = FALSE, size = 1) +
-    scale_color_manual(values = c("black","darkred")) +
+plot_global <- function(plot){ # global ggplot objects for all plots
+  plot +
     scale_x_continuous() + # automatic x axis ticks
     scale_y_continuous(breaks = c(0,25,50,75,100)) + # manual y axis ticks
     coord_cartesian(xlim = x_limits, # set x axis zoom from global values
                     ylim = c(0,NA)) + # set y axis zoom locally
     theme_prism() + # make it look fancy like prism
     theme(plot.background = element_blank()) + # need for transparent background
-    labs(x = "Log [compound] (M)",
-         y = "Relative cell viability (%)",
-         title = cpd)
+    labs(x = "log [compound] (M)",
+         y = "relative cell viability (%)")
+}
+# plot data for each compound--------------------------------------------------
+for (cpd in distinct(plate_data["compound"])$compound){
+  print(str_glue("working on compound {cpd}"))
+  plate_summary <- plate_data %>%
+    filter(compound == cpd) %>% # get data from one compound to work with
+    group_by(cell_line, log.conc) %>%  # get set of replicates for each condition
+    plate_summarize()
+    {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = cell_line)) +
+    geom_point() +
+    # error bars = mean plus or minus standard error
+    geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
+    # use drm method from drc package to fit dose response curve
+    geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
+              se = FALSE, size = 1)} %>%
+    plot_global() +
+    scale_color_manual(values = c("black","darkred")) +
+    labs(title = cpd)
   # save plot with manually optimized aspect ratio
   ggsave(str_glue("plots output/{cpd}.pdf"), width = 5, height = 4, bg = "transparent")
   print(str_glue("done plotting compound {cpd}"))
@@ -106,52 +106,39 @@ viridis_start <- .8
 viridis_end <- 0
 for (c_line in distinct(plate_data["cell_line"])$cell_line){
   print(str_glue("working on cell line {c_line}"))
-  plate_data %>%
+  plate_summary <- plate_data %>%
     filter(cell_line == c_line) %>%
     group_by(compound, log.conc) %>% # group into replicates for each condition
-    plate_summarize() %>%
-    ggplot(aes(x = log.conc, y = mean_read, color = compound)) +
-    geom_point() +
-    # error bars = mean plus or minus standard error
-    geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
-    # use drm method from drc package to fit dose response curve
-    geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
-              se = FALSE, size = 1, alpha = alpha_val) +
-    scale_x_continuous() + # automatic x axis ticks
-    scale_y_continuous(breaks = c(0,25,50,75,100)) + # manual y axis ticks
-    coord_cartesian(xlim = x_limits, # set x axis zoom from global values
-                    ylim = c(0,NA)) + # set y axis zoom locally
-    theme_prism() + # make it look fancy like prism
-    theme(plot.background = element_blank()) + # need for transparent background
+    plate_summarize()
+  # bracket ggplot so it can be piped to helper function
+  {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = compound)) +
+      geom_point() +
+      # error bars = mean plus or minus standard error
+      geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
+      # use drm method from drc package to fit dose response curve
+      geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
+                se = FALSE, size = 1, alpha = alpha_val)} %>%
+    plot_global() +
     scale_color_viridis(option = "turbo", discrete = TRUE, begin = viridis_start, end = viridis_end) +
-    labs(x = "log [compound] (M)",
-         y = "relative cell viability (%)",
-         title = c_line)
+    labs(title = c_line)
   ggsave(str_glue("plots output/{c_line}.pdf"), width = 7, height = 5, bg = "transparent")
   print(str_glue("done plotting cell line {c_line}"))
 }
-# plot data for all cell lines at once-----------------------------------------
+# # plot data for all cell lines at once-----------------------------------------
 alpha_val <- 1
 viridis_start <- .8
 viridis_end <- 0
-plate_data %>%
+plate_summary <- plate_data %>%
   group_by(cell_line, compound, log.conc) %>% # group into replicates for each condition
-  plate_summarize() %>%
-  ggplot(aes(x = log.conc, y = mean_read, color = compound)) +
+  plate_summarize()
+  {ggplot(plate_summary,aes(x = log.conc, y = mean_read, color = compound)) +
   geom_point() +
   # error bars = mean plus or minus standard error
   geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
   # use drm method from drc package to fit dose response curve
   geom_line(aes(linetype = cell_line), stat = "smooth", method = "drm", method.args = list(fct = L.4()),
-            se = FALSE, size = 1, alpha = alpha_val) +
-  scale_x_continuous() + # automatic x axis ticks
-  scale_y_continuous(breaks = c(0,25,50,75,100)) + # manual y axis ticks
-  coord_cartesian(xlim = x_limits, # set x axis zoom from global values
-                  ylim = c(0,NA)) + # set y axis zoom locally
-  theme_prism() + # make it look fancy like prism
-  theme(plot.background = element_blank()) + # need for transparent background
+            se = FALSE, size = 1, alpha = alpha_val)} %>%
+  plot_global() +
   scale_color_viridis(option = "turbo", discrete = TRUE, begin = viridis_start, end = viridis_end) +
-  labs(x = "log [compound] (M)",
-       y = "relative cell viability (%)",
-       title = "All data")
+  labs(title = "All data")
   ggsave(str_glue("plots output/all_data.pdf"), width = 7, height = 5, bg = "transparent")
