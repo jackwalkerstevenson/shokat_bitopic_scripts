@@ -97,16 +97,12 @@ for (cpd in distinct(plate_data["compound"])$compound){
 }
 # plot data for each cell line-------------------------------------------------
 alpha_val <- .7
-mako_start <- 0.9
-mako_end <- 0.3
 viridis_start <- 1
 viridis_end <- 0
-compounds_to_plot <- c("asciminib", "ponatinib")
 for (c_line in distinct(plate_data["cell_line"])$cell_line){
   print(str_glue("working on cell line {c_line}"))
   plate_data %>%
     filter(cell_line == c_line) %>%
-    #filter(compound %in% compounds_to_plot) %>% # for testing asciminib error bar bug
     group_by(compound, log.conc) %>% # group into replicates for each condition
     summarize(
       # standard error for error bars = standard deviation / square root of n
@@ -114,7 +110,6 @@ for (c_line in distinct(plate_data["cell_line"])$cell_line){
       mean_read = mean(read_norm), # mean normalized readout value for plotting
       w = 0.1 * n() # necessary for consistent error bar widths across plots
       ) %>%
-    # todo: both cell lines on one plot, linetype and shape for cell line
     ggplot(aes(x = log.conc, y = mean_read, color = compound)) +
     geom_point() +
     # error bars = mean plus or minus standard error
@@ -129,7 +124,6 @@ for (c_line in distinct(plate_data["cell_line"])$cell_line){
     theme_prism() + # make it look fancy like prism
     theme(plot.background = element_blank()) + # need for transparent background
     scale_color_viridis(option = "viridis", discrete = TRUE, begin = viridis_start, end = viridis_end) +
-    #scale_color_viridis(option = "mako", discrete = TRUE, begin = mako_start, end = mako_end)+
     labs(x = "log [compound] (M)",
          y = "relative cell viability (%)",
          title = c_line)
