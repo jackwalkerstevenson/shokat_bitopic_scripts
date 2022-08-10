@@ -56,60 +56,60 @@ compound_factors <- distinct(plate_data, compound)$compound
 plate_data <- plate_data %>% 
   mutate(cell_line = fct_relevel(cell_line, cell_line_factors)) %>%
   mutate(compound = fct_relevel(compound, compound_factors))
-
 # find x-axis min/max values for consistent zoom window between all plots
 x_limits <- c(floor(min(plate_data$log.conc)), ceiling(max(plate_data$log.conc)))
-
-# plot data for each compound--------------------------------------
+# helper function for summarizing replicate data for plotting
+plate_summarize <- function(x){
+  summarize(x,
+            # standard error for error bars = standard deviation / square root of n
+            sem = sd(read_norm, na.rm = TRUE)/sqrt(n()),
+            # get mean normalized readout value for plotting
+            mean_read = mean(read_norm),
+            w = 0.1 * n() # necessary for consistent error bar widths across plots
+  )
+}
+ggplot_test <- function(){
+  
+}
+# plot data for each compound--------------------------------------------------
 for (cpd in distinct(plate_data["compound"])$compound){
   print(str_glue("working on compound {cpd}"))
   plate_data %>%
     filter(compound == cpd) %>% # get data from one compound to work with
     group_by(cell_line, log.conc) %>%  # get set of replicates for each condition
     # create summary table for plotting
-    summarize(
-      # standard error for error bars = standard deviation / square root of n
-      sem = sd(read_norm, na.rm = TRUE)/sqrt(n()),
-      # get mean normalized readout value for plotting
-      mean_read = mean(read_norm),
-      w = 0.1 * n() # necessary for consistent error bar widths across plots
-      ) %>%
+    plate_summarize() %>%
     ggplot(aes(x = log.conc, y = mean_read, color = cell_line)) +
-      geom_point() +
-      # error bars = mean plus or minus standard error
-      geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
-      # use drm method from drc package to fit dose response curve
-      geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
-                se = FALSE, size = 1) +
-      scale_color_manual(values = c("black","darkred")) +
-      scale_x_continuous() + # automatic x axis ticks
-      scale_y_continuous(breaks = c(0,25,50,75,100)) + # manual y axis ticks
-      coord_cartesian(xlim = x_limits, # set x axis zoom from global values
-                      ylim = c(0,NA)) + # set y axis zoom locally
-      theme_prism() + # make it look fancy like prism
-      theme(plot.background = element_blank()) + # need for transparent background
-      labs(x = "Log [compound] (M)",
-           y = "Relative cell viability (%)",
-           title = cpd)
+    geom_point() +
+    # error bars = mean plus or minus standard error
+    geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
+    # use drm method from drc package to fit dose response curve
+    geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
+              se = FALSE, size = 1) +
+    scale_color_manual(values = c("black","darkred")) +
+    scale_x_continuous() + # automatic x axis ticks
+    scale_y_continuous(breaks = c(0,25,50,75,100)) + # manual y axis ticks
+    coord_cartesian(xlim = x_limits, # set x axis zoom from global values
+                    ylim = c(0,NA)) + # set y axis zoom locally
+    theme_prism() + # make it look fancy like prism
+    theme(plot.background = element_blank()) + # need for transparent background
+    labs(x = "Log [compound] (M)",
+         y = "Relative cell viability (%)",
+         title = cpd)
   # save plot with manually optimized aspect ratio
   ggsave(str_glue("plots output/{cpd}.pdf"), width = 5, height = 4, bg = "transparent")
   print(str_glue("done plotting compound {cpd}"))
 }
 # plot data for each cell line-------------------------------------------------
-alpha_val <- .8
-viridis_start <- 0
-viridis_end <- 1
+alpha_val <- 1
+viridis_start <- .8
+viridis_end <- 0
 for (c_line in distinct(plate_data["cell_line"])$cell_line){
   print(str_glue("working on cell line {c_line}"))
   plate_data %>%
     filter(cell_line == c_line) %>%
     group_by(compound, log.conc) %>% # group into replicates for each condition
-    summarize(
-      # standard error for error bars = standard deviation / square root of n
-      sem = sd(read_norm, na.rm = TRUE)/sqrt(n()),
-      mean_read = mean(read_norm), # mean normalized readout value for plotting
-      w = 0.1 * n() # necessary for consistent error bar widths across plots
-      ) %>%
+    plate_summarize() %>%
     ggplot(aes(x = log.conc, y = mean_read, color = compound)) +
     geom_point() +
     # error bars = mean plus or minus standard error
@@ -123,7 +123,7 @@ for (c_line in distinct(plate_data["cell_line"])$cell_line){
                     ylim = c(0,NA)) + # set y axis zoom locally
     theme_prism() + # make it look fancy like prism
     theme(plot.background = element_blank()) + # need for transparent background
-    scale_color_viridis(option = "viridis", discrete = TRUE, begin = viridis_start, end = viridis_end) +
+    scale_color_viridis(option = "turbo", discrete = TRUE, begin = viridis_start, end = viridis_end) +
     labs(x = "log [compound] (M)",
          y = "relative cell viability (%)",
          title = c_line)
@@ -131,17 +131,12 @@ for (c_line in distinct(plate_data["cell_line"])$cell_line){
   print(str_glue("done plotting cell line {c_line}"))
 }
 # plot data for all cell lines at once-----------------------------------------
-alpha_val <- .8
-viridis_start <- 0
-viridis_end <- 1
+alpha_val <- 1
+viridis_start <- .8
+viridis_end <- 0
 plate_data %>%
   group_by(cell_line, compound, log.conc) %>% # group into replicates for each condition
-  summarize(
-    # standard error for error bars = standard deviation / square root of n
-    sem = sd(read_norm, na.rm = TRUE)/sqrt(n()),
-    mean_read = mean(read_norm), # mean normalized readout value for plotting
-    w = 0.1 * n() # necessary for consistent error bar widths across plots
-  ) %>%
+  plate_summarize() %>%
   ggplot(aes(x = log.conc, y = mean_read, color = compound)) +
   geom_point() +
   # error bars = mean plus or minus standard error
@@ -155,7 +150,7 @@ plate_data %>%
                   ylim = c(0,NA)) + # set y axis zoom locally
   theme_prism() + # make it look fancy like prism
   theme(plot.background = element_blank()) + # need for transparent background
-  scale_color_viridis(option = "viridis", discrete = TRUE, begin = viridis_start, end = viridis_end) +
+  scale_color_viridis(option = "turbo", discrete = TRUE, begin = viridis_start, end = viridis_end) +
   labs(x = "log [compound] (M)",
        y = "relative cell viability (%)",
        title = "All data")
