@@ -53,6 +53,7 @@ plate_data <- read_plates(plate_files, plate_names) %>% # import with plater
 # set global parameters for all plots------------------------------------------
 all_compounds <- distinct(plate_data["compound"])$compound
 all_lines <- distinct(plate_data["cell_line"])$cell_line
+save_transparent <- function(plot, ...){ggsave(plot, bg = "transparent", ...)}
 # find x-axis min/max values for consistent zoom window between all plots
 x_limits <- c(floor(min(plate_data$log.conc)), ceiling(max(plate_data$log.conc)))
 # set factors so cell lines get plotted and colored in input order
@@ -99,6 +100,7 @@ plot_compound <- function(cpd){
       geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
                 se = FALSE, size = 1)} %>%
     plot_global() +
+    theme(aspect.ratio = 1) +
     scale_color_manual(values = c("black","darkred")) +
     labs(title = cpd)
 }
@@ -113,10 +115,10 @@ compound_plots = list()
 for (cpd in all_compounds){
   compound_plots <- append(compound_plots, list(plot_compound(cpd)))
 }
-wrap_plots(compound_plots, ncol = 4, guides = "collect") &
+wrap_plots(compound_plots, guides = "collect") &
   theme(plot.margin = unit(c(10,10,10,10), "pt")) +
   theme(legend.text= element_text(face = "bold", size = 16))
-ggsave(str_glue("plots output/compound_facets.pdf"), width = 16, height = 8, bg = "transparent")
+save_transparent(str_glue("plots output/compound_facets.pdf"), width = 15, height = 14)
 # plot data for each cell line separately-------------------------------------------------
 alpha_val <- 1
 viridis_start <- .8
