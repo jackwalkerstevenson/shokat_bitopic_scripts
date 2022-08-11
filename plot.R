@@ -88,7 +88,6 @@ plot_global <- function(plot){
 }
 # helper function to plot one compound----------------------------------------
 plot_compound <- function(cpd){
-  print(str_glue("plot_compound working on compound {cpd}"))
   plate_summary <- plate_data %>%
     filter(compound == cpd) %>% # get data from one compound to work with
     group_by(cell_line, log.conc) %>%  # get set of replicates for each condition
