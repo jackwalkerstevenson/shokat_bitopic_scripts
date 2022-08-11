@@ -103,46 +103,25 @@ plot_compound <- function(cpd){
     labs(title = cpd)
 }
 # plot data for each compound separately----------------------------------------
-for (cpd in distinct(plate_data["compound"])$compound){
+for (cpd in all_compounds){
   plot_compound(cpd)
   # save plot with manually optimized aspect ratio
   ggsave(str_glue("plots output/{cpd}.pdf"), width = 5, height = 4, bg = "transparent")
-  print(str_glue("done plotting compound {cpd}"))
 }
-# facet_wrap practice breaking out by compound----------------------------------
+# plot data for all compounds in facets----------------------------------
+compound_plots = list()
+for (cpd in all_compounds){
+  compound_plots <- append(compound_plots, list(plot_compound(cpd)))
+}
+wrap_plots(compound_plots, ncol = 4, guides = "collect") &
+  theme(plot.margin = unit(c(10,10,10,10), "pt")) +
+  theme(legend.text= element_text(face = "bold", size = 16))
+ggsave(str_glue("plots output/compound_facets.pdf"), width = 16, height = 8, bg = "transparent")
+# plot data for each cell line separately-------------------------------------------------
 alpha_val <- 1
 viridis_start <- .8
 viridis_end <- 0
-plate_summary <- plate_data %>%
-  group_by(cell_line, compound, log.conc) %>% # group into replicates for each condition
-  plate_summarize()
-{ggplot(plate_summary,aes(x = log.conc, y = mean_read, color = cell_line)) +
-    geom_point() +
-    # error bars = mean plus or minus standard error
-    geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
-    # use drm method from drc package to fit dose response curve
-    geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
-              se = FALSE, size = 1, alpha = alpha_val)} %>%
-  plot_global() +
-  scale_color_manual(values = c("black","darkred")) +
-  labs(title = "All data") +
-  facet_wrap(vars(compound), scales = "free") +
-  theme(panel.spacing = unit(1, "lines"))
-ggsave(str_glue("plots output/facet.pdf"), bg = "transparent", width = 12, height = 8)
-# patchwork practice breaking out by compound----------------------------------
-cpd = "ponatinib"
-p1 <- plot_compound(cpd)
-cpd = "asciminib"
-p2 <- plot_compound(cpd)
-p1 | p2 + plot_layout(guides = "collect")
-ggsave(str_glue("plots output/patchwork.pdf"), width = 8, height = 4, bg = "transparent")
-
-# plot data for each cell line-------------------------------------------------
-alpha_val <- 1
-viridis_start <- .8
-viridis_end <- 0
-for (c_line in distinct(plate_data["cell_line"])$cell_line){
-  print(str_glue("working on cell line {c_line}"))
+for (c_line in all_lines){
   plate_summary <- plate_data %>%
     filter(cell_line == c_line) %>%
     group_by(compound, log.conc) %>% # group into replicates for each condition
@@ -159,7 +138,6 @@ for (c_line in distinct(plate_data["cell_line"])$cell_line){
     scale_color_viridis(option = "turbo", discrete = TRUE, begin = viridis_start, end = viridis_end) +
     labs(title = c_line)
   ggsave(str_glue("plots output/{c_line}.pdf"), width = 7, height = 5, bg = "transparent")
-  print(str_glue("done plotting cell line {c_line}"))
 }
 # plot data for all cell lines at once-----------------------------------------
 alpha_val <- 1
