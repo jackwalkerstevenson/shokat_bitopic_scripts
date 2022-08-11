@@ -37,7 +37,6 @@ library(patchwork) # for plot organization
 # specify names of input files and import data---------------------------------
 # note the order compounds are imported is the order they will be plotted
 plate_directory <- "Input CSVs/"
-
 plate_filenames <- c(list.files(plate_directory, pattern = "*.csv")) #gathers all .csv in directory
 plate_paths <- paste0(plate_directory, plate_filenames)
 plate_names <- seq(1,length(plate_filenames))  # create plate IDs
@@ -50,7 +49,7 @@ plate_data <- read_plates(plate_paths, plate_names) %>% # import with plater
 # set global parameters for all plots------------------------------------------
 all_compounds <- distinct(plate_data["compound"])$compound
 all_lines <- distinct(plate_data["cell_line"])$cell_line
-save_transparent <- function(plot, ...){ggsave(plot, bg = "transparent", ...)}
+save_plot <- function(plot, ...){ggsave(plot, bg = "transparent", ...)}
 # find x-axis min/max values for consistent zoom window between all plots
 x_limits <- c(floor(min(plate_data$log.conc)), ceiling(max(plate_data$log.conc)))
 # set factors so cell lines get plotted and colored in input order
@@ -105,7 +104,7 @@ plot_compound <- function(cpd){
 for (cpd in all_compounds){
   plot_compound(cpd)
   # save plot with manually optimized aspect ratio
-  ggsave(str_glue("plots output/{cpd}.pdf"), width = 5, height = 4, bg = "transparent")
+  save_plot(str_glue("plots output/{cpd}.pdf"), width = 5, height = 4)
 }
 # plot data for all compounds in facets----------------------------------
 compound_plots = list()
@@ -115,7 +114,7 @@ for (cpd in all_compounds){
 wrap_plots(compound_plots, guides = "collect") &
   theme(plot.margin = unit(c(10,10,10,10), "pt")) +
   theme(legend.text= element_text(face = "bold", size = 16))
-save_transparent(str_glue("plots output/compound_facets.pdf"), width = 15, height = 14)
+save_plot(str_glue("plots output/compound_facets.pdf"), width = 15, height = 14)
 # plot data for each cell line separately-------------------------------------------------
 alpha_val <- 1
 viridis_start <- .8
@@ -136,7 +135,7 @@ for (c_line in all_lines){
     plot_global() +
     scale_color_viridis(option = "turbo", discrete = TRUE, begin = viridis_start, end = viridis_end) +
     labs(title = c_line)
-  ggsave(str_glue("plots output/{c_line}.pdf"), width = 7, height = 5, bg = "transparent")
+  save_plot(str_glue("plots output/{c_line}.pdf"), width = 7, height = 5)
 }
 # plot data for all cell lines at once-----------------------------------------
 alpha_val <- 1
@@ -155,4 +154,4 @@ plate_summary <- plate_data %>%
   plot_global() +
   scale_color_viridis(option = "turbo", discrete = TRUE, begin = viridis_start, end = viridis_end) +
   labs(title = "All data")
-ggsave(str_glue("Plots Output/all_data.pdf"), width = 7, height = 5, bg = "transparent")
+save_plot(str_glue("Plots Output/all_data.pdf"), width = 7, height = 5)
