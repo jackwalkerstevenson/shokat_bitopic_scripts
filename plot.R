@@ -20,11 +20,11 @@
 #'
 #'1. Make one copy of the JWS Excel plater template for each plate of data you want to import
 #'2. Fill out each copy with the compound + concs used and paste in raw plate reader data
-#'3. Save input sheets as csv and put them in your working directory (or move your working directory to where they are)
-#'  - alternatively, manually create plater-formatted csv files and put them in the working directory
-#'4. Fill out input filenames in the plate_files variable below
+#'3. Save input sheets as csv and put them in a folder within your working directory
+#'4. Set `plate_directory` to the folder of .csv files (default is "Input CSVs/")
+#'  -Maintain format of default, "Folder" and "~/Folder/" will both fail.
 #'5. Run plot.R (this file)
-#'6. Output plots will be created in a "plots output" folder in the working directory
+#'6. Output plots will be created in a "Plots Output" folder in the working directory
 
 # Load required libraries------------------------------------------------------
 library(drc)  # for dose response curves
@@ -36,15 +36,12 @@ library(patchwork) # for plot organization
 
 # specify names of input files and import data---------------------------------
 # note the order compounds are imported is the order they will be plotted
-plate_files = c("JS-B2-80 plater 1 ponatinib.csv",
-                "JS-B2-80 plater 2 asciminib.csv",
-                "JS-B2-80 plater 8 pona-asc.csv",
-                "JS-B2-80 plater 3 PonatiLink-1-12.csv",
-                "JS-B2-80 plater 4 PonatiLink-1-16.csv",
-                "JS-B2-80 plater 5 PonatiLink-1-20.csv",
-                "JS-B2-80 plater 7 PonatiLink-1-24.csv")
-plate_names = seq(1,length(plate_files))  # create plate IDs
-plate_data <- read_plates(plate_files, plate_names) %>% # import with plater
+plate_directory <- "Input CSVs/"
+
+plate_filenames <- c(list.files(plate_directory, pattern = "*.csv")) #gathers all .csv in directory
+plate_paths <- paste0(plate_directory, plate_filenames)
+plate_names <- seq(1,length(plate_filenames))  # create plate IDs
+plate_data <- read_plates(plate_paths, plate_names) %>% # import with plater
   filter(compound != "N/A") %>% # drop empty wells
   # drop 0 values before plotting and curve fitting
   # note this is only OK because normalization happens before import
@@ -103,8 +100,8 @@ plot_compound <- function(cpd){
 for (cpd in distinct(plate_data["compound"])$compound){
   plot_compound(cpd)
   # save plot with manually optimized aspect ratio
-  ggsave(str_glue("plots output/{cpd}.pdf"), width = 5, height = 4, bg = "transparent")
-  print(str_glue("done plotting compound {cpd}"))
+  ggsave(str_glue("Plots Output/{cpd}.pdf"), width = 5, height = 4, bg = "transparent")
+  print(str_glue("Done plotting compound {cpd}"))
 }
 # facet_wrap practice breaking out by compound----------------------------------
 alpha_val <- 1
@@ -125,14 +122,14 @@ plate_summary <- plate_data %>%
   labs(title = "All data") +
   facet_wrap(vars(compound), scales = "free") +
   theme(panel.spacing = unit(1, "lines"))
-ggsave(str_glue("plots output/facet.pdf"), bg = "transparent", width = 12, height = 8)
+ggsave(str_glue("Plots Output/facet.pdf"), bg = "transparent", width = 12, height = 8)
 # patchwork practice breaking out by compound----------------------------------
 cpd = "ponatinib"
 p1 <- plot_compound(cpd)
 cpd = "asciminib"
 p2 <- plot_compound(cpd)
 p1 | p2 + plot_layout(guides = "collect")
-ggsave(str_glue("plots output/patchwork.pdf"), width = 8, height = 4, bg = "transparent")
+ggsave(str_glue("Plots Output/patchwork.pdf"), width = 8, height = 4, bg = "transparent")
 
 # plot data for each cell line-------------------------------------------------
 alpha_val <- 1
@@ -155,8 +152,8 @@ for (c_line in distinct(plate_data["cell_line"])$cell_line){
     plot_global() +
     scale_color_viridis(option = "turbo", discrete = TRUE, begin = viridis_start, end = viridis_end) +
     labs(title = c_line)
-  ggsave(str_glue("plots output/{c_line}.pdf"), width = 7, height = 5, bg = "transparent")
-  print(str_glue("done plotting cell line {c_line}"))
+  ggsave(str_glue("Plots Output/{c_line}.pdf"), width = 7, height = 5, bg = "transparent")
+  print(str_glue("Done plotting cell line {c_line}"))
 }
 # plot data for all cell lines at once-----------------------------------------
 alpha_val <- 1
@@ -175,4 +172,4 @@ plate_summary <- plate_data %>%
   plot_global() +
   scale_color_viridis(option = "turbo", discrete = TRUE, begin = viridis_start, end = viridis_end) +
   labs(title = "All data")
-  ggsave(str_glue("plots output/all_data.pdf"), width = 7, height = 5, bg = "transparent")
+  ggsave(str_glue("Plots Output/all_data.pdf"), width = 7, height = 5, bg = "transparent")
