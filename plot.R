@@ -51,14 +51,16 @@ plate_data <- read_plates(plate_files, plate_names) %>% # import with plater
   filter(conc != 0) %>%
   mutate(log.conc = log10(conc/1e6))  # convert conc µM to M and log transform
 # set global parameters for all plots------------------------------------------
+all_compounds <- distinct(plate_data["compound"])$compound
+all_lines <- distinct(plate_data["cell_line"])$cell_line
+# find x-axis min/max values for consistent zoom window between all plots
+x_limits <- c(floor(min(plate_data$log.conc)), ceiling(max(plate_data$log.conc)))
 # set factors so cell lines get plotted and colored in input order
 cell_line_factors <- distinct(plate_data, cell_line)$cell_line
 compound_factors <- distinct(plate_data, compound)$compound
 plate_data <- plate_data %>% 
   mutate(cell_line = fct_relevel(cell_line, cell_line_factors)) %>%
   mutate(compound = fct_relevel(compound, compound_factors))
-# find x-axis min/max values for consistent zoom window between all plots
-x_limits <- c(floor(min(plate_data$log.conc)), ceiling(max(plate_data$log.conc)))
 # helper function for summarizing replicate data for plotting------------------
 plate_summarize <- function(x){
   summarize(x,
@@ -88,6 +90,7 @@ plot_compound <- function(cpd){
     filter(compound == cpd) %>% # get data from one compound to work with
     group_by(cell_line, log.conc) %>%  # get set of replicates for each condition
     plate_summarize()
+  # bracket ggplot so it can be piped to helper function
   {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = cell_line)) +
       geom_point() +
       # error bars = mean plus or minus standard error
