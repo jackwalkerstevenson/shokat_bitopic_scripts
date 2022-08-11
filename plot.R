@@ -162,14 +162,14 @@ viridis_end <- 0
 plate_summary <- plate_data %>%
   group_by(cell_line, compound, log.conc) %>% # group into replicates for each condition
   plate_summarize()
-  {ggplot(plate_summary,aes(x = log.conc, y = mean_read, color = compound)) +
-  geom_point() +
-  # error bars = mean plus or minus standard error
-  geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
-  # use drm method from drc package to fit dose response curve
-  geom_line(aes(linetype = cell_line), stat = "smooth", method = "drm", method.args = list(fct = L.4()),
-            se = FALSE, size = 1, alpha = alpha_val)} %>%
+{ggplot(plate_summary,aes(x = log.conc, y = mean_read, color = compound)) +
+    geom_point() +
+    # error bars = mean plus or minus standard error
+    geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
+    # use drm method from drc package to fit dose response curve
+    geom_line(aes(linetype = cell_line), stat = "smooth", method = "drm", method.args = list(fct = L.4()),
+              se = FALSE, size = 1, alpha = alpha_val)} %>%
   plot_global() +
   scale_color_viridis(option = "turbo", discrete = TRUE, begin = viridis_start, end = viridis_end) +
   labs(title = "All data")
-  ggsave(str_glue("Plots Output/all_data.pdf"), width = 7, height = 5, bg = "transparent")
+ggsave(str_glue("Plots Output/all_data.pdf"), width = 7, height = 5, bg = "transparent")
