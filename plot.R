@@ -26,7 +26,7 @@
 #'5. Run plot.R (this file)
 #'6. Output plots will be created in a "plots output" folder in the working directory
 
-# Load required libraries------------------------------------------------------
+# load required libraries------------------------------------------------------
 library(drc)  # for dose response curves
 library(tidyverse) # for tidy data handling
 library(ggprism)  # for pretty prism-like plots
