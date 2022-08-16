@@ -54,7 +54,7 @@ x_min <- floor(min(plate_data$log.conc))
 x_max <- ceiling(max(plate_data$log.conc))
 x_limits <- c(x_min, x_max)
 # create logistic minor breaks for all compounds
-x_breaks <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
+minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
 # set factors so cell lines get plotted and colored in input order
 cell_line_factors <- distinct(plate_data, cell_line)$cell_line
 compound_factors <- distinct(plate_data, compound)$compound
@@ -81,8 +81,10 @@ plate_summarize <- function(x){
 # helper function to add ggplot objects common to all plots--------------------
 plot_global <- function(plot){
   plot +
-    scale_x_continuous() + # automatic x axis ticks
-    scale_y_continuous(breaks = c(0,25,50,75,100)) + # manual y axis ticks
+    scale_x_continuous(guide = "prism_offset_minor", # end at last tick
+                       minor_breaks = minor_x) + # manual minor ticks
+    scale_y_continuous(guide = "prism_offset",  # end at last tick
+                       breaks = c(0,25,50,75,100)) + # manual y axis ticks
     coord_cartesian(xlim = x_limits, # set x axis zoom from global values
                     ylim = c(0,NA)) + # set y axis zoom locally
     theme_prism() + # make it look fancy like prism
