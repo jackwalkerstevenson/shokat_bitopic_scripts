@@ -50,7 +50,11 @@ plate_data <- read_plates(plate_paths, plate_names) %>% # import with plater
 all_compounds <- distinct(plate_data["compound"])$compound
 all_lines <- distinct(plate_data["cell_line"])$cell_line
 # find x-axis min/max values for consistent zoom window between all plots
-x_limits <- c(floor(min(plate_data$log.conc)), ceiling(max(plate_data$log.conc)))
+x_min <- floor(min(plate_data$log.conc))
+x_max <- ceiling(max(plate_data$log.conc))
+x_limits <- c(x_min, x_max)
+# create logistic minor breaks for all compounds
+x_breaks <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
 # set factors so cell lines get plotted and colored in input order
 cell_line_factors <- distinct(plate_data, cell_line)$cell_line
 compound_factors <- distinct(plate_data, compound)$compound
