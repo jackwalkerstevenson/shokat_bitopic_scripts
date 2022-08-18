@@ -112,8 +112,9 @@ for (cpd in all_compounds){
   compound_plots <- append(compound_plots, list(plot_compound(cpd)))
 }
 wrap_plots(compound_plots, ncol = 4, guides = "collect") &
-  theme(plot.margin = unit(c(10,10,10,10), "pt")) +
-  theme(legend.text= element_text(face = "bold", size = 16))
+  theme(plot.margin = unit(c(10,10,10,10), "pt"),
+        plot.background = element_blank(),
+        legend.text= element_text(face = "bold", size = 16))
 ggsave(str_glue("plots output/compound_facets.{plot_type}"), width = 16, height = 8, bg = "transparent")
 # plot data for each cell line separately-------------------------------------------------
 alpha_val <- 1
