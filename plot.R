@@ -48,17 +48,28 @@ plate_data <- read_plates(plate_paths, plate_names) %>% # import with plater
   # note this is only OK because normalization happens before import
   filter(conc != 0) %>%
   mutate(log.conc = log10(conc/1e6))  # convert conc µM to M and log transform
-# set global parameters for all plots------------------------------------------
+# generate global parameters for all plots------------------------------------------
 all_compounds <- distinct(plate_data["compound"])$compound
 all_lines <- distinct(plate_data["cell_line"])$cell_line
 # find x-axis min/max values for consistent zoom window between all plots
-x_limits <- c(floor(min(plate_data$log.conc)), ceiling(max(plate_data$log.conc)))
+x_min <- floor(min(plate_data$log.conc))
+x_max <- ceiling(max(plate_data$log.conc))
+x_limits <- c(x_min, x_max)
+# create logistic minor breaks for all compounds
+minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
 # set factors so cell lines get plotted and colored in input order
 cell_line_factors <- distinct(plate_data, cell_line)$cell_line
 compound_factors <- distinct(plate_data, compound)$compound
 plate_data <- plate_data %>% 
   mutate(cell_line = fct_relevel(cell_line, cell_line_factors)) %>%
   mutate(compound = fct_relevel(compound, compound_factors))
+# helper function for saving plots----------------------------------------------
+scale_facet <- 4 # plot width per col/height per row
+#todo: allow overriding width and height if provided
+save_plot <- function(plot, nrow = 1, ncol = 1, ...){
+  ggsave(plot, bg = "transparent",
+         width = ncol*scale_facet + 1,
+         height = nrow*scale_facet, ...)}
 # helper function for summarizing replicate data for plotting------------------
 plate_summarize <- function(x){
   summarize(x,
@@ -72,8 +83,10 @@ plate_summarize <- function(x){
 # helper function to add ggplot objects common to all plots--------------------
 plot_global <- function(plot){
   plot +
-    scale_x_continuous() + # automatic x axis ticks
-    scale_y_continuous(breaks = c(0,25,50,75,100)) + # manual y axis ticks
+    scale_x_continuous(guide = "prism_offset_minor", # end at last tick
+                       minor_breaks = minor_x) + # manual minor ticks
+    scale_y_continuous(guide = "prism_offset",  # end at last tick
+                       breaks = c(0,25,50,75,100)) + # manual y axis ticks
     coord_cartesian(xlim = x_limits, # set x axis zoom from global values
                     ylim = c(0,NA)) + # set y axis zoom locally
     theme_prism() + # make it look fancy like prism
@@ -83,7 +96,6 @@ plot_global <- function(plot){
 }
 # helper function to plot one compound----------------------------------------
 plot_compound <- function(cpd){
-  print(str_glue("plot_compound working on compound {cpd}"))
   plate_summary <- plate_data %>%
     filter(compound == cpd) %>% # get data from one compound to work with
     group_by(cell_line, log.conc) %>%  # get set of replicates for each condition
@@ -97,6 +109,7 @@ plot_compound <- function(cpd){
       geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
                 se = FALSE, size = 1)} %>%
     plot_global() +
+    theme(aspect.ratio = 1) +
     scale_color_manual(values = c("black","darkred")) +
     labs(title = cpd)
 }
@@ -104,18 +117,22 @@ plot_compound <- function(cpd){
 for (cpd in all_compounds){
   plot_compound(cpd)
   # save plot with manually optimized aspect ratio
-  ggsave(str_glue("plots output/{cpd}.{plot_type}"), width = 5, height = 4, bg = "transparent")
-}
+  save_plot(str_glue("plots output/{cpd}.{plot_type}"))
+}  
 # plot data for all compounds in facets----------------------------------
 compound_plots = list()
 for (cpd in all_compounds){
   compound_plots <- append(compound_plots, list(plot_compound(cpd)))
 }
-wrap_plots(compound_plots, ncol = 4, guides = "collect") &
-  theme(plot.margin = unit(c(10,10,10,10), "pt"),
+
+plot_mar <- 15 # margin between wrapped plots, in points
+cols = 4
+rows = 2
+wrap_plots(compound_plots, guides = "collect", ncol = cols, nrow = rows) &
+  theme(plot.margin = unit(c(plot_mar,plot_mar,plot_mar,plot_mar), "pt"),
         plot.background = element_blank(),
         legend.text= element_text(face = "bold", size = 16))
-ggsave(str_glue("plots output/compound_facets.{plot_type}"), width = 16, height = 8, bg = "transparent")
+save_plot(str_glue("plots output/compound_facets.{plot_type}"), ncol = cols, nrow = rows)
 # plot data for each cell line separately-------------------------------------------------
 alpha_val <- 1
 viridis_start <- .8
@@ -136,7 +153,7 @@ for (c_line in all_lines){
     plot_global() +
     scale_color_viridis(option = "turbo", discrete = TRUE, begin = viridis_start, end = viridis_end) +
     labs(title = c_line)
-  ggsave(str_glue("plots output/{c_line}.{plot_type}"), width = 7, height = 5, bg = "transparent")
+  save_plot(str_glue("plots output/{c_line}.{plot_type}"))
 }
 # plot data for all cell lines at once-----------------------------------------
 alpha_val <- 1
@@ -155,4 +172,4 @@ plate_summary <- plate_data %>%
   plot_global() +
   scale_color_viridis(option = "turbo", discrete = TRUE, begin = viridis_start, end = viridis_end) +
   labs(title = "All data")
-ggsave(str_glue("Plots Output/all_data.{plot_type}"), width = 7, height = 5, bg = "transparent")
+save_plot(str_glue("Plots Output/all_data.{plot_type}"))
