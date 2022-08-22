@@ -37,6 +37,8 @@ library(patchwork) # for plot organization
 # specify names of input files and import data---------------------------------
 # note the order compounds are imported is the order they will be plotted
 plate_directory <- "Input CSVs/"
+plot_type <- "pdf"
+
 plate_filenames <- c(list.files(plate_directory, pattern = "*.csv")) #gathers all .csv in directory
 plate_paths <- paste0(plate_directory, plate_filenames)
 plate_names <- seq(1,length(plate_filenames))  # create plate IDs
@@ -115,20 +117,22 @@ plot_compound <- function(cpd){
 for (cpd in all_compounds){
   plot_compound(cpd)
   # save plot with manually optimized aspect ratio
-  save_plot(str_glue("plots output/{cpd}.pdf"))
-}
+  save_plot(str_glue("plots output/{cpd}.{plot_type}"))
+}  
 # plot data for all compounds in facets----------------------------------
 compound_plots = list()
 for (cpd in all_compounds){
   compound_plots <- append(compound_plots, list(plot_compound(cpd)))
 }
+
 plot_mar <- 15 # margin between wrapped plots, in points
 cols = 4
 rows = 2
 wrap_plots(compound_plots, guides = "collect", ncol = cols, nrow = rows) &
-  theme(plot.margin = unit(c(plot_mar,plot_mar,plot_mar,plot_mar), "pt")) +
-  theme(legend.text= element_text(face = "bold", size = 16))
-save_plot(str_glue("plots output/compound_facets.pdf"), ncol = cols, nrow = rows)
+  theme(plot.margin = unit(c(plot_mar,plot_mar,plot_mar,plot_mar), "pt"),
+        plot.background = element_blank(),
+        legend.text= element_text(face = "bold", size = 16))
+save_plot(str_glue("plots output/compound_facets.{plot_type}"), ncol = cols, nrow = rows)
 # plot data for each cell line separately-------------------------------------------------
 alpha_val <- 1
 viridis_start <- .8
@@ -149,7 +153,7 @@ for (c_line in all_lines){
     plot_global() +
     scale_color_viridis(option = "turbo", discrete = TRUE, begin = viridis_start, end = viridis_end) +
     labs(title = c_line)
-  save_plot(str_glue("plots output/{c_line}.pdf"))
+  save_plot(str_glue("plots output/{c_line}.{plot_type}"))
 }
 # plot data for all cell lines at once-----------------------------------------
 alpha_val <- 1
@@ -168,4 +172,4 @@ plate_summary <- plate_data %>%
   plot_global() +
   scale_color_viridis(option = "turbo", discrete = TRUE, begin = viridis_start, end = viridis_end) +
   labs(title = "All data")
-save_plot(str_glue("Plots Output/all_data.pdf"))
+save_plot(str_glue("Plots Output/all_data.{plot_type}"))
