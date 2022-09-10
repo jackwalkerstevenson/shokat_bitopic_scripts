@@ -36,11 +36,11 @@ library(patchwork) # for plot organization
 
 # specify names of input files and import data---------------------------------
 # note the order compounds are imported is the order they will be plotted
-plate_directory <- "Input CSVs/"
+input_directory <- "Input CSVs/"
 plot_type <- "pdf"
 
-plate_filenames <- c(list.files(plate_directory, pattern = "*.csv")) #gathers all .csv in directory
-plate_paths <- paste0(plate_directory, plate_filenames)
+plate_filenames <- c(list.files(input_directory, pattern = "*.csv")) #gathers all .csv in directory
+plate_paths <- paste0(input_directory, plate_filenames)
 plate_names <- seq(1,length(plate_filenames))  # create plate IDs
 plate_data <- read_plates(plate_paths, plate_names) %>% # import with plater
   filter(compound != "N/A") %>% # drop empty wells
@@ -68,7 +68,7 @@ scale_facet <- 4 # plot width per col/height per row
 #todo: allow overriding width and height if provided
 save_plot <- function(plot, nrow = 1, ncol = 1, ...){
   ggsave(plot, bg = "transparent",
-         width = ncol*scale_facet + 1,
+         width = ncol*scale_facet + 2,
          height = nrow*scale_facet, ...)}
 # helper function for summarizing replicate data for plotting------------------
 plate_summarize <- function(x){
@@ -133,10 +133,12 @@ wrap_plots(compound_plots, guides = "collect", ncol = cols, nrow = rows) &
         plot.background = element_blank(),
         legend.text= element_text(face = "bold", size = 16))
 save_plot(str_glue("plots output/compound_facets.{plot_type}"), ncol = cols, nrow = rows)
-# plot data for each cell line separately-------------------------------------------------
+# set color parameters for overlaid plots--------------------------------------
 alpha_val <- 1
-viridis_start <- .8
-viridis_end <- 0
+color_scale <- "turbo"
+color_start <- .8
+color_end <- .15
+# plot data for each cell line separately-------------------------------------------------
 for (c_line in all_lines){
   plate_summary <- plate_data %>%
     filter(cell_line == c_line) %>%
@@ -151,14 +153,11 @@ for (c_line in all_lines){
       geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
                 se = FALSE, size = 1, alpha = alpha_val)} %>%
     plot_global() +
-    scale_color_viridis(option = "turbo", discrete = TRUE, begin = viridis_start, end = viridis_end) +
+    scale_color_viridis(option = color_scale, discrete = TRUE, begin = color_start, end = color_end) +
     labs(title = c_line)
   save_plot(str_glue("plots output/{c_line}.{plot_type}"))
 }
 # plot data for all cell lines at once-----------------------------------------
-alpha_val <- 1
-viridis_start <- .8
-viridis_end <- 0
 plate_summary <- plate_data %>%
   group_by(cell_line, compound, log.conc) %>% # group into replicates for each condition
   plate_summarize()
@@ -170,6 +169,6 @@ plate_summary <- plate_data %>%
     geom_line(aes(linetype = cell_line), stat = "smooth", method = "drm", method.args = list(fct = L.4()),
               se = FALSE, size = 1, alpha = alpha_val)} %>%
   plot_global() +
-  scale_color_viridis(option = "turbo", discrete = TRUE, begin = viridis_start, end = viridis_end) +
+  scale_color_viridis(option = color_scale, discrete = TRUE, begin = color_start, end = color_end) +
   labs(title = "All data")
 save_plot(str_glue("Plots Output/all_data.{plot_type}"))
