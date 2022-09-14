@@ -106,9 +106,9 @@ get_EC <- function(cpd, c_line, EC_threshold){
 EC_summary <- plate_data %>%
   group_by(compound, cell_line) %>%
   summarize(
-    EC50 = get_EC(compound, cell_line, 50),
+    EC50_nM = 10^get_EC(compound, cell_line, 50) * 1e9, # convert M to nM
     # for negative-response data like this, the EC75 is the drop to 25%
-    EC75 = get_EC(compound, cell_line, 25)
+    EC75_nM = 10^get_EC(compound, cell_line, 25) * 1e9
   )
 write_csv(EC_summary, "plots output/EC_summary.csv")
 # helper function to plot one compound----------------------------------------
