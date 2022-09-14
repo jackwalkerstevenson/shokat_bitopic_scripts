@@ -94,6 +94,23 @@ plot_global <- function(plot){
     labs(x = "log [compound] (M)",
          y = "relative cell viability (%)")
 }
+# fit models to output EC values------------------------------------------------
+# seems like you should be able to just pipe group_by into drm(), but nope, so doing this instead
+# helper function for getting EC for one compound, cell line, and EC threshold
+get_EC <- function(cpd, c_line, EC_threshold){
+    cpd_data <- plate_data %>%
+      filter(compound == cpd, cell_line == c_line)
+    EC <- ED(drm(read_norm~log.conc, data=cpd_data, fct=L.4()), EC_threshold)[1,1]
+    return(EC)
+}
+EC_summary <- plate_data %>%
+  group_by(compound, cell_line) %>%
+  summarize(
+    EC50 = get_EC(compound, cell_line, 50),
+    # for negative-response data like this, the EC75 is the drop to 25%
+    EC75 = get_EC(compound, cell_line, 25)
+  )
+write_csv(EC_summary, "plots output/EC_summary.csv")
 # helper function to plot one compound----------------------------------------
 plot_compound <- function(cpd){
   plate_summary <- plate_data %>%
