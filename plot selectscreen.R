@@ -35,6 +35,23 @@ plate_data <- read_csv(input_filename) %>%
   # wrangle: convert conc and convert inhibition to activity
   mutate(log.conc = log10(Compound_Conc_nM/1e9)) %>%  # convert conc nM to log(M)
   mutate(activity = 100 - pct_inhibition)
+# fit models to output EC values------------------------------------------------
+# seems like you should be able to just pipe group_by into drm(), but nope, so doing this instead
+# helper function for getting EC for one compound, cell line, and EC threshold
+get_EC <- function(compound, kinase, EC_threshold){
+  cpd_data <- plate_data %>%
+    filter(compound == compound, Kinase == kinase)
+  EC <- ED(drm(activity~log.conc, data=cpd_data, fct=L.4()), EC_threshold)[1,1]
+  return(EC)
+}
+EC_summary <- plate_data %>%
+  group_by(compound, Kinase) %>%
+  summarize(
+    EC50_nM = 10^get_EC(compound, Kinase, 50) * 1e9, # convert M to nM
+    # for negative-response data like this, the EC75 is the drop to 25%
+    EC75_nM = 10^get_EC(compound, Kinase, 25) * 1e9
+  )
+write_csv(EC_summary, "plots output/EC_summary_selectscreen.csv")
 # generate global parameters for all plots------------------------------------------
 all_compounds <- distinct(plate_data["compound"])$compound
 all_kinases <- distinct(plate_data["Kinase"])$Kinase
