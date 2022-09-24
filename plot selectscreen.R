@@ -17,28 +17,22 @@ library(assertthat) # for QC assertions
 
 # import and tidy data---------------------------------
 # note the order compounds are imported is the order they will be plotted
-input_filename <- "SSBK ZLyte IC50_20220909-201123.csv"
+input_filename <- "ZLYTE_compiled_results_complete.csv"
 plot_type <- "pdf"
+compounds <- c("Ponatinib",
+               "Asciminib",
+               "Ponatinib + Asciminib",
+               "PonatiLink-1-12",
+               "PonatiLink-1-16",
+               "PonatiLink-1-20",
+               "PonatiLink-1-24")
 plate_data <- read_csv(input_filename) %>%
-  filter(Compound != 38214) %>% # remove KL-E5-14
-  # tidy by pivoting to one measurement per row
-  pivot_longer(cols = 11:12, names_to = NULL, values_to = "pct_inhibition")
-# convert compound IDs into compound names-------------------------------------
-compound_names <- c( # order of compound IDs hopefully preserved in results
-  "PonatiLink-1-12 (SP-C1-04)",
-  "PonatiLink-1-16 (SP-C1-11)",
-  "PonatiLink-1-20 (JS-C1-05)",
-  "PonatiLink-1-24 (SP-C1-12)"
-)
-compound_IDs <- sort(distinct(plate_data["Compound"])$Compound)
-assert_that(length(compound_names) == length(compound_IDs))
-get_compound_name <- Vectorize(function(ID){
-  compound_names[which(ID == compound_IDs)]
-})
-plate_data <- plate_data %>%
-  mutate(compound = get_compound_name(Compound))
-# wrangle data: convert conc and convert inhibition to activity
-plate_data <- plate_data %>%
+  rename(compound = Compound) %>%
+  # filter for desired compounds
+  filter(compound %in% compounds) %>%
+  # tidy by pivoting to one measurement per row. magic column number, watch out!
+  pivot_longer(cols = 12:13, names_to = NULL, values_to = "pct_inhibition") %>%
+  # wrangle: convert conc and convert inhibition to activity
   mutate(log.conc = log10(Compound_Conc_nM/1e9)) %>%  # convert conc nM to log(M)
   mutate(activity = 100 - pct_inhibition)
 # generate global parameters for all plots------------------------------------------
@@ -46,6 +40,7 @@ all_compounds <- distinct(plate_data["compound"])$compound
 all_kinases <- distinct(plate_data["Kinase"])$Kinase
 # find x-axis min/max values for consistent zoom window between all plots
 x_min <- floor(min(plate_data$log.conc))
+x_min <- -9.5
 x_max <- ceiling(max(plate_data$log.conc))
 x_limits <- c(x_min, x_max)
 # create logistic minor breaks for all conc plots
@@ -119,8 +114,8 @@ for (cpd in all_compounds){
 }
 
 plot_mar <- 15 # margin between wrapped plots, in points
-cols = 5
-rows = 1
+cols = ceiling(sqrt(length(compounds)))
+rows = ceiling(length(compounds)/cols)
 wrap_plots(compound_plots, guides = "collect", ncol = cols, nrow = rows) &
   theme(plot.margin = unit(c(plot_mar,plot_mar,plot_mar,plot_mar), "pt"),
         plot.background = element_blank(),
