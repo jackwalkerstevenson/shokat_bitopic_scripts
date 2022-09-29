@@ -19,9 +19,10 @@ library(assertthat) # for QC assertions
 # note the order compounds are imported is the order they will be plotted
 input_filename <- "ZLYTE_compiled_results_complete.csv"
 plot_type <- "pdf"
-compounds <- c("Ponatinib",
-               "Asciminib",
-               "Ponatinib + Asciminib",
+compounds <- c("ponatinib",
+               "dasatinib",
+               "asciminib",
+               "ponatinib + asciminib",
                "PonatiLink-1-12",
                "PonatiLink-1-16",
                "PonatiLink-1-20",
@@ -30,17 +31,18 @@ plate_data <- read_csv(input_filename) %>%
   rename(compound = Compound) %>%
   # filter for desired compounds
   filter(compound %in% compounds) %>%
+  mutate(compound = fct_relevel(compound, compounds)) %>% # order compounds by list
   # tidy by pivoting to one measurement per row. magic column number, watch out!
-  pivot_longer(cols = 12:13, names_to = NULL, values_to = "pct_inhibition") %>%
+  pivot_longer(cols = 11:12, names_to = NULL, values_to = "pct_inhibition") %>%
   # wrangle: convert conc and convert inhibition to activity
   mutate(log.conc = log10(Compound_Conc_nM/1e9)) %>%  # convert conc nM to log(M)
   mutate(activity = 100 - pct_inhibition)
 # fit models to output EC values------------------------------------------------
 # seems like you should be able to just pipe group_by into drm(), but nope, so doing this instead
 # helper function for getting EC for one compound, cell line, and EC threshold
-get_EC <- function(compound, kinase, EC_threshold){
+get_EC <- function(cpd, kinase, EC_threshold){
   cpd_data <- plate_data %>%
-    filter(compound == compound, Kinase == kinase)
+    filter(compound == cpd, Kinase == kinase)
   EC <- ED(drm(activity~log.conc, data=cpd_data, fct=L.4()), EC_threshold)[1,1]
   return(EC)
 }
@@ -57,17 +59,17 @@ all_compounds <- distinct(plate_data["compound"])$compound
 all_kinases <- distinct(plate_data["Kinase"])$Kinase
 # find x-axis min/max values for consistent zoom window between all plots
 x_min <- floor(min(plate_data$log.conc))
-x_min <- -9.5
+x_min <- -10
 x_max <- ceiling(max(plate_data$log.conc))
 x_limits <- c(x_min, x_max)
 # create logistic minor breaks for all conc plots
 minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
-# set factors so cell lines get plotted and colored in input order
-compound_factors <- distinct(plate_data, compound)$compound
+# set factors so kinases get plotted and colored in input order
+#compound_factors <- distinct(plate_data, compound)$compound
 kinase_factors <- distinct(plate_data, Kinase)$Kinase
 plate_data <- plate_data %>% 
-  mutate(Kinase = fct_relevel(Kinase, kinase_factors)) %>%
-  mutate(compound = fct_relevel(compound, compound_factors))
+  mutate(Kinase = fct_relevel(Kinase, kinase_factors))# %>%
+#  mutate(compound = fct_relevel(compound, compound_factors))
 # helper function for saving plots----------------------------------------------
 scale_facet <- 4 # plot width per col/height per row
 #todo: allow overriding width and height if provided
