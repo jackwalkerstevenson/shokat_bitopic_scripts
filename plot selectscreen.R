@@ -20,13 +20,13 @@ library(assertthat) # for QC assertions
 input_filename <- "ZLYTE_compiled_results_complete.csv"
 plot_type <- "pdf"
 compounds <- c("ponatinib",
-               "dasatinib",
-               "asciminib",
-               "ponatinib + asciminib",
+               #"dasatinib",
+               #"ponatinib + asciminib",
                "PonatiLink-1-12",
                "PonatiLink-1-16",
                "PonatiLink-1-20",
-               "PonatiLink-1-24")
+               "PonatiLink-1-24",
+               "asciminib")
 plate_data <- read_csv(input_filename) %>%
   rename(compound = Compound) %>%
   # filter for desired compounds
@@ -144,7 +144,7 @@ save_plot(str_glue("plots output/compound_facets.{plot_type}"), ncol = cols, nro
 alpha_val <- 1
 color_scale <- "viridis"
 viridis_start <- .95
-viridis_end <- .1
+viridis_end <- 0
 # plot data for each kinase separately------------------------------------------
 for (k in all_kinases){
   plate_summary <- plate_data %>%
