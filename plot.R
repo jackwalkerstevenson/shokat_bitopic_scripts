@@ -38,18 +38,25 @@ library(patchwork) # for plot organization
 # note the order compounds are imported is the order they will be plotted
 input_directory <- "Input CSVs/"
 plot_type <- "pdf"
-
+compounds <- c("ponatinib",
+               #"dasatinib",
+               "asciminib",
+               "ponatinib + asciminib",
+               "PonatiLink-1-12",
+               "PonatiLink-1-16",
+               "PonatiLink-1-20",
+               "PonatiLink-1-24")
 plate_filenames <- c(list.files(input_directory, pattern = "*.csv")) #gathers all .csv in directory
 plate_paths <- paste0(input_directory, plate_filenames)
 plate_names <- seq(1,length(plate_filenames))  # create plate IDs
 plate_data <- read_plates(plate_paths, plate_names) %>% # import with plater
   filter(compound != "N/A") %>% # drop empty wells
+  filter(compound %in% compounds) %>%
   # drop 0 values before plotting and curve fitting
   # note this is only OK because normalization happens before import
   filter(conc != 0) %>%
   mutate(log.conc = log10(conc/1e6))  # convert conc µM to M and log transform
 # generate global parameters for all plots------------------------------------------
-all_compounds <- distinct(plate_data["compound"])$compound
 all_lines <- distinct(plate_data["cell_line"])$cell_line
 # find x-axis min/max values for consistent zoom window between all plots
 x_min <- floor(min(plate_data$log.conc))
@@ -131,14 +138,14 @@ plot_compound <- function(cpd){
     labs(title = cpd)
 }
 # plot data for each compound separately----------------------------------------
-for (cpd in all_compounds){
+for (cpd in compounds){
   plot_compound(cpd)
   # save plot with manually optimized aspect ratio
   save_plot(str_glue("plots output/{cpd}.{plot_type}"))
 }  
 # plot data for all compounds in facets----------------------------------
 compound_plots = list()
-for (cpd in all_compounds){
+for (cpd in compounds){
   compound_plots <- append(compound_plots, list(plot_compound(cpd)))
 }
 
