@@ -10,7 +10,7 @@
 #'Variables expected in the import file (JWS Excel template is already set up for this):
 #' 
 #'- 'compound': name of compound used (including DMSO wells in dilution series)
-#'- 'conc': concentration of compound used
+#'- 'conc_uM': concentration of compound used, in µM
 #'- 'cell_line': cell line treated
 #'- 'readout': raw plate reader data (this is only used to calculate read_norm)
 #'- 'read_norm': normalized plate reader data (calculated in the spreadsheet)
@@ -40,12 +40,12 @@ input_directory <- "Input CSVs/"
 plot_type <- "pdf"
 compounds <- c("ponatinib",
                #"dasatinib",
-               "asciminib",
-               "ponatinib + asciminib",
+               #"ponatinib + asciminib",
                "PonatiLink-1-12",
                "PonatiLink-1-16",
                "PonatiLink-1-20",
-               "PonatiLink-1-24")
+               "PonatiLink-1-24",
+               "asciminib")
 plate_filenames <- c(list.files(input_directory, pattern = "*.csv")) #gathers all .csv in directory
 plate_paths <- paste0(input_directory, plate_filenames)
 plate_names <- seq(1,length(plate_filenames))  # create plate IDs
@@ -54,10 +54,10 @@ plate_data <- read_plates(plate_paths, plate_names) %>% # import with plater
   filter(compound %in% compounds) %>%
   # drop 0 values before plotting and curve fitting
   # note this is only OK because normalization happens before import
-  filter(conc != 0) %>%
-  mutate(log.conc = log10(conc/1e6))  # convert conc µM to M and log transform
+  filter(conc_uM != 0) %>%
+  mutate(log.conc = log10(conc_uM/1e6))  # convert conc µM to M and log transform
 # generate global parameters for all plots------------------------------------------
-all_lines <- distinct(plate_data["cell_line"])$cell_line
+cell_lines <- distinct(plate_data["cell_line"])$cell_line
 # find x-axis min/max values for consistent zoom window between all plots
 x_min <- floor(min(plate_data$log.conc))
 x_max <- ceiling(max(plate_data$log.conc))
@@ -66,7 +66,7 @@ x_limits <- c(x_min, x_max)
 minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
 # set factors so cell lines get plotted and colored in input order
 cell_line_factors <- distinct(plate_data, cell_line)$cell_line
-compound_factors <- distinct(plate_data, compound)$compound
+compound_factors <- compounds # manual factor order for compounds
 plate_data <- plate_data %>% 
   mutate(cell_line = fct_relevel(cell_line, cell_line_factors)) %>%
   mutate(compound = fct_relevel(compound, compound_factors))
@@ -159,11 +159,11 @@ wrap_plots(compound_plots, guides = "collect", ncol = cols, nrow = rows) &
 save_plot(str_glue("plots output/compound_facets.{plot_type}"), ncol = cols, nrow = rows)
 # set color parameters for overlaid plots--------------------------------------
 alpha_val <- 1
-color_scale <- "turbo"
-color_start <- .8
-color_end <- .15
+color_scale <- "viridis"
+color_start <- .95
+color_end <- 0
 # plot data for each cell line separately-------------------------------------------------
-for (c_line in all_lines){
+for (c_line in cell_lines){
   plate_summary <- plate_data %>%
     filter(cell_line == c_line) %>%
     group_by(compound, log.conc) %>% # group into replicates for each condition
