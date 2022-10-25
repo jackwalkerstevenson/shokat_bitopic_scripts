@@ -70,13 +70,26 @@ compound_factors <- compounds # manual factor order for compounds
 plate_data <- plate_data %>% 
   mutate(cell_line = fct_relevel(cell_line, cell_line_factors)) %>%
   mutate(compound = fct_relevel(compound, compound_factors))
+# set default font size for plots
+font_base_size <- 14 # 14 is theme_prism default
 # helper function for saving plots----------------------------------------------
-scale_facet <- 4 # plot width per col/height per row
-#todo: allow overriding width and height if provided
-save_plot <- function(plot, nrow = 1, ncol = 1, ...){
-  ggsave(plot, bg = "transparent",
-         width = ncol*scale_facet + 2,
-         height = nrow*scale_facet, ...)}
+scale_facet <- 4.5 # plot width per col/height per row
+legend_pad <- 0.3 # extra width for legend icon
+text_factor <- font_base_size / 120 # approx width per character of longest legend text
+save_plot <- function(filename, legend_len = 0, nrow = 1, ncol = 1, width = 0, height = 0, ...){
+  # if width is not provided, calculate width from length of legend text
+  if(width == 0){
+    width <- ncol * scale_facet + legend_pad + legend_len * text_factor
+  }
+  if(height == 0){
+    height <- nrow * scale_facet
+  }
+  ggsave(filename, bg = "transparent", width = width, height = height, ...)}
+# helper function for getting length of longest string in a list---------------
+longest <- function(strings){
+  lengths <- map(strings, nchar)
+  lengths[[which.max(lengths)]]
+}
 # helper function for summarizing replicate data for plotting------------------
 plate_summarize <- function(x){
   summarize(x,
@@ -96,7 +109,7 @@ plot_global <- function(plot){
                        breaks = c(0,25,50,75,100)) + # manual y axis ticks
     coord_cartesian(xlim = x_limits, # set x axis zoom from global values
                     ylim = c(0,NA)) + # set y axis zoom locally
-    theme_prism() + # make it look fancy like prism
+    theme_prism(base_size = font_base_size) + # make it look fancy like prism
     theme(plot.background = element_blank()) + # need for transparent background
     labs(x = "log [compound] (M)",
          y = "relative cell viability (%)")
@@ -141,7 +154,7 @@ plot_compound <- function(cpd){
 for (cpd in compounds){
   plot_compound(cpd)
   # save plot with manually optimized aspect ratio
-  save_plot(str_glue("plots output/{cpd}.{plot_type}"))
+  save_plot(str_glue("plots output/{cpd}.{plot_type}"), legend_len = longest(cell_lines))
 }  
 # plot data for all compounds in facets----------------------------------
 compound_plots = list()
@@ -156,7 +169,7 @@ wrap_plots(compound_plots, guides = "collect", ncol = cols, nrow = rows) &
   theme(plot.margin = unit(c(plot_mar,plot_mar,plot_mar,plot_mar), "pt"),
         plot.background = element_blank(),
         legend.text= element_text(face = "bold", size = 16))
-save_plot(str_glue("plots output/compound_facets.{plot_type}"), ncol = cols, nrow = rows)
+save_plot(str_glue("plots output/compound_facets.{plot_type}"), ncol = cols, nrow = rows, legend_len = longest(cell_lines))
 # set color parameters for overlaid plots--------------------------------------
 alpha_val <- 1
 color_scale <- "viridis"
@@ -179,7 +192,7 @@ for (c_line in cell_lines){
     plot_global() +
     scale_color_viridis(option = color_scale, discrete = TRUE, begin = color_start, end = color_end) +
     labs(title = c_line)
-  save_plot(str_glue("plots output/{c_line}.{plot_type}"))
+  save_plot(str_glue("plots output/{c_line}.{plot_type}"), legend_len = longest(compounds))
 }
 # plot data for all cell lines at once-----------------------------------------
 plate_summary <- plate_data %>%
@@ -195,4 +208,4 @@ plate_summary <- plate_data %>%
   plot_global() +
   scale_color_viridis(option = color_scale, discrete = TRUE, begin = color_start, end = color_end) +
   labs(title = "All data")
-save_plot(str_glue("Plots Output/all_data.{plot_type}"))
+save_plot(str_glue("Plots Output/all_data.{plot_type}"), legend_len = longest(append(cell_lines, compounds)))
