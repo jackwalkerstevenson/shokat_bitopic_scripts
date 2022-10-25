@@ -1,30 +1,30 @@
 #' ---
 #'title: "plateplotr"
 #'author: "Jack Stevenson"
-#'date: "2022-08-09"
+#'date: "2022"
 #' ---
 #'plateplotr generates dose-response plots from plate reader data.
 #' 
-#'Input: data formatted as per the plater package. Use the JWS Excel plater template to make this easy.
+#'Input: CSVs formatted as per the plater package
 #' 
-#'Variables expected in the import file (JWS Excel template is already set up for this):
+#'Variables expected in import files (Excel template is already set up for this):
 #' 
-#'- 'compound': name of compound used (including DMSO wells in dilution series)
+#'- 'compound': name of compound used (including vehicle wells in dilution series)
 #'- 'conc_uM': concentration of compound used, in µM
-#'- 'cell_line': cell line treated
-#'- 'readout': raw plate reader data (this is only used to calculate read_norm)
+#'- 'target': target of treatment, e.g. cell line or purified enzyme
 #'- 'read_norm': normalized plate reader data (calculated in the spreadsheet)
-#'- 'replicate': replicate of curve (not actually used)
+#'- 'replicate': replicate of curve (included for possible future QC)
 #'
 #'How to use plateplotr:
 #'
 #'1. Make one copy of the JWS Excel plater template for each plate of data you want to import
-#'2. Fill out each copy with the compound + concs used and paste in raw plate reader data
-#'3. Save input sheets as csv and put them in a folder within your working directory
-#'4. Set `plate_directory` to the folder of .csv files (default is "Input CSVs/")
-#'  -Maintain format of default, "Folder" and "~/Folder/" will both fail.
-#'5. Run plot.R (this file)
-#'6. Output plots will be created in a "Plots Output" folder in the working directory
+#'2. Fill out each sheet with the compound + concs used (check that the layout is correct for your experiment)
+#'3. Paste corresponding raw plate reader data into each sheet
+#'4. Save input sheets as CSVs
+#'5. Copy input sheets into a directory called "Input CSVs" in the same directory as this script
+#'(or set the working directory to the directory that contains "Input CSVs/")
+#'6. Run plot.R (this file)
+#'7. Output plots will be created in a "Plots Output" folder in the working directory
 
 # load required libraries------------------------------------------------------
 library(drc)  # for dose response curves
