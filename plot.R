@@ -7,7 +7,7 @@
 #' 
 #'Input: CSVs formatted as per the plater package
 #' 
-#'Variables expected in import files (Excel template is already set up for this):
+#'Variables expected in import files (import template is already set up for this):
 #' 
 #'- 'compound': name of compound used (including vehicle wells in dilution series)
 #'- 'conc_uM': concentration of compound used, in µM
@@ -17,7 +17,7 @@
 #'
 #'How to use plateplotr:
 #'
-#'1. Make one copy of the JWS Excel plater template for each plate of data you want to import
+#'1. Make one copy of the import template for each plate of data you want to import
 #'2. Fill out each sheet with the compound + concs used (check that the layout is correct for your experiment)
 #'3. Paste corresponding raw plate reader data into each sheet
 #'4. Save input sheets as CSVs
@@ -57,18 +57,18 @@ plate_data <- read_plates(plate_paths, plate_names) %>% # import with plater
   filter(conc_uM != 0) %>%
   mutate(log.conc = log10(conc_uM/1e6))  # convert conc µM to M and log transform
 # generate global parameters for all plots------------------------------------------
-cell_lines <- distinct(plate_data["cell_line"])$cell_line
+targets <- distinct(plate_data["target"])$target
 # find x-axis min/max values for consistent zoom window between all plots
 x_min <- floor(min(plate_data$log.conc))
 x_max <- ceiling(max(plate_data$log.conc))
 x_limits <- c(x_min, x_max)
 # create logistic minor breaks for all compounds
 minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
-# set factors so cell lines get plotted and colored in input order
-cell_line_factors <- distinct(plate_data, cell_line)$cell_line
+# set factors so targets get plotted and colored in input order
+target_factors <- distinct(plate_data, target)$target
 compound_factors <- compounds # manual factor order for compounds
 plate_data <- plate_data %>% 
-  mutate(cell_line = fct_relevel(cell_line, cell_line_factors)) %>%
+  mutate(target = fct_relevel(target, target_factors)) %>%
   mutate(compound = fct_relevel(compound, compound_factors))
 # set default font size for plots
 font_base_size <- 14 # 14 is theme_prism default
@@ -116,29 +116,29 @@ plot_global <- function(plot){
 }
 # fit models to output EC values------------------------------------------------
 # seems like you should be able to just pipe group_by into drm(), but nope, so doing this instead
-# helper function for getting EC for one compound, cell line, and EC threshold
-get_EC <- function(cpd, c_line, EC_threshold){
+# helper function for getting EC for one compound, target, and EC threshold
+get_EC <- function(cpd, t, EC_threshold){
     cpd_data <- plate_data %>%
-      filter(compound == cpd, cell_line == c_line)
+      filter(compound == cpd, target == t)
     EC <- ED(drm(read_norm~log.conc, data=cpd_data, fct=L.4()), EC_threshold)[1,1]
     return(EC)
 }
 EC_summary <- plate_data %>%
-  group_by(compound, cell_line) %>%
+  group_by(compound, target) %>%
   summarize(
-    EC50_nM = 10^get_EC(compound, cell_line, 50) * 1e9, # convert M to nM
+    EC50_nM = 10^get_EC(compound, target, 50) * 1e9, # convert M to nM
     # for negative-response data like this, the EC75 is the drop to 25%
-    EC75_nM = 10^get_EC(compound, cell_line, 25) * 1e9
+    EC75_nM = 10^get_EC(compound, target, 25) * 1e9
   )
 write_csv(EC_summary, "plots output/EC_summary.csv")
 # helper function to plot one compound----------------------------------------
 plot_compound <- function(cpd){
   plate_summary <- plate_data %>%
     filter(compound == cpd) %>% # get data from one compound to work with
-    group_by(cell_line, log.conc) %>%  # get set of replicates for each condition
+    group_by(target, log.conc) %>%  # get set of replicates for each condition
     plate_summarize()
   # bracket ggplot so it can be piped to helper function
-  {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = cell_line)) +
+  {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = target)) +
       geom_point() +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
@@ -154,7 +154,7 @@ plot_compound <- function(cpd){
 for (cpd in compounds){
   plot_compound(cpd)
   # save plot with manually optimized aspect ratio
-  save_plot(str_glue("plots output/{cpd}.{plot_type}"), legend_len = longest(cell_lines))
+  save_plot(str_glue("plots output/{cpd}.{plot_type}"), legend_len = longest(targets))
 }  
 # plot data for all compounds in facets----------------------------------
 compound_plots = list()
@@ -169,16 +169,16 @@ wrap_plots(compound_plots, guides = "collect", ncol = cols, nrow = rows) &
   theme(plot.margin = unit(c(plot_mar,plot_mar,plot_mar,plot_mar), "pt"),
         plot.background = element_blank(),
         legend.text= element_text(face = "bold", size = 16))
-save_plot(str_glue("plots output/compound_facets.{plot_type}"), ncol = cols, nrow = rows, legend_len = longest(cell_lines))
+save_plot(str_glue("plots output/compound_facets.{plot_type}"), ncol = cols, nrow = rows, legend_len = longest(targets))
 # set color parameters for overlaid plots--------------------------------------
 alpha_val <- 1
 color_scale <- "viridis"
 color_start <- .95
 color_end <- 0
-# plot data for each cell line separately-------------------------------------------------
-for (c_line in cell_lines){
+# plot data for each target separately-------------------------------------------------
+for (t in targets){
   plate_summary <- plate_data %>%
-    filter(cell_line == c_line) %>%
+    filter(target == t) %>%
     group_by(compound, log.conc) %>% # group into replicates for each condition
     plate_summarize()
   # bracket ggplot so it can be piped to helper function
@@ -194,18 +194,18 @@ for (c_line in cell_lines){
     labs(title = c_line)
   save_plot(str_glue("plots output/{c_line}.{plot_type}"), legend_len = longest(compounds))
 }
-# plot data for all cell lines at once-----------------------------------------
+# plot data for all targets at once-----------------------------------------
 plate_summary <- plate_data %>%
-  group_by(cell_line, compound, log.conc) %>% # group into replicates for each condition
+  group_by(target, compound, log.conc) %>% # group into replicates for each condition
   plate_summarize()
 {ggplot(plate_summary,aes(x = log.conc, y = mean_read, color = compound)) +
     geom_point() +
     # error bars = mean plus or minus standard error
     geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
     # use drm method from drc package to fit dose response curve
-    geom_line(aes(linetype = cell_line), stat = "smooth", method = "drm", method.args = list(fct = L.4()),
+    geom_line(aes(linetype = target), stat = "smooth", method = "drm", method.args = list(fct = L.4()),
               se = FALSE, size = 1, alpha = alpha_val)} %>%
   plot_global() +
   scale_color_viridis(option = color_scale, discrete = TRUE, begin = color_start, end = color_end) +
   labs(title = "All data")
-save_plot(str_glue("Plots Output/all_data.{plot_type}"), legend_len = longest(append(cell_lines, compounds)))
+save_plot(str_glue("Plots Output/all_data.{plot_type}"), legend_len = longest(append(targets, compounds)))
