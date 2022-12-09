@@ -38,14 +38,24 @@ library(patchwork) # for plot organization
 # note the order compounds are imported is the order they will be plotted
 input_directory <- "Input CSVs/"
 plot_type <- "pdf"
-compounds <- c("ponatinib",
-               #"dasatinib",
-               #"ponatinib + asciminib",
-               "PonatiLink-1-12",
-               "PonatiLink-1-16",
-               "PonatiLink-1-20",
-               "PonatiLink-1-24",
-               "asciminib")
+compounds <- c(
+  "ponatinib",
+  #"PonatiLink-1",
+  #"ponatinib + asciminib",
+  #"dasatinib",
+  #"dasatinib + asciminib",
+  #"asciminib",
+  #"DasatiLink-1",
+  #"DasatiLink-2",
+  #"DasatiLink-3",
+  #"DasatiLink-4"
+  #"PonatiLink-1-12",
+  #"PonatiLink-1-16",
+  "PonatiLink-1-20",
+  "PonatiLink-1-24",
+  "PonatiLink-1-28",
+  "PonatiLink-2-7-8"
+)
 plate_filenames <- c(list.files(input_directory, pattern = "*.csv")) #gathers all .csv in directory
 plate_paths <- paste0(input_directory, plate_filenames)
 plate_names <- seq(1,length(plate_filenames))  # create plate IDs
@@ -157,19 +167,19 @@ for (cpd in compounds){
   save_plot(str_glue("plots output/{cpd}.{plot_type}"), legend_len = longest(targets))
 }  
 # plot data for all compounds in facets----------------------------------
-compound_plots = list()
-for (cpd in compounds){
-  compound_plots <- append(compound_plots, list(plot_compound(cpd)))
-}
-
-plot_mar <- 15 # margin between wrapped plots, in points
-cols = 4
-rows = 2
-wrap_plots(compound_plots, guides = "collect", ncol = cols, nrow = rows) &
-  theme(plot.margin = unit(c(plot_mar,plot_mar,plot_mar,plot_mar), "pt"),
-        plot.background = element_blank(),
-        legend.text= element_text(face = "bold", size = 16))
-save_plot(str_glue("plots output/compound_facets.{plot_type}"), ncol = cols, nrow = rows, legend_len = longest(targets))
+# compound_plots = list()
+# for (cpd in compounds){
+#   compound_plots <- append(compound_plots, list(plot_compound(cpd)))
+# }
+# 
+# plot_mar <- 15 # margin between wrapped plots, in points
+# cols = 4
+# rows = 2
+# wrap_plots(compound_plots, guides = "collect", ncol = cols, nrow = rows) &
+#   theme(plot.margin = unit(c(plot_mar,plot_mar,plot_mar,plot_mar), "pt"),
+#         plot.background = element_blank(),
+#         legend.text= element_text(face = "bold", size = 16))
+# save_plot(str_glue("plots output/compound_facets.{plot_type}"), ncol = cols, nrow = rows, legend_len = longest(targets))
 # set color parameters for overlaid plots--------------------------------------
 alpha_val <- 1
 color_scale <- "viridis"
@@ -183,16 +193,17 @@ for (t in targets){
     plate_summarize()
   # bracket ggplot so it can be piped to helper function
   {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = compound)) +
-      geom_point() +
+      geom_point(aes(shape = compound), size = 4) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
       # use drm method from drc package to fit dose response curve
-      geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
+      geom_line(aes(linetype = compound),
+                stat = "smooth", method = "drm", method.args = list(fct = L.4()),
                 se = FALSE, size = 1, alpha = alpha_val)} %>%
     plot_global() +
     scale_color_viridis(option = color_scale, discrete = TRUE, begin = color_start, end = color_end) +
-    labs(title = c_line)
-  save_plot(str_glue("plots output/{c_line}.{plot_type}"), legend_len = longest(compounds))
+    labs(title = t)
+  save_plot(str_glue("plots output/{t}.{plot_type}"), legend_len = longest(compounds))
 }
 # plot data for all targets at once-----------------------------------------
 plate_summary <- plate_data %>%
