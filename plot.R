@@ -39,22 +39,28 @@ library(patchwork) # for plot organization
 input_directory <- "Input CSVs/"
 plot_type <- "pdf"
 compounds <- c(
-  "ponatinib",
-  #"PonatiLink-1",
-  #"ponatinib + asciminib",
+  # "ponatinib",
+  # "ponatinib (KL)",
+  # "PonatiLink-1",
+  "ponatinib + asciminib",
+  # "ponatinib + asciminib (KL)",
   #"dasatinib",
-  #"dasatinib + asciminib",
-  #"asciminib",
-  #"DasatiLink-1",
-  #"DasatiLink-2",
-  #"DasatiLink-3",
-  #"DasatiLink-4"
-  #"PonatiLink-1-12",
-  #"PonatiLink-1-16",
-  "PonatiLink-1-20",
-  "PonatiLink-1-24",
-  "PonatiLink-1-28",
-  "PonatiLink-2-7-8"
+  # "dasatinib + asciminib",
+  # "asciminib",
+  # "DasatiLink-1",
+  # "DasatiLink-2",
+  # "DasatiLink-3",
+  # "DasatiLink-4"
+  # "PonatiLink-1-12",
+  # "PonatiLink-1-16",
+  # "PonatiLink-1-20",
+  # "PonatiLink-1-24",
+  # "PonatiLink-1-28"
+  "PonatiLink-2-7-4",
+  "PonatiLink-2-7-6",
+  "PonatiLink-2-7-8",
+  "PonatiLink-2-7-10"
+  # "PonatiLink-2-7-8 (JS-C1-21)"
 )
 plate_filenames <- c(list.files(input_directory, pattern = "*.csv")) #gathers all .csv in directory
 plate_paths <- paste0(input_directory, plate_filenames)
@@ -183,8 +189,10 @@ for (cpd in compounds){
 # set color parameters for overlaid plots--------------------------------------
 alpha_val <- 1
 color_scale <- "viridis"
-color_start <- .95
-color_end <- 0
+viridis_start <- .95
+viridis_end <- 0
+grey_start <- 0.7
+grey_end <- 0
 # plot data for each target separately-------------------------------------------------
 for (t in targets){
   plate_summary <- plate_data %>%
@@ -193,15 +201,16 @@ for (t in targets){
     plate_summarize()
   # bracket ggplot so it can be piped to helper function
   {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = compound)) +
-      geom_point(aes(shape = compound), size = 4) +
+      geom_point(aes(shape = compound), size = 3) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
       # use drm method from drc package to fit dose response curve
-      geom_line(aes(linetype = compound),
+      geom_line(#aes(linetype = compound),  # linetype for better grayscale
                 stat = "smooth", method = "drm", method.args = list(fct = L.4()),
                 se = FALSE, size = 1, alpha = alpha_val)} %>%
     plot_global() +
-    scale_color_viridis(option = color_scale, discrete = TRUE, begin = color_start, end = color_end) +
+    #scale_color_grey(start = grey_start, end = grey_end) +
+    scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_start, end = viridis_end) +
     labs(title = t)
   save_plot(str_glue("plots output/{t}.{plot_type}"), legend_len = longest(compounds))
 }
