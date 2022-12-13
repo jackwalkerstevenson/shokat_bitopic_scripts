@@ -20,22 +20,26 @@ library(assertthat) # for QC assertions
 input_filename <- "ZLYTE_compiled_results_complete.csv"
 plot_type <- "pdf"
 compounds <- c(
-  "ponatinib",
+  # "ponatinib",
   #"PonatiLink-1",
-  #"ponatinib + asciminib",
+  "ponatinib + asciminib",
   #"dasatinib",
-  #"dasatinib + asciminib",
-  #"asciminib",
-  #"DasatiLink-1",
-  #"DasatiLink-2",
-  #"DasatiLink-3",
-  #"DasatiLink-4"
-  #"PonatiLink-1-12",
-  #"PonatiLink-1-16",
+  # "dasatinib + asciminib",
+  # "asciminib"
+  # "DasatiLink-1",
+  # "DasatiLink-2",
+  # "DasatiLink-3",
+  # "DasatiLink-4"
+  "PonatiLink-1-12",
+  "PonatiLink-1-16",
   "PonatiLink-1-20",
-  "PonatiLink-1-24",
-  "PonatiLink-1-28",
-  "PonatiLink-2-7-8"
+  "PonatiLink-1-24"
+  # "PonatiLink-1-28",
+  # "PonatiLink-2-7-4",
+  # "PonatiLink-2-7-6",
+  # "PonatiLink-2-7-8",
+  # "PonatiLink-2-7-10",
+  #"PonatiLink-2-7-8 (JS-C1-21)"
 )
 plate_data <- read_csv(input_filename) %>%
   rename(compound = Compound) %>%
@@ -155,6 +159,8 @@ alpha_val <- 1
 color_scale <- "viridis"
 viridis_start <- .95
 viridis_end <- 0
+grey_start <- .7
+grey_end <- 0
 # plot data for each kinase separately------------------------------------------
 for (k in all_kinases){
   plate_summary <- plate_data %>%
@@ -163,13 +169,15 @@ for (k in all_kinases){
     plate_summarize()
   # bracket ggplot so it can be piped to helper function
   {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = compound)) +
-      geom_point() +
+      geom_point(aes(shape = compound), size = 4) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
       # use drm method from drc package to fit dose response curve
-      geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
+      geom_line(#aes(linetype = compound),
+        stat = "smooth", method = "drm", method.args = list(fct = L.4()),
                 se = FALSE, size = 1, alpha = alpha_val)} %>%
     plot_global() +
+    #scale_color_grey(start = grey_start, end = grey_end) +
     scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_start, end = viridis_end) +
     labs(title = k)
   save_plot(str_glue("plots output/{k}.{plot_type}"))
