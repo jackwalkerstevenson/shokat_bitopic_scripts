@@ -18,29 +18,8 @@ library(assertthat) # for QC assertions
 # import and tidy data---------------------------------
 # note the order compounds are imported is the order they will be plotted
 input_filename <- "ZLYTE_compiled_results_complete.csv"
+source("compounds.R")
 plot_type <- "pdf"
-compounds <- c(
-  # "ponatinib",
-  #"PonatiLink-1",
-  "ponatinib + asciminib",
-  #"dasatinib",
-  # "dasatinib + asciminib",
-  # "asciminib"
-  # "DasatiLink-1",
-  # "DasatiLink-2",
-  # "DasatiLink-3",
-  # "DasatiLink-4"
-  "PonatiLink-1-12",
-  "PonatiLink-1-16",
-  "PonatiLink-1-20",
-  "PonatiLink-1-24"
-  # "PonatiLink-1-28",
-  # "PonatiLink-2-7-4",
-  # "PonatiLink-2-7-6",
-  # "PonatiLink-2-7-8",
-  # "PonatiLink-2-7-10",
-  #"PonatiLink-2-7-8 (JS-C1-21)"
-)
 plate_data <- read_csv(input_filename) %>%
   rename(compound = Compound) %>%
   # filter for desired compounds
