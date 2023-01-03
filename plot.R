@@ -38,30 +38,7 @@ library(patchwork) # for plot organization
 # note the order compounds are imported is the order they will be plotted
 input_directory <- "Input CSVs/"
 plot_type <- "pdf"
-compounds <- c(
-  # "ponatinib",
-  # "ponatinib (KL)",
-  # "PonatiLink-1",
-  "ponatinib + asciminib",
-  # "ponatinib + asciminib (KL)",
-  #"dasatinib",
-  # "dasatinib + asciminib",
-  # "asciminib",
-  # "DasatiLink-1",
-  # "DasatiLink-2",
-  # "DasatiLink-3",
-  # "DasatiLink-4"
-  # "PonatiLink-1-12",
-  # "PonatiLink-1-16",
-  # "PonatiLink-1-20",
-  # "PonatiLink-1-24",
-  # "PonatiLink-1-28"
-  "PonatiLink-2-7-4",
-  "PonatiLink-2-7-6",
-  "PonatiLink-2-7-8",
-  "PonatiLink-2-7-10"
-  # "PonatiLink-2-7-8 (JS-C1-21)"
-)
+source("compounds.R")
 plate_filenames <- c(list.files(input_directory, pattern = "*.csv")) #gathers all .csv in directory
 plate_paths <- paste0(input_directory, plate_filenames)
 plate_names <- seq(1,length(plate_filenames))  # create plate IDs
@@ -163,7 +140,8 @@ plot_compound <- function(cpd){
                 se = FALSE, size = 1)} %>%
     plot_global() +
     theme(aspect.ratio = 1) +
-    scale_color_manual(values = c("black","darkred")) +
+    scale_color_viridis(discrete = TRUE) +
+    #scale_color_manual(values = c("black","darkred")) +
     labs(title = cpd)
 }
 # plot data for each compound separately----------------------------------------
