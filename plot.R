@@ -36,7 +36,7 @@ library(patchwork) # for plot organization
 
 # specify names of input files and import data---------------------------------
 # note the order compounds are imported is the order they will be plotted
-input_directory <- "Input CSVs/"
+input_directory <- "input/"
 plot_type <- "pdf"
 source("compounds.R")
 plate_filenames <- c(list.files(input_directory, pattern = "*.csv")) #gathers all .csv in directory
@@ -167,8 +167,8 @@ for (cpd in compounds){
 # set color parameters for overlaid plots--------------------------------------
 alpha_val <- 1
 color_scale <- "viridis"
-viridis_start <- .95
-viridis_end <- 0
+viridis_start <- 1
+viridis_end <- .1
 grey_start <- 0.7
 grey_end <- 0
 # plot data for each target separately-------------------------------------------------
@@ -204,6 +204,6 @@ plate_summary <- plate_data %>%
     geom_line(aes(linetype = target), stat = "smooth", method = "drm", method.args = list(fct = L.4()),
               se = FALSE, size = 1, alpha = alpha_val)} %>%
   plot_global() +
-  scale_color_viridis(option = color_scale, discrete = TRUE, begin = color_start, end = color_end) +
+  scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_start, end = viridis_end) +
   labs(title = "All data")
 save_plot(str_glue("Plots Output/all_data.{plot_type}"), legend_len = longest(append(targets, compounds)))
