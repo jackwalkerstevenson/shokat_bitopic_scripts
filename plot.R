@@ -29,6 +29,7 @@
 # load required libraries------------------------------------------------------
 library(drc)  # for dose response curves
 library(tidyverse) # for tidy data handling
+library(assertthat) # for testing
 library(ggprism)  # for pretty prism-like plots
 library(plater)  # for tidy importing of plate data
 library(viridis) # for color schemes
@@ -38,7 +39,7 @@ library(patchwork) # for plot organization
 # note the order compounds are imported is the order they will be plotted
 input_directory <- "input/"
 plot_type <- "pdf"
-source("compounds.R")
+source("compounds.R") # import list of compounds to include in plots
 plate_filenames <- c(list.files(input_directory, pattern = "*.csv")) #gathers all .csv in directory
 plate_paths <- paste0(input_directory, plate_filenames)
 plate_names <- seq(1,length(plate_filenames))  # create plate IDs
@@ -49,6 +50,11 @@ plate_data <- read_plates(plate_paths, plate_names) %>% # import with plater
   # note this is only OK because normalization happens before import
   filter(conc_uM != 0) %>%
   mutate(log.conc = log10(conc_uM/1e6))  # convert conc µM to M and log transform
+# assert that all compounds to be included are represented in the data
+imported_compounds <- distinct(plate_data["compound"])$compound
+for(compound in compounds){
+  assert_that(compound %in% imported_compounds)
+}
 # generate global parameters for all plots------------------------------------------
 targets <- distinct(plate_data["target"])$target
 # find x-axis min/max values for consistent zoom window between all plots
@@ -59,10 +65,10 @@ x_limits <- c(x_min, x_max)
 minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
 # set factors so targets get plotted and colored in input order
 target_factors <- distinct(plate_data, target)$target
-compound_factors <- compounds # manual factor order for compounds
+#compound_factors <- compounds # manual factor order for compounds
 plate_data <- plate_data %>% 
   mutate(target = fct_relevel(target, target_factors)) %>%
-  mutate(compound = fct_relevel(compound, compound_factors))
+  mutate(compound = fct_relevel(compound, compounds))
 # set default font size for plots
 font_base_size <- 14 # 14 is theme_prism default
 # helper function for saving plots----------------------------------------------
