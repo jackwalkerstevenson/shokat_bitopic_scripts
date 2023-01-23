@@ -40,6 +40,11 @@ library(patchwork) # for plot organization
 input_directory <- "input/"
 plot_type <- "pdf"
 source("compounds.R") # import list of compounds to include in plots
+excel_filenames <- c(list.files(input_directory, pattern = "*.xls")) #gathers all .csv in directory
+excel_paths <- paste0(input_directory, excel_filenames)
+excel_to_csv <- function(filename){
+}
+map(excel_filenames, excel_to_csv)
 plate_filenames <- c(list.files(input_directory, pattern = "*.csv")) #gathers all .csv in directory
 plate_paths <- paste0(input_directory, plate_filenames)
 plate_names <- seq(1,length(plate_filenames))  # create plate IDs
