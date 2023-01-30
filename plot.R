@@ -29,6 +29,7 @@
 # load required libraries------------------------------------------------------
 library(drc)  # for dose response curves
 library(tidyverse) # for tidy data handling
+library(readxl) # for excel file handling
 library(assertthat) # for testing
 library(ggprism)  # for pretty prism-like plots
 library(plater)  # for tidy importing of plate data
@@ -40,9 +41,12 @@ library(patchwork) # for plot organization
 input_directory <- "input/"
 plot_type <- "pdf"
 source("compounds.R") # import list of compounds to include in plots
-excel_filenames <- c(list.files(input_directory, pattern = "*.xls")) #gathers all .csv in directory
-excel_paths <- paste0(input_directory, excel_filenames)
+excel_filenames <- c(list.files(input_directory, pattern = "*.xls"))
 excel_to_csv <- function(filename){
+  excel_path <- paste0(input_directory, filename)
+  excel_data <- read_excel(excel_path)
+  csv_path <- paste0(input_directory, tools::file_path_sans_ext(filename), ".csv")
+  write_csv(excel_data, file = csv_path)
 }
 map(excel_filenames, excel_to_csv)
 plate_filenames <- c(list.files(input_directory, pattern = "*.csv")) #gathers all .csv in directory
