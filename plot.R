@@ -36,22 +36,29 @@ library(plater)  # for tidy importing of plate data
 library(viridis) # for color schemes
 library(patchwork) # for plot organization
 
-# specify names of input files and import data---------------------------------
-# note the order compounds are imported is the order they will be plotted
+# import data---------------------------------
+# the order of the compound list is the order they will be plotted
+source("compounds.R") # import list of compounds to include in plots
+# create input and output directories, since git doesn't track empty directories
+dir.create("input/", showWarnings = FALSE) # do nothing if directory already exists
+dir.create("output/", showWarnings = FALSE)
 input_directory <- "input/"
 plot_type <- "pdf"
-source("compounds.R") # import list of compounds to include in plots
-excel_filenames <- c(list.files(input_directory, pattern = "*.xls"))
+# get excel filenames that start with an alphanumeric character (no hidden files)
+excel_filenames <- c(list.files(input_directory, pattern = "^[[:alnum:]].*.xls"))
+# convert any excel files to csv so plater can import them
 excel_to_csv <- function(filename){
-  excel_path <- paste0(input_directory, filename)
-  excel_data <- read_excel(excel_path)
+  excel_path <- paste0(input_directory, filename) # full file path
+  excel_data <- read_excel(excel_path) # get data from excel file
+  # create a new file path that replaces the excel extension with csv
   csv_path <- paste0(input_directory, tools::file_path_sans_ext(filename), ".csv")
-  write_csv(excel_data, file = csv_path)
+  write_csv(excel_data, file = csv_path) # write data to new csv file
 }
 map(excel_filenames, excel_to_csv)
-plate_filenames <- c(list.files(input_directory, pattern = "*.csv")) #gathers all .csv in directory
-plate_paths <- paste0(input_directory, plate_filenames)
-plate_names <- seq(1,length(plate_filenames))  # create plate IDs
+# gather all CSVs in directory and import them
+plate_filenames <- c(list.files(input_directory, pattern = "*.csv")) # get file names
+plate_paths <- paste0(input_directory, plate_filenames) # full file paths
+plate_names <- seq(1,length(plate_filenames))  # create sequential plate IDs
 plate_data <- read_plates(plate_paths, plate_names) %>% # import with plater
   filter(compound != "N/A") %>% # drop empty wells
   filter(compound %in% compounds) %>%
@@ -145,7 +152,7 @@ EC_summary <- plate_data %>%
     EC75_nM = 10^get_EC(compound, target, 25) * 1e9,
     hill_slope = get_hill_slope(compound, target)
   )
-write_csv(EC_summary, "plots output/EC_summary.csv")
+write_csv(EC_summary, "output/EC_summary.csv")
 # helper function to plot one compound----------------------------------------
 plot_compound <- function(cpd){
   plate_summary <- plate_data %>%
@@ -170,7 +177,7 @@ plot_compound <- function(cpd){
 for (cpd in compounds){
   plot_compound(cpd)
   # save plot with manually optimized aspect ratio
-  save_plot(str_glue("plots output/{cpd}.{plot_type}"), legend_len = longest(targets))
+  save_plot(str_glue("output/{cpd}.{plot_type}"), legend_len = longest(targets))
 }  
 # plot data for all compounds in facets----------------------------------
 # compound_plots = list()
@@ -185,7 +192,7 @@ for (cpd in compounds){
 #   theme(plot.margin = unit(c(plot_mar,plot_mar,plot_mar,plot_mar), "pt"),
 #         plot.background = element_blank(),
 #         legend.text= element_text(face = "bold", size = 16))
-# save_plot(str_glue("plots output/compound_facets.{plot_type}"), ncol = cols, nrow = rows, legend_len = longest(targets))
+# save_plot(str_glue("output/compound_facets.{plot_type}"), ncol = cols, nrow = rows, legend_len = longest(targets))
 # set color parameters for overlaid plots--------------------------------------
 alpha_val <- 1
 color_scale <- "viridis"
@@ -212,7 +219,7 @@ for (t in targets){
     #scale_color_grey(start = grey_start, end = grey_end) +
     scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_start, end = viridis_end) +
     labs(title = t)
-  save_plot(str_glue("plots output/{t}.{plot_type}"), legend_len = longest(compounds))
+  save_plot(str_glue("output/{t}.{plot_type}"), legend_len = longest(compounds))
 }
 # plot data for all targets at once-----------------------------------------
 plate_summary <- plate_data %>%
@@ -228,4 +235,4 @@ plate_summary <- plate_data %>%
   plot_global() +
   scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_start, end = viridis_end) +
   labs(title = "All data")
-save_plot(str_glue("Plots Output/all_data.{plot_type}"), legend_len = longest(append(targets, compounds)))
+save_plot(str_glue("output/all_data.{plot_type}"), legend_len = longest(append(targets, compounds)))
