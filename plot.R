@@ -84,11 +84,10 @@ x_limits <- c(x_min, x_max)
 # create logistic minor breaks for all compounds
 minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
 # set factors so targets get plotted and colored in input order
-target_factors <- distinct(plate_data, target)$target
-#compound_factors <- compounds # manual factor order for compounds
+target_factors <- distinct(plate_data, target)$target # targets in order of appearance in data
 plate_data <- plate_data %>% 
   mutate(target = fct_relevel(target, target_factors)) %>%
-  mutate(compound = fct_relevel(compound, compounds))
+  mutate(compound = fct_relevel(compound, compounds)) # compounds in order of input list
 # set default font size for plots
 font_base_size <- 14 # 14 is theme_prism default
 # helper function for saving plots----------------------------------------------
