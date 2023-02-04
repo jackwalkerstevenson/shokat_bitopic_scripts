@@ -10,7 +10,7 @@
 #'Variables expected in import files (import template is already set up for this):
 #' 
 #'- 'compound': name of compound used (including vehicle wells in dilution series)
-#'- 'conc_uM': concentration of compound used, in µM
+#'- 'conc_nM': concentration of compound used, in µM
 #'- 'target': target of treatment, e.g. cell line or purified enzyme
 #'- 'read_norm': normalized plate reader data (calculated in the spreadsheet)
 #'- 'replicate': replicate of curve (included for possible future QC)
@@ -57,8 +57,8 @@ plate_data <- read_plates(plate_paths, plate_names) %>% # import with plater
   filter(compound %in% compounds) %>%
   # drop 0 values before plotting and curve fitting
   # note this is only OK because normalization happens before import
-  filter(conc_uM != 0) %>%
-  mutate(log.conc = log10(conc_uM/1e6))  # convert conc µM to M and log transform
+  filter(conc_nM != 0) %>%
+  mutate(log.conc = log10(conc_nM/1e9))  # convert conc µM to M and log transform
 # assert that all compounds to be included are represented in the data
 imported_compounds <- distinct(plate_data["compound"])$compound
 for(compound in compounds){
