@@ -1,30 +1,34 @@
 #' ---
 #'title: "plateplotr"
 #'author: "Jack Stevenson"
-#'date: "2022"
+#'date: "2023"
 #' ---
 #'plateplotr generates dose-response plots from plate reader data.
 #' 
-#'Input: CSVs formatted as per the plater package
+#'Input: platemap spreadsheets, Excel or CSV, formatted as per the plater package
+#'
+#'An import template is provided to make it easy to make platemaps.
 #' 
-#'Variables expected in import files (import template is already set up for this):
+#'Variables expected in input platemaps:
 #' 
-#'- 'compound': name of compound used (including vehicle wells in dilution series)
-#'- 'conc_nM': concentration of compound used, in µM
-#'- 'target': target of treatment, e.g. cell line or purified enzyme
-#'- 'read_norm': normalized plate reader data (calculated in the spreadsheet)
-#'- 'replicate': replicate of curve (included for possible future QC)
+#'- 'compound': name of compound used
+#'
+#'note: if a dilution series includes a vehicle (zero-concentration) well, it should be labeled as the same compound
+#'
+#'- 'conc_nM' or 'conc_uM': concentration of compound used in µM or nM
+#'- 'target': target of treatment, e.g. cell line or purified protein
+#'- 'read_norm': normalized plate reader data (calculated in the platemap)
+#'- 'replicate': replicate of condition (included for possible future QC)
 #'
 #'How to use plateplotr:
 #'
-#'1. Make one copy of the import template for each plate of data you want to import
-#'2. Fill out each sheet with the compound + concs used (check that the layout is correct for your experiment)
-#'3. Paste corresponding raw plate reader data into each sheet
-#'4. Save input sheets as CSVs
-#'5. Copy input sheets into a directory called "Input CSVs" in the same directory as this script
-#'(or set the working directory to the directory that contains "Input CSVs/")
-#'6. Run plot.R (this file)
-#'7. Output plots will be created in a "Plots Output" folder in the working directory
+#'1. Fill in "compounds.R" with the list of compounds you want to plot
+#'2. Make a copy of the import platemap for each plate of data you want to import
+#'3. Fill out each platemap with compound(s), target(s) (e.g. cell line) and concentrations used
+#'4. Copy the corresponding raw plate reader data into each platemap
+#'5. Copy input platemaps into a directory called "input" in the same directory as this script
+#'6. Run plot.R
+#'7. Output plots will be created in an "output" folder in the working directory
 
 # load required libraries------------------------------------------------------
 library(drc)  # for dose response curves
