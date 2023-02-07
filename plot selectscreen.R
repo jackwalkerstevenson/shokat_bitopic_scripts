@@ -20,6 +20,7 @@ library(assertthat) # for QC assertions
 input_filename <- "ZLYTE_compiled_results_complete.csv"
 source("compounds.R")
 plot_type <- "pdf"
+dir.create("output/", showWarnings = FALSE)
 plate_data <- read_csv(input_filename) %>%
   rename(compound = Compound) %>%
   # filter for desired compounds
@@ -46,13 +47,13 @@ EC_summary <- plate_data %>%
     # for negative-response data like this, the EC75 is the drop to 25%
     EC75_nM = 10^get_EC(compound, Kinase, 25) * 1e9
   )
-write_csv(EC_summary, "plots output/EC_summary_selectscreen.csv")
+write_csv(EC_summary, "output/EC_summary_selectscreen.csv")
 # generate global parameters for all plots------------------------------------------
 all_compounds <- distinct(plate_data["compound"])$compound
 all_kinases <- distinct(plate_data["Kinase"])$Kinase
 # find x-axis min/max values for consistent zoom window between all plots
 x_min <- floor(min(plate_data$log.conc))
-x_min <- -10
+# x_min <- -10
 x_max <- ceiling(max(plate_data$log.conc))
 x_limits <- c(x_min, x_max)
 # create logistic minor breaks for all conc plots
@@ -117,7 +118,7 @@ plot_compound <- function(cpd){
 for (cpd in all_compounds){
   plot_compound(cpd)
   # save plot with manually optimized aspect ratio
-  save_plot(str_glue("plots output/{cpd}.{plot_type}"))
+  save_plot(str_glue("output/{cpd}.{plot_type}"))
 }  
 # plot data for all compounds in facets----------------------------------
 compound_plots = list()
@@ -132,7 +133,7 @@ wrap_plots(compound_plots, guides = "collect", ncol = cols, nrow = rows) &
   theme(plot.margin = unit(c(plot_mar,plot_mar,plot_mar,plot_mar), "pt"),
         plot.background = element_blank(),
         legend.text= element_text(face = "bold", size = 16))
-save_plot(str_glue("plots output/compound_facets.{plot_type}"), ncol = cols, nrow = rows)
+save_plot(str_glue("output/compound_facets.{plot_type}"), ncol = cols, nrow = rows)
 # set color parameters for overlaid plots--------------------------------------
 alpha_val <- 1
 color_scale <- "viridis"
@@ -159,7 +160,7 @@ for (k in all_kinases){
     #scale_color_grey(start = grey_start, end = grey_end) +
     scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_start, end = viridis_end) +
     labs(title = k)
-  save_plot(str_glue("plots output/{k}.{plot_type}"))
+  save_plot(str_glue("output/{k}.{plot_type}"))
 }
 # plot data for all kinases at once-----------------------------------------
 plate_summary <- plate_data %>%
@@ -175,4 +176,4 @@ plate_summary <- plate_data %>%
   plot_global() +
   scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_start, end = viridis_end) +
   labs(title = "All data")
-save_plot(str_glue("Plots Output/all_data.{plot_type}"))
+save_plot(str_glue("output/all_data.{plot_type}"))
