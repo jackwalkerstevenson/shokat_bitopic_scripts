@@ -78,7 +78,7 @@ plate_summarize <- function(x){
             sem = sd(activity, na.rm = TRUE)/sqrt(n()),
             # get mean normalized readout value for plotting
             mean_read = mean(activity),
-            w = 0.1 * n() # necessary for consistent error bar widths across plots
+            w = 0.06 * n() # necessary for consistent error bar widths across plots
   )
 }
 # helper function to add ggplot objects common to all plots--------------------
