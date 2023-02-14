@@ -111,7 +111,8 @@ plot_compound <- function(cpd){
                 se = FALSE, size = 1)} %>%
     plot_global() +
     theme(aspect.ratio = 1) +
-    scale_color_manual(values = c("black","darkred")) +
+    scale_color_viridis(discrete = TRUE, begin = 1, end = 0) +
+    # scale_color_manual(values = c("black","darkred")) +
     labs(title = cpd)
 }
 # plot data for each compound separately----------------------------------------
