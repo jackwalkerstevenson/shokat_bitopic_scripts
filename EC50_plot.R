@@ -15,14 +15,7 @@ library(viridis) # for color schemes
 input_filename <- "EC50s.csv"
 plot_type <- "pdf"
 # choose and order compounds to plot
-compounds <- c("ponatinib",
-               #"dasatinib",
-               "asciminib",
-               #"ponatinib + asciminib",
-               "PonatiLink-1-12",
-               "PonatiLink-1-16",
-               "PonatiLink-1-20",
-               "PonatiLink-1-24")
+source("compounds.R")
 EC_data <- read_csv(input_filename) %>%
   mutate(log10EC50_nM = log10(EC50_nM)) %>%
   # filter for desired compounds
