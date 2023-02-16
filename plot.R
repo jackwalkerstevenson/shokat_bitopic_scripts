@@ -73,7 +73,8 @@ plate_data <- read_plates(plate_paths, plate_names) %>% # import with plater
 # assert that all compounds to be included are represented in the data
 imported_compounds <- distinct(plate_data["compound"])$compound
 for(compound in compounds){
-  assert_that(compound %in% imported_compounds)
+  assert_that(compound %in% imported_compounds,
+  msg = glue::glue("compound '{compound}' from the list of compounds to plot was not found in imported data"))
 }
 # generate global parameters for all plots------------------------------------------
 targets <- distinct(plate_data["target"])$target
