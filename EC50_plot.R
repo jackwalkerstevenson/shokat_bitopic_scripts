@@ -84,7 +84,7 @@ EC_data %>%
   filter(linker_length > 0) %>% # only plot compounds with linkers
   ggplot(aes(x = CTG, y = SelectScreen)) +
   facet_wrap(vars(Abl)) +
-  scale_size(range = c(3,9)) +
+  scale_size(range = c(2,8)) +
   geom_point(aes(size = linker_length, color = linker_length)) +
   scale_x_continuous(trans = c("log10", "reverse")) +
   scale_y_continuous(trans = c("log10", "reverse")) +
@@ -92,7 +92,7 @@ EC_data %>%
   scale_color_viridis(begin = .95, end = 0) +
   #guides(color=guide_legend(override.aes=list(shape=32))) +
   theme_prism() + # make it look fancy like prism
-  theme(panel.spacing = unit(5, "inches")) +
+  theme(panel.spacing = unit(.5, "inches")) +
   # theme(panel.background = element_rect(fill = NA, color = "black")) + # box facets
   theme(plot.background = element_blank()) + # need for transparent background
   labs(x = "CTG EC50",
