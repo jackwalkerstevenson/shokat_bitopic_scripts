@@ -7,63 +7,97 @@
 #'
 # load required libraries------------------------------------------------------
 library(tidyverse) # for tidy data handling
+library(scales)
 library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
 
 # specify names of input files and import data---------------------------------
 # note the order compounds are imported is the order they will be plotted
 input_filename <- "EC50s.csv"
+dir.create("output/", showWarnings = FALSE)
 plot_type <- "pdf"
-# choose and order compounds to plot
+# choose and order compounds and targets to plot
 source("compounds.R")
+source("targets.R")
 EC_data <- read_csv(input_filename) %>%
-  mutate(log10EC50_nM = log10(EC50_nM)) %>%
+  mutate(linker_length = as.numeric(linker_length)) %>%
+  mutate(neglog10EC50_nM = -log10(EC50_nM)) %>%
   # filter for desired compounds
   filter(compound %in% compounds) %>%
-  mutate(compound = fct_relevel(compound, compounds)) # order compounds by list
-# set factors so experiments and targets get plotted and colored in input order
-experiment_factors <- distinct(EC_data, experiment)$experiment
+  # filter for desired compounds
+  filter(target %in% targets) %>%
+  mutate(compound = fct_relevel(compound, compounds)) %>% # order compounds by list
+  mutate(target = fct_relevel(target, targets)) # order targets by list
+# set factors so things get plotted and colored in input order
 Abl_factors <- distinct(EC_data, Abl)$Abl
-EC_data <- EC_data %>% 
-  mutate(experiment = fct_relevel(experiment, experiment_factors)) %>%
+EC_data <- EC_data %>%
   mutate(Abl = fct_relevel(Abl, Abl_factors))
 # plot ECs in points---------------------------------------------------------------
 EC_data %>%
-  ggplot(aes(x = compound, y = log10EC50_nM)) +
-  geom_point(aes(shape = target, color = experiment), size = 3) +
+  ggplot(aes(x = compound, y = EC50_nM)) +
+  geom_point(aes(shape = assay, color = Abl), size = 4) +
+  scale_shape(labels = c("CellTiter-Glo", "SelectScreen")) +
   scale_x_discrete(guide = guide_axis(angle = -90)) +
+  # -log10 transform to show most potent on top
+  scale_y_continuous(trans = c("log10","reverse")) +
+  scale_color_manual(values = c("black","red3"),
+                     labels = c("Abl wt", "Abl T315I")) +
+  #scale_color_viridis(discrete = TRUE, begin = 0.3, end = 0.8) +
   theme_prism() + # make it look fancy like prism
-  scale_color_viridis(discrete = TRUE, begin = 0.3, end = 0.8) +
+  guides(shape = guide_legend(order = 1)) + # force shape to top of legend
   labs(x = "compound",
-       y = "log10(EC50) (nM)",
-       title = "Relative potency of compounds") +
+       y = "EC50 (nM)",
+       title = "Potency across assays") +
   theme(plot.background = element_blank()) # need for transparent background
-  ggsave(str_glue("plots output/EC50_points.{plot_type}"),
-            bg = "transparent",
-            width = 7,
-            height = 5)
-
+ggsave(str_glue("output/EC50_points.{plot_type}"),
+          bg = "transparent",
+          width = 8,
+          height = 6)
 # plot ECs by linker length-----------------------------------------------------
 EC_data %>%
-  filter(linker_length > 0) %>%
-  #group_by(experiment) %>%
+  filter(linker_length > 0) %>% # only plot compounds with linkers
   ggplot(aes(x = linker_length, y = EC50_nM,
-             color = experiment, shape = Abl)) +
-  scale_x_continuous(guide = "prism_offset_minor", # end at last tick
-                     breaks = c(12, 16, 20, 24)) + # manual x ticks
+             shape = assay, color = Abl)) +
+  theme_prism() + # make it look fancy like prism
+  scale_x_continuous(
+                     guide = "prism_offset_minor", # end at last tick
+                     breaks = seq(11,23,2)) + # manual x ticks
   scale_y_log10(guide = "prism_offset") +
-  #scale_y_continuous(guide = "prism_offset") +
-  scale_color_manual(values = c("blue2","green3"), labels = c("CellTiter-Glo", "SelectScreen")) +
+  # scale_y_reverse() +
+  scale_color_manual(values = c("black","red3")) +
   #scale_color_viridis(discrete = TRUE, begin = 0.3, end = 0.8) +
-  guides(color=guide_legend(override.aes=list(shape=15))) +
+  # remove placeholder shape from color legend with 32, the nonshape
+  guides(color=guide_legend(override.aes=list(shape=32))) +
   geom_point(size = 3) +
   geom_line() +
-  theme_prism() + # make it look fancy like prism
   theme(plot.background = element_blank()) + # need for transparent background
   labs(x = "linker length (PEG units)",
        y = "EC50 (nM)",
-       title = "Potency of PonatiLink-1 series by linker length") +
-  ggsave(str_glue("plots output/EC50_linker.{plot_type}"),
-         bg = "transparent",
-         width = 7,
-         height = 3.5)
+       title = "Potency of PonatiLink-2 series by linker length")
+ggsave(str_glue("output/EC50_assays.{plot_type}"),
+        bg = "transparent",
+       width = 7,
+       height = 3.5)
+# plot ECs comparing assays-----------------------------------------------------
+EC_data %>%
+  pivot_wider(names_from = assay, values_from = EC50_nM, id_cols = c(linker_length, Abl)) %>%
+  filter(linker_length > 0) %>% # only plot compounds with linkers
+  ggplot(aes(x = CTG, y = SelectScreen)) +
+  geom_point(aes(size = linker_length, color = linker_length)) +
+  facet_wrap(vars(Abl)) +
+  scale_x_log10(guide = "prism_offset_minor") +
+  scale_y_log10(guide = "prism_offset_minor") +
+  coord_fixed() +
+  #scale_color_manual(values = c("black","darkred")) +
+  scale_color_viridis(begin = 0.9, end = 0.1) +
+  #guides(color=guide_legend(override.aes=list(shape=32))) +
+  theme_prism() + # make it look fancy like prism
+  theme(plot.background = element_blank()) + # need for transparent background
+  labs(x = "CTG EC50",
+       y = "SelectScreen EC50",
+       title = str_wrap("Potency of PonatiLink-2 series in cell-based vs biochemical assays", width = 50))
+ggsave(str_glue("output/EC50_linker.{plot_type}"),
+       bg = "transparent",
+       width = 6,
+       height = 6)
+
