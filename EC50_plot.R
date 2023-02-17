@@ -79,19 +79,32 @@ ggsave(str_glue("output/EC50_linker.{plot_type}"),
        width = 7,
        height = 3.5)
 # plot ECs comparing assays-----------------------------------------------------
-EC_data %>%
+linker_data <- EC_data %>%
   pivot_wider(names_from = assay, values_from = EC50_nM, id_cols = c(linker_length, Abl)) %>%
-  filter(linker_length > 0) %>% # only plot compounds with linkers
+  mutate(Abl = recode(Abl, "wt" = "Abl wt", "T315I" = "Abl T315I")) %>%
+  filter(linker_length > 0) # only plot compounds with linkers
+linker_min <- min(linker_data$linker_length)
+linker_max <- max(linker_data$linker_length)
+linker_seq <- seq(linker_min, linker_max, 2)
+linker_data %>%
   ggplot(aes(x = CTG, y = SelectScreen)) +
   facet_wrap(vars(Abl)) +
-  scale_size(range = c(2,8)) +
-  geom_point(aes(size = linker_length, color = linker_length)) +
   scale_x_continuous(trans = c("log10", "reverse")) +
   scale_y_continuous(trans = c("log10", "reverse")) +
   coord_fixed() + # even coordinate spacing on both axes
-  scale_color_viridis(begin = .95, end = 0) +
-  #guides(color=guide_legend(override.aes=list(shape=32))) +
-  theme_prism() + # make it look fancy like prism
+  geom_point(aes(size = linker_length, color = linker_length)) +
+  scale_size_continuous(name = "test",
+                        labels = linker_seq,
+                        range = c(2,7),
+                        limits = c(linker_min, linker_max),
+                        breaks = linker_seq) +
+  # scale_color_viridis(begin = .95, end = 0,
+  scale_color_continuous(name = "test",
+                         labels = linker_seq,
+                         limits = c(linker_min, linker_max),
+                         breaks = linker_seq) +
+                        #guide = guide_colorsteps(ticks = FALSE)) +
+  # theme_prism() + # make it look fancy like prism
   theme(panel.spacing = unit(.5, "inches")) +
   # theme(panel.background = element_rect(fill = NA, color = "black")) + # box facets
   theme(plot.background = element_blank()) + # need for transparent background
