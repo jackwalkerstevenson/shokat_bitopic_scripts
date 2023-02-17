@@ -1,7 +1,7 @@
 #' ---
 #'title: "plateplotr"
 #'author: "Jack Stevenson"
-#'date: "2022-09-29"
+#'date: "2023-02"
 #' ---
 #'This is a baby spinoff from plateplotr for plotting EC50s
 #'
@@ -88,25 +88,23 @@ linker_max <- max(linker_data$linker_length)
 linker_seq <- seq(linker_min, linker_max, 2)
 linker_data %>%
   ggplot(aes(x = CTG, y = SelectScreen)) +
+  theme_prism() + # make it look fancy like prism
   facet_wrap(vars(Abl)) +
+  theme(panel.spacing = unit(1, "inches")) +
   scale_x_continuous(trans = c("log10", "reverse")) +
   scale_y_continuous(trans = c("log10", "reverse")) +
   coord_fixed() + # even coordinate spacing on both axes
   geom_point(aes(size = linker_length, color = linker_length)) +
-  scale_size_continuous(name = "test",
-                        labels = linker_seq,
-                        range = c(2,7),
+  scale_size_continuous(range = c(2,7),
                         limits = c(linker_min, linker_max),
-                        breaks = linker_seq) +
-  # scale_color_viridis(begin = .95, end = 0,
-  scale_color_continuous(name = "test",
-                         labels = linker_seq,
-                         limits = c(linker_min, linker_max),
-                         breaks = linker_seq) +
-                        #guide = guide_colorsteps(ticks = FALSE)) +
-  # theme_prism() + # make it look fancy like prism
-  theme(panel.spacing = unit(.5, "inches")) +
-  # theme(panel.background = element_rect(fill = NA, color = "black")) + # box facets
+                        breaks = linker_seq,
+                        labels = linker_seq,
+                        guide = guide_legend(reverse = TRUE)) +
+  scale_color_viridis(begin = .95, end = 0,
+                      limits = c(linker_min, linker_max),
+                      breaks = linker_seq,
+                      labels = linker_seq,
+                      guide = guide_legend(reverse = TRUE)) +
   theme(plot.background = element_blank()) + # need for transparent background
   labs(x = "CTG EC50",
        y = "SelectScreen EC50",
