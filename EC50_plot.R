@@ -47,7 +47,7 @@ EC_data %>%
   guides(shape = guide_legend(order = 1)) + # force shape to top of legend
   labs(x = "compound",
        y = "EC50 (nM)",
-       title = "Potency across assays") +
+       title = ("PonatiLink-2 cell-based vs. biochemical potency")) +
   theme(plot.background = element_blank()) # need for transparent background
 ggsave(str_glue("output/EC50_points.{plot_type}"),
           bg = "transparent",
@@ -62,8 +62,8 @@ EC_data %>%
   scale_x_continuous(
                      guide = "prism_offset_minor", # end at last tick
                      breaks = seq(11,23,2)) + # manual x ticks
-  scale_y_log10(guide = "prism_offset") +
-  # scale_y_reverse() +
+  scale_y_continuous(trans = c("log10", "reverse"),
+                     guide = "prism_offset_minor") +
   scale_color_manual(values = c("black","red3")) +
   #scale_color_viridis(discrete = TRUE, begin = 0.3, end = 0.8) +
   # remove placeholder shape from color legend with 32, the nonshape
@@ -73,8 +73,8 @@ EC_data %>%
   theme(plot.background = element_blank()) + # need for transparent background
   labs(x = "linker length (PEG units)",
        y = "EC50 (nM)",
-       title = "Potency of PonatiLink-2 series by linker length")
-ggsave(str_glue("output/EC50_assays.{plot_type}"),
+       title = "PonatiLink-2 cell-based vs. biochemical potency")
+ggsave(str_glue("output/EC50_linker.{plot_type}"),
         bg = "transparent",
        width = 7,
        height = 3.5)
@@ -83,21 +83,23 @@ EC_data %>%
   pivot_wider(names_from = assay, values_from = EC50_nM, id_cols = c(linker_length, Abl)) %>%
   filter(linker_length > 0) %>% # only plot compounds with linkers
   ggplot(aes(x = CTG, y = SelectScreen)) +
-  geom_point(aes(size = linker_length, color = linker_length)) +
   facet_wrap(vars(Abl)) +
-  scale_x_log10(guide = "prism_offset_minor") +
-  scale_y_log10(guide = "prism_offset_minor") +
-  coord_fixed() +
-  #scale_color_manual(values = c("black","darkred")) +
-  scale_color_viridis(begin = 0.9, end = 0.1) +
+  scale_size(range = c(3,9)) +
+  geom_point(aes(size = linker_length, color = linker_length)) +
+  scale_x_continuous(trans = c("log10", "reverse")) +
+  scale_y_continuous(trans = c("log10", "reverse")) +
+  coord_fixed() + # even coordinate spacing on both axes
+  scale_color_viridis(begin = .95, end = 0) +
   #guides(color=guide_legend(override.aes=list(shape=32))) +
   theme_prism() + # make it look fancy like prism
+  theme(panel.spacing = unit(5, "inches")) +
+  # theme(panel.background = element_rect(fill = NA, color = "black")) + # box facets
   theme(plot.background = element_blank()) + # need for transparent background
   labs(x = "CTG EC50",
        y = "SelectScreen EC50",
        title = str_wrap("Potency of PonatiLink-2 series in cell-based vs biochemical assays", width = 50))
-ggsave(str_glue("output/EC50_linker.{plot_type}"),
+ggsave(str_glue("output/EC50_assays.{plot_type}"),
        bg = "transparent",
-       width = 6,
+       width = 8,
        height = 6)
 
