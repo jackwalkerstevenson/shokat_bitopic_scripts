@@ -41,6 +41,18 @@ library(viridis) # for color schemes
 library(patchwork) # for plot organization
 
 # import data---------------------------------
+# helper function for reading concentration from nM or uM input data
+make_log_conc <- function(df){
+  tryCatch({
+    message("trying to convert from conc_uM")
+    df %>%
+      mutate(log.conc = log10(conc_uM/1e6))},
+    error = function(e){
+      message("error converting from conc_uM")
+      df %>% mutate(log.conc = log10(conc_nM/1e9))
+      }
+  )
+}
 # the order of the compound list is the order they will be plotted
 source("compounds.R") # import list of compounds to include in plots
 # create input and output directories, since git doesn't track empty directories
@@ -65,11 +77,11 @@ plate_paths <- paste0(input_directory, plate_filenames) # full file paths
 plate_names <- seq(1,length(plate_filenames))  # create sequential plate IDs
 plate_data <- read_plates(plate_paths, plate_names) %>% # import with plater
   filter(compound != "N/A") %>% # drop empty wells
-  filter(compound %in% compounds) %>%
-  # drop 0 values before plotting and curve fitting
+  filter(compound %in% compounds) %>% # take only specified compounds
+  make_log_conc %>% # convert conc_nM or conc_uM to log molar concentration
+  # drop 0 concs before plotting and curve fitting
   # note this is only OK because normalization happens before import
-  filter(conc_nM != 0) %>%
-  mutate(log.conc = log10(conc_nM/1e9))  # convert conc µM to M and log transform
+  filter(log.conc != -Inf)
 # assert that all compounds to be included are represented in the data
 imported_compounds <- distinct(plate_data["compound"])$compound
 for(compound in compounds){
