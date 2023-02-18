@@ -43,16 +43,10 @@ library(patchwork) # for plot organization
 # import data---------------------------------
 # helper function for reading concentration from nM or uM input data
 make_log_conc <- function(df){
-  tryCatch({
-    message("trying to convert from conc_uM")
-    df %>%
-      mutate(log.conc = log10(conc_uM/1e6))},
-    error = function(e){
-      message("error converting from conc_uM")
-      df %>% mutate(log.conc = log10(conc_nM/1e9))
-      }
-  )
-}
+  tryCatch({ # try to convert from conc_uM
+    df %>% mutate(log.conc = log10(conc_uM/1e6))},
+    error = function(e){ # if no conc_uM, try to convert from conc_nM
+      df %>% mutate(log.conc = log10(conc_nM/1e9))})}
 # the order of the compound list is the order they will be plotted
 source("compounds.R") # import list of compounds to include in plots
 # create input and output directories, since git doesn't track empty directories
@@ -82,7 +76,7 @@ plate_data <- read_plates(plate_paths, plate_names) %>% # import with plater
   # drop 0 concs before plotting and curve fitting
   # note this is only OK because normalization happens before import
   filter(log.conc != -Inf)
-# assert that all compounds to be included are represented in the data
+# assert that all compounds listed are actually present in imported data
 imported_compounds <- distinct(plate_data["compound"])$compound
 for(compound in compounds){
   assert_that(compound %in% imported_compounds,
