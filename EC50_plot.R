@@ -37,17 +37,17 @@ EC_data <- EC_data %>%
 EC_data %>%
   ggplot(aes(x = compound, y = EC50_nM)) +
   geom_point(aes(shape = assay, color = Abl), size = 4, alpha = 1) +
-  scale_shape(labels = c("CellTiter-Glo, K562", "SelectScreen, Abl1")) +
+  scale_shape(labels = c("CellTiter-Glo, K562", "SelectScreen, Abl1"),
+              guide = guide_legend(order = 1)) + # force to top of legend
   scale_x_discrete(guide = guide_axis(angle = -90)) +
   # -log10 transform to show most potent on top
   scale_y_continuous(trans = c("log10","reverse")) +
   scale_color_manual(
                      values = c("black","red3"),
                      labels = c("Abl wt", "Abl T315I")) +
-                   # values = c("black","red3","blue2"),
-                   # labels = c("Abl wt", "Abl T315I", "Abl V468F")) +
+                     # values = c("black","red3","blue2"),
+                     # labels = c("Abl wt", "Abl T315I", "Abl V468F")) +
   theme_prism() + # make it look fancy like prism
-  guides(shape = guide_legend(order = 1)) + # force shape to top of legend
   labs(x = "compound",
        y = "EC50 (nM) [more potent ->]",
        title = ("PonatiLink-2 cell-based vs. biochemical potency")) +
@@ -61,7 +61,8 @@ EC_data %>%
   filter(linker_length > 0) %>% # only plot compounds with linkers
   ggplot(aes(x = linker_length, y = EC50_nM,
              shape = assay, color = Abl)) +
-  scale_shape(labels = c("CellTiter-Glo, K562", "SelectScreen, Abl1")) +
+  scale_shape(labels = c("CellTiter-Glo, K562", "SelectScreen, Abl1"),
+              guide = guide_legend(order = 1)) + # force to top of legend
   theme_prism() + # make it look fancy like prism
   scale_x_continuous(
                      guide = "prism_offset_minor", # end at last tick
@@ -76,11 +77,11 @@ EC_data %>%
   #scale_color_viridis(discrete = TRUE, begin = 0.3, end = 0.8) +
   # remove placeholder shape from color legend with 32, the nonshape
   guides(color=guide_legend(override.aes=list(shape=32))) +
-  geom_point(size = 3) +
+  geom_point(size = 4) +
   geom_line() +
   theme(plot.background = element_blank()) + # need for transparent background
   labs(x = "linker length (PEG units)",
-       y = "EC50 (nM)",
+       y = "EC50 (nM) [more potent ->]",
        title = "PonatiLink-2 cell-based vs. biochemical potency")
 ggsave(str_glue("output/EC50_linker.{plot_type}"),
         bg = "transparent",
@@ -120,8 +121,8 @@ linker_data %>%
   theme(plot.background = element_blank(), # need for transparent background
         legend.title = element_text(size = 10), # reinstate legend title bc theme_prism removes
         strip.text.x = element_text(size = 14)) + # size facet labels
-  labs(x = "CellTiter-Glo EC50 (more potent ->)",
-       y = "SelectScreen EC50 (more potent ->)",
+  labs(x = "CellTiter-Glo EC50 [more potent ->]",
+       y = "SelectScreen EC50 [more potent ->]",
        title = str_wrap("PonatiLink-2 cell-based vs. biochemical potency", width = 70))
 ggsave(str_glue("output/EC50_assays.{plot_type}"),
        bg = "transparent",
