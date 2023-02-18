@@ -10,7 +10,7 @@ library(tidyverse) # for tidy data handling
 library(scales)
 library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
-
+library(lemon) # for fancy facet wrapping
 # specify names of input files and import data---------------------------------
 # note the order compounds are imported is the order they will be plotted
 input_filename <- "EC50s.csv"
@@ -87,7 +87,7 @@ ggsave(str_glue("output/EC50_linker.{plot_type}"),
         bg = "transparent",
        width = 8,
        height = 4)
-# plot ECs comparing assays-----------------------------------------------------
+# prepare data to plot ECs across assays----------------------------------------
 linker_data <- EC_data %>%
   pivot_wider(names_from = assay, values_from = EC50_nM, id_cols = c(linker_length, Abl)) %>%
   mutate(Abl = recode(Abl, "wt" = "Abl wt", "T315I" = "Abl T315I")) %>%
@@ -95,13 +95,15 @@ linker_data <- EC_data %>%
 linker_min <- min(linker_data$linker_length)
 linker_max <- max(linker_data$linker_length)
 linker_seq <- seq(linker_min, linker_max, 2)
+# plot ECs across assays--------------------------------------------------------
 linker_data %>%
   ggplot(aes(x = CTG, y = SelectScreen)) +
   theme_prism() + # make it look fancy like prism
-  facet_wrap(vars(Abl)) +
-  theme(panel.spacing = unit(1, "inches")) +
+  facet_rep_wrap(vars(Abl), repeat.tick.labels = "left") + # repeat y axis
+  theme(panel.spacing = unit(.5, "inches")) +
   scale_x_continuous(trans = c("log10", "reverse")) +
-  scale_y_continuous(trans = c("log10", "reverse")) +
+  scale_y_continuous(trans = c("log10", "reverse"),
+                     breaks = c(1.5, 1, .5)) +
   coord_fixed() + # even coordinate spacing on both axes
   geom_point(aes(size = linker_length, color = linker_length)) +
   # specify manual limits, breaks and labels so 
@@ -121,8 +123,8 @@ linker_data %>%
   theme(plot.background = element_blank(), # need for transparent background
         legend.title = element_text(size = 10), # reinstate legend title bc theme_prism removes
         strip.text.x = element_text(size = 14)) + # size facet labels
-  labs(x = "CellTiter-Glo EC50 [more potent ->]",
-       y = "SelectScreen EC50 [more potent ->]",
+  labs(x = "CellTiter-Glo EC50 (nM) [more potent ->]",
+       y = "SelectScreen EC50  (nM) [more potent ->]",
        title = str_wrap("PonatiLink-2 cell-based vs. biochemical potency", width = 70))
 ggsave(str_glue("output/EC50_assays.{plot_type}"),
        bg = "transparent",
