@@ -99,7 +99,7 @@ linker_seq <- seq(linker_min, linker_max, 2)
 linker_data %>%
   ggplot(aes(x = CTG, y = SelectScreen)) +
   theme_prism() + # make it look fancy like prism
-  facet_rep_wrap(vars(Abl), repeat.tick.labels = "left") + # repeat y axis
+  lemon::facet_rep_wrap(vars(Abl), repeat.tick.labels = "left") + # repeat y axis
   theme(panel.spacing = unit(.5, "inches")) +
   scale_x_continuous(trans = c("log10", "reverse")) +
   scale_y_continuous(trans = c("log10", "reverse"),
