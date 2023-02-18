@@ -21,13 +21,14 @@ source("compounds.R")
 source("targets.R")
 EC_data <- read_csv(input_filename) %>%
   mutate(linker_length = as.numeric(linker_length)) %>%
-  mutate(neglog10EC50_nM = -log10(EC50_nM)) %>%
+  mutate(EC50_nM = as.numeric(EC50_nM)) %>%
   # filter for desired compounds
   filter(compound %in% compounds) %>%
   # filter for desired compounds
   filter(target %in% targets) %>%
   mutate(compound = fct_relevel(compound, compounds)) %>% # order compounds by list
-  mutate(target = fct_relevel(target, targets)) # order targets by list
+  mutate(target = fct_relevel(target, targets)) %>% # order targets by list
+  mutate(neglog10EC50_nM = -log10(EC50_nM))
 # set factors so things get plotted and colored in input order
 Abl_factors <- distinct(EC_data, Abl)$Abl
 EC_data <- EC_data %>%
@@ -35,18 +36,20 @@ EC_data <- EC_data %>%
 # plot ECs in points---------------------------------------------------------------
 EC_data %>%
   ggplot(aes(x = compound, y = EC50_nM)) +
-  geom_point(aes(shape = assay, color = Abl), size = 4) +
-  scale_shape(labels = c("CellTiter-Glo", "SelectScreen")) +
+  geom_point(aes(shape = assay, color = Abl), size = 4, alpha = 1) +
+  scale_shape(labels = c("CellTiter-Glo, K562", "SelectScreen, Abl1")) +
   scale_x_discrete(guide = guide_axis(angle = -90)) +
   # -log10 transform to show most potent on top
   scale_y_continuous(trans = c("log10","reverse")) +
-  scale_color_manual(values = c("black","red3", "blue2"),
-                     labels = c("Abl wt", "Abl T315I", "Abl V468F")) +
-  #scale_color_viridis(discrete = TRUE, begin = 0.3, end = 0.8) +
+  scale_color_manual(
+                     values = c("black","red3"),
+                     labels = c("Abl wt", "Abl T315I")) +
+                   # values = c("black","red3","blue2"),
+                   # labels = c("Abl wt", "Abl T315I", "Abl V468F")) +
   theme_prism() + # make it look fancy like prism
   guides(shape = guide_legend(order = 1)) + # force shape to top of legend
   labs(x = "compound",
-       y = "EC50 (nM)",
+       y = "EC50 (nM) [more potent ->]",
        title = ("PonatiLink-2 cell-based vs. biochemical potency")) +
   theme(plot.background = element_blank()) # need for transparent background
 ggsave(str_glue("output/EC50_points.{plot_type}"),
@@ -58,13 +61,18 @@ EC_data %>%
   filter(linker_length > 0) %>% # only plot compounds with linkers
   ggplot(aes(x = linker_length, y = EC50_nM,
              shape = assay, color = Abl)) +
+  scale_shape(labels = c("CellTiter-Glo, K562", "SelectScreen, Abl1")) +
   theme_prism() + # make it look fancy like prism
   scale_x_continuous(
                      guide = "prism_offset_minor", # end at last tick
                      breaks = seq(11,23,2)) + # manual x ticks
   scale_y_continuous(trans = c("log10", "reverse"),
                      guide = "prism_offset_minor") +
-  scale_color_manual(values = c("black","red3")) +
+  scale_color_manual(
+                     values = c("black","red3"),
+                     labels = c("Abl wt", "Abl T315I")) +
+                     # values = c("black","red3","blue2"),
+                     # labels = c("Abl wt", "Abl T315I", "Abl V468F")) +
   #scale_color_viridis(discrete = TRUE, begin = 0.3, end = 0.8) +
   # remove placeholder shape from color legend with 32, the nonshape
   guides(color=guide_legend(override.aes=list(shape=32))) +
@@ -76,8 +84,8 @@ EC_data %>%
        title = "PonatiLink-2 cell-based vs. biochemical potency")
 ggsave(str_glue("output/EC50_linker.{plot_type}"),
         bg = "transparent",
-       width = 7,
-       height = 3.5)
+       width = 8,
+       height = 4)
 # plot ECs comparing assays-----------------------------------------------------
 linker_data <- EC_data %>%
   pivot_wider(names_from = assay, values_from = EC50_nM, id_cols = c(linker_length, Abl)) %>%
@@ -112,9 +120,9 @@ linker_data %>%
   theme(plot.background = element_blank(), # need for transparent background
         legend.title = element_text(size = 10), # reinstate legend title bc theme_prism removes
         strip.text.x = element_text(size = 14)) + # size facet labels
-  labs(x = "CellTiter-Glo EC50",
-       y = "SelectScreen EC50",
-       title = str_wrap("Cell-based vs. biochemical potency of PonatiLink-2 series by linker length", width = 40))
+  labs(x = "CellTiter-Glo EC50 (more potent ->)",
+       y = "SelectScreen EC50 (more potent ->)",
+       title = str_wrap("PonatiLink-2 cell-based vs. biochemical potency", width = 70))
 ggsave(str_glue("output/EC50_assays.{plot_type}"),
        bg = "transparent",
        width = 9,
