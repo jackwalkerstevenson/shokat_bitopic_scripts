@@ -40,8 +40,8 @@ EC_data %>%
   scale_x_discrete(guide = guide_axis(angle = -90)) +
   # -log10 transform to show most potent on top
   scale_y_continuous(trans = c("log10","reverse")) +
-  scale_color_manual(values = c("black","red3"),
-                     labels = c("Abl wt", "Abl T315I")) +
+  scale_color_manual(values = c("black","red3", "blue2"),
+                     labels = c("Abl wt", "Abl T315I", "Abl V468F")) +
   #scale_color_viridis(discrete = TRUE, begin = 0.3, end = 0.8) +
   theme_prism() + # make it look fancy like prism
   guides(shape = guide_legend(order = 1)) + # force shape to top of legend
@@ -95,22 +95,28 @@ linker_data %>%
   scale_y_continuous(trans = c("log10", "reverse")) +
   coord_fixed() + # even coordinate spacing on both axes
   geom_point(aes(size = linker_length, color = linker_length)) +
-  scale_size_continuous(range = c(2,7),
+  # specify manual limits, breaks and labels so 
+  scale_size_continuous(range = c(3,7),
                         limits = c(linker_min, linker_max),
                         breaks = linker_seq,
                         labels = linker_seq,
-                        guide = guide_legend(reverse = TRUE)) +
-  scale_color_viridis(begin = .95, end = 0,
+                        guide = guide_legend(reverse = TRUE,
+                                             title = "linker length (PEG units)")) +
+  scale_color_viridis(option = "viridis",
+                      begin = 1, end = 0,
                       limits = c(linker_min, linker_max),
                       breaks = linker_seq,
                       labels = linker_seq,
-                      guide = guide_legend(reverse = TRUE)) +
-  theme(plot.background = element_blank()) + # need for transparent background
-  labs(x = "CTG EC50",
+                      guide = guide_legend(reverse = TRUE,
+                                           title = "linker length (PEG units)")) +
+  theme(plot.background = element_blank(), # need for transparent background
+        legend.title = element_text(size = 10), # reinstate legend title bc theme_prism removes
+        strip.text.x = element_text(size = 14)) + # size facet labels
+  labs(x = "CellTiter-Glo EC50",
        y = "SelectScreen EC50",
-       title = str_wrap("Potency of PonatiLink-2 series in cell-based vs biochemical assays", width = 50))
+       title = str_wrap("Cell-based vs. biochemical potency of PonatiLink-2 series by linker length", width = 40))
 ggsave(str_glue("output/EC50_assays.{plot_type}"),
        bg = "transparent",
-       width = 8,
+       width = 9,
        height = 6)
 
