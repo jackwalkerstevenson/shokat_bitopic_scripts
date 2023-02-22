@@ -142,25 +142,15 @@ plot_global <- function(plot){
 # fit models to output EC values------------------------------------------------
 # seems like you should be able to just pipe group_by into drm(), but nope, so doing this instead
 # helper function for getting EC for one compound, target, and EC threshold
-get_EC <- function(cpd, tgt, EC_threshold){
-    cpd_data <- plate_data %>%
-      filter(compound == cpd, target == tgt)
-    EC <- ED(drm(read_norm~log.conc, data=cpd_data, fct=L.4()), EC_threshold)[1,1]
-    return(EC)
-}
-get_hill_slope <- function(cpd, tgt){
-  cpd_data <- plate_data %>%
-    filter(compound == cpd, target == tgt)
-  slope <- coef(drm(read_norm~log.conc, data=cpd_data, fct=L.4()))[1]
-  return(slope)
-}
+source("get_EC.R")
+source("get_hill_slope.R")
 EC_summary <- plate_data %>%
   group_by(compound, target) %>%
   summarize(
-    EC50_nM = 10^get_EC(compound, target, 50) * 1e9, # convert M to nM
+    EC50_nM = 10^get_EC(plate_data, compound, target, 50) * 1e9, # convert M to nM
     # for negative-response data like this, the EC75 is the drop to 25%
-    EC75_nM = 10^get_EC(compound, target, 25) * 1e9,
-    hill_slope = get_hill_slope(compound, target)
+    EC75_nM = 10^get_EC(plate_data, compound, target, 25) * 1e9,
+    hill_slope = get_hill_slope(plate_data, compound, target)
   )
 write_csv(EC_summary, "output/EC_summary.csv")
 # helper function to plot one compound----------------------------------------
