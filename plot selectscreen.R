@@ -15,24 +15,26 @@ library(viridis) # for color schemes
 library(patchwork) # for plot organization
 library(assertthat) # for QC assertions
 
-# import and tidy data---------------------------------
-# note the order compounds are imported is the order they will be plotted
+# set global variables---------------------------------------------------------
 input_filename <- "ZLYTE_compiled_results_complete.csv"
+plot_type <- "pdf" # file type for saved output plots
+dir.create("output/", showWarnings = FALSE) # silently create output directory
 source("compounds.R")
 source("targets.R")
-plot_type <- "pdf"
-dir.create("output/", showWarnings = FALSE)
+# import and tidy data---------------------------------
+# note the order compounds are imported is the order they will be plotted
 plate_data <- read_csv(input_filename) %>%
   rename(compound = Compound) %>%
   rename(target = Kinase) %>%
-  # filter for desired compounds
+  # filter for desired compounds and targets and order by lis
   filter(compound %in% compounds) %>%
+  mutate(compound = fct_relevel(compound, compounds)) %>%
   filter(target %in% targets) %>%
-  mutate(compound = fct_relevel(compound, compounds)) %>% # order compounds by list
-  # tidy by pivoting to one measurement per row. magic column number, watch out!
+  mutate(target = fct_relevel(target, targets)) %>%
+  # tidy by pivoting duplicates to one measurement per row. magic column number, watch out!
   pivot_longer(cols = 11:12, names_to = NULL, values_to = "pct_inhibition") %>%
-  # wrangle: convert conc and convert inhibition to activity
-  mutate(log.conc = log10(Compound_Conc_nM/1e9)) %>%  # convert conc nM to log(M)
+  # wrangle: convert conc to log molar and convert inhibition to activity
+  mutate(log.conc = log10(Compound_Conc_nM/1e9)) %>%
   mutate(activity = 100 - pct_inhibition)
 # fit models to output EC values------------------------------------------------
 # seems like you should be able to just pipe group_by into drm(), but nope, so doing this instead
@@ -57,12 +59,6 @@ x_max <- ceiling(max(plate_data$log.conc))
 x_limits <- c(x_min, x_max)
 # create logistic minor breaks for all conc plots
 minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
-# set factors so targets get plotted and colored in input order
-#compound_factors <- distinct(plate_data, compound)$compound
-target_factors <- distinct(plate_data, target)$target
-plate_data <- plate_data %>% 
-  mutate(target = fct_relevel(target, target_factors))# %>%
-#  mutate(compound = fct_relevel(compound, compound_factors))
 # helper function for saving plots----------------------------------------------
 scale_facet <- 4 # plot width per col/height per row
 #todo: allow overriding width and height if provided
