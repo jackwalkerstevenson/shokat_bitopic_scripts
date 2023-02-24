@@ -70,6 +70,7 @@ plate_filenames <- c(list.files(input_directory, pattern = "*.csv")) # get file 
 plate_paths <- paste0(input_directory, plate_filenames) # full file paths
 plate_names <- seq(1,length(plate_filenames))  # create sequential plate IDs
 plate_data <- read_plates(plate_paths, plate_names) %>% # import with plater
+  rename(activity = read_norm) %>%
   filter(compound != "N/A") %>% # drop empty wells
   filter(compound %in% compounds) %>% # take only specified compounds
   make_log_conc %>% # convert conc_nM or conc_uM to log molar concentration
@@ -119,9 +120,9 @@ longest <- function(strings){
 plate_summarize <- function(x){
   summarize(x,
             # standard error for error bars = standard deviation / square root of n
-            sem = sd(read_norm, na.rm = TRUE)/sqrt(n()),
+            sem = sd(activity, na.rm = TRUE)/sqrt(n()),
             # get mean normalized readout value for plotting
-            mean_read = mean(read_norm),
+            mean_read = mean(activity),
             w = 0.06 * n() # necessary for consistent error bar widths across plots
   )
 }
@@ -166,7 +167,7 @@ plot_compound <- function(cpd){
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
       # use drm method from drc package to fit dose response curve
       geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
-                se = FALSE, size = 1)} %>%
+                se = FALSE, linewidth = 1)} %>%
     plot_global() +
     theme(aspect.ratio = 1) +
     scale_color_viridis(discrete = TRUE) +
@@ -214,7 +215,7 @@ for (t in targets){
       # use drm method from drc package to fit dose response curve
       geom_line(#aes(linetype = compound),  # linetype for better grayscale
                 stat = "smooth", method = "drm", method.args = list(fct = L.4()),
-                se = FALSE, size = 1, alpha = alpha_val)} %>%
+                se = FALSE, linewidth = 1, alpha = alpha_val)} %>%
     plot_global() +
     #scale_color_grey(start = grey_start, end = grey_end) +
     scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_start, end = viridis_end) +
@@ -231,7 +232,7 @@ plate_summary <- plate_data %>%
     geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
     # use drm method from drc package to fit dose response curve
     geom_line(aes(linetype = target), stat = "smooth", method = "drm", method.args = list(fct = L.4()),
-              se = FALSE, size = 1, alpha = alpha_val)} %>%
+              se = FALSE, linewidth = 1, alpha = alpha_val)} %>%
   plot_global() +
   scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_start, end = viridis_end) +
   labs(title = "All data")
