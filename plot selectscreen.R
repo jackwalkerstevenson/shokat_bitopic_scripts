@@ -24,16 +24,17 @@ source("targets.R")
 # import and tidy data---------------------------------
 # note the order compounds are imported is the order they will be plotted
 plate_data <- read_csv(input_filename) %>%
+  # rename relevant columns to common names
   rename(compound = Compound) %>%
   rename(target = Kinase) %>%
-  # filter for desired compounds and targets and order by lis
+  # filter for desired compounds and targets and order by input lists
   filter(compound %in% compounds) %>%
   mutate(compound = fct_relevel(compound, compounds)) %>%
   filter(target %in% targets) %>%
   mutate(target = fct_relevel(target, targets)) %>%
   # tidy by pivoting duplicates to one measurement per row. magic column number, watch out!
   pivot_longer(cols = 11:12, names_to = NULL, values_to = "pct_inhibition") %>%
-  # wrangle: convert conc to log molar and convert inhibition to activity
+  # wrangle: convert conc to log molar and convert percent inhibition to activity
   mutate(log.conc = log10(Compound_Conc_nM/1e9)) %>%
   mutate(activity = 100 - pct_inhibition)
 # fit models to output EC values------------------------------------------------
