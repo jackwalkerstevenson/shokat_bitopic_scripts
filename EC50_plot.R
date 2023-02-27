@@ -19,6 +19,14 @@ plot_type <- "pdf"
 # choose and order compounds and targets to plot
 source("compounds.R")
 source("targets.R")
+# helper function to find factor levels to match the levels of target
+get_target_levels <- function(col){
+  num_col <- EC_data %>%
+    select(col) %>%
+    distinct() %>%
+    nrow()
+    #nrow(distinct(select(EC_data, col)))
+}
 EC_data <- read_csv(input_filename) %>%
   mutate(linker_length = as.numeric(linker_length)) %>%
   mutate(EC50_nM = as.numeric(EC50_nM)) %>%
@@ -28,6 +36,8 @@ EC_data <- read_csv(input_filename) %>%
   filter(target %in% targets) %>%
   mutate(compound = fct_relevel(compound, compounds)) %>% # order compounds by list
   mutate(target = fct_relevel(target, targets)) %>% # order targets by list
+  #todo: relevel Abl by target levels
+  # mutate(Abl = fct_relevel(Abl, get_target_levels(Abl))) $>$
   mutate(neglog10EC50_nM = -log10(EC50_nM))
 # set factors so things get plotted and colored in input order
 Abl_factors <- distinct(EC_data, Abl)$Abl
