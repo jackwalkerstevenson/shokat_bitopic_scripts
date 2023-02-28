@@ -52,8 +52,9 @@ ggsave(str_glue("output/EC50_points.{plot_type}"),
           width = 8,
           height = 6)
 # calculate linker length scale parameters--------------------------------------
-linker_min <- min(linker_data$linker_length)
-linker_max <- max(linker_data$linker_length)
+linkers <- unique(as.numeric(linker_data$linker_length))
+linker_min <- min(linkers)
+linker_max <- max(linkers)
 linker_seq <- seq(linker_min, linker_max, 2)
 # plot ECs by linker length-----------------------------------------------------
 EC_data %>%
@@ -83,43 +84,58 @@ ggsave(str_glue("output/EC50_linker.{plot_type}"),
        height = 4)
 # plot ECs across assays--------------------------------------------------------
 EC_data %>%
-  # pivot data so that EC50s from each assay associate with the same linker/variant combo
+  # pivot so EC50s from both assays associate with each linker/variant combo
   pivot_wider(names_from = assay,
               values_from = EC50_nM,
               id_cols = c(linker_length, variant)) %>%
   filter(linker_length > 0) %>% # only plot compounds with linkers
-  ggplot(aes(x = CTG, y = SelectScreen)) +
+  ggplot(aes(y = CTG, x = SelectScreen)) +
   theme_prism() + # make it look fancy like prism
   lemon::facet_rep_wrap(vars(variant), repeat.tick.labels = "left") + # repeat y axis
-  theme(panel.spacing = unit(.5, "inches")) +
-  scale_x_continuous(trans = c("log10", "reverse")) +
-  scale_y_continuous(trans = c("log10", "reverse")
-                     #breaks = c(1.5, 1, .5)
+  theme(panel.spacing = unit(.5, "inches")) + # spacing between facets
+  # log10 and reverse both axes for intuitive potency direction
+  scale_x_continuous(trans = c("log10", "reverse"),
+                     # breaks = c(1.5, 1, .5)
+                     ) +
+  scale_y_continuous(trans = c("log10", "reverse"),
+                     # limits = c(3, 1),
+                     # breaks = c(3, 2, 1)
                      ) +
   coord_fixed() + # even coordinate spacing on both axes
+  # geom_path(color = "gray", linewidth = 1) + # path between points
   geom_point(aes(size = linker_length, color = linker_length)) +
-  # specify manual limits, breaks and labels so 
+  # manual limits, breaks and labels for a unified linker length legend
   scale_size_continuous(range = c(3,7),
                         limits = c(linker_min, linker_max),
-                        breaks = linker_seq,
-                        labels = linker_seq,
-                        guide = guide_legend(reverse = TRUE,
-                                             title = "linker length (PEG units)")) +
+                        breaks = linkers,
+                        labels = linkers,
+                        guide = guide_legend(reverse = FALSE,
+                                             direction = "horizontal",
+                                             title.position = "top",
+                                             label.position = "bottom",
+                                             nrow = 1,
+                                             keywidth = .5,
+                                             title = "linker length (PEG units)"),) +
   scale_color_viridis(option = "viridis",
                       begin = 1, end = 0,
                       limits = c(linker_min, linker_max),
-                      breaks = linker_seq,
-                      labels = linker_seq,
-                      guide = guide_legend(reverse = TRUE,
+                      breaks = linkers,
+                      labels = linkers,
+                      guide = guide_legend(reverse = FALSE,
+                                           direction = "horizontal",
+                                           title.position = "top",
+                                           label.position = "bottom",
+                                           nrow = 1,
+                                           keywidth = .5,
                                            title = "linker length (PEG units)")) +
   theme(plot.background = element_blank(), # need for transparent background
         legend.title = element_text(size = 10), # reinstate legend title bc theme_prism removes
+        # legend.position = "bottom",
         strip.text.x = element_text(size = 14)) + # size facet labels
-  labs(x = "CellTiter-Glo EC50 (nM) [more potent ->]",
-       y = "SelectScreen EC50  (nM) [more potent ->]",
+  labs(y = "CellTiter-Glo EC50 (nM)",
+       x = "SelectScreen EC50  (nM)",
        title = str_wrap("PonatiLink-2 cell-based vs. biochemical potency", width = 70))
 ggsave(str_glue("output/EC50_assays.{plot_type}"),
        bg = "transparent",
-       width = 9,
+       width = 10,
        height = 6)
-
