@@ -51,6 +51,10 @@ ggsave(str_glue("output/EC50_points.{plot_type}"),
           bg = "transparent",
           width = 8,
           height = 6)
+# calculate linker length scale parameters--------------------------------------
+linker_min <- min(linker_data$linker_length)
+linker_max <- max(linker_data$linker_length)
+linker_seq <- seq(linker_min, linker_max, 2)
 # plot ECs by linker length-----------------------------------------------------
 EC_data %>%
   filter(linker_length > 0) %>% # only plot compounds with linkers
@@ -61,7 +65,7 @@ EC_data %>%
   theme_prism() + # make it look fancy like prism
   scale_x_continuous(
                      guide = "prism_offset_minor", # end at last tick
-                     breaks = seq(11,23,2)) + # manual x ticks
+                     breaks = linker_seq) + # manual x ticks
   scale_y_continuous(trans = c("log10", "reverse"),
                      guide = "prism_offset_minor") +
   scale_color_manual(values = variant_colors) +
@@ -77,10 +81,6 @@ ggsave(str_glue("output/EC50_linker.{plot_type}"),
         bg = "transparent",
        width = 8,
        height = 4)
-# prepare data to plot ECs across assays----------------------------------------
-linker_min <- min(linker_data$linker_length)
-linker_max <- max(linker_data$linker_length)
-linker_seq <- seq(linker_min, linker_max, 2)
 # plot ECs across assays--------------------------------------------------------
 EC_data %>%
   # pivot data so that EC50s from each assay associate with the same linker/variant combo
