@@ -52,7 +52,10 @@ ggsave(str_glue("output/EC50_points.{plot_type}"),
           width = 8,
           height = 6)
 # calculate linker length scale parameters--------------------------------------
-linkers <- unique(as.numeric(linker_data$linker_length))
+linkers <- EC_data %>%
+  filter(linker_length > 0) %>%
+  distinct(linker_length) %>%
+  pull(linker_length)
 linker_min <- min(linkers)
 linker_max <- max(linkers)
 linker_seq <- seq(linker_min, linker_max, 2)
@@ -95,15 +98,17 @@ EC_data %>%
   theme(panel.spacing = unit(.5, "inches")) + # spacing between facets
   # log10 and reverse both axes for intuitive potency direction
   scale_x_continuous(trans = c("log10", "reverse"),
+                     expand = expansion(mult = .1),
                      # breaks = c(1.5, 1, .5)
                      ) +
   scale_y_continuous(trans = c("log10", "reverse"),
+                     expand = expansion(mult = .1),
                      # limits = c(3, 1),
                      # breaks = c(3, 2, 1)
                      ) +
   coord_fixed() + # even coordinate spacing on both axes
   # geom_path(color = "gray", linewidth = 1) + # path between points
-  geom_point(aes(size = linker_length, color = linker_length)) +
+  geom_point(aes(size = linker_length, color = linker_length), alpha = 0.9) +
   # manual limits, breaks and labels for a unified linker length legend
   scale_size_continuous(range = c(3,7),
                         limits = c(linker_min, linker_max),
@@ -116,7 +121,7 @@ EC_data %>%
                                              nrow = 1,
                                              keywidth = .5,
                                              title = "linker length (PEG units)"),) +
-  scale_color_viridis(option = "viridis",
+  scale_color_viridis(option = "viridis", # default viridis color scale
                       begin = 1, end = 0,
                       limits = c(linker_min, linker_max),
                       breaks = linkers,
@@ -138,4 +143,4 @@ EC_data %>%
 ggsave(str_glue("output/EC50_assays.{plot_type}"),
        bg = "transparent",
        width = 10,
-       height = 6)
+       height = 5)
