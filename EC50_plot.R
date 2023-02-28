@@ -19,44 +19,29 @@ plot_type <- "pdf"
 # choose and order compounds and targets to plot
 source("compounds.R")
 source("targets.R")
-# helper function to find factor levels to match the levels of target
-get_target_levels <- function(col){
-  num_col <- EC_data %>%
-    select(col) %>%
-    distinct() %>%
-    nrow()
-    #nrow(distinct(select(EC_data, col)))
-}
+source("variants.R")
 EC_data <- read_csv(input_filename) %>%
   mutate(linker_length = as.numeric(linker_length)) %>%
   mutate(EC50_nM = as.numeric(EC50_nM)) %>%
-  # filter for desired compounds
+  # filter for desired compounds, targets and target variants
   filter(compound %in% compounds) %>%
-  # filter for desired compounds
   filter(target %in% targets) %>%
+  filter(variant %in% variants) %>%
   mutate(compound = fct_relevel(compound, compounds)) %>% # order compounds by list
   mutate(target = fct_relevel(target, targets)) %>% # order targets by list
-  #todo: relevel Abl by target levels
-  # mutate(Abl = fct_relevel(Abl, get_target_levels(Abl))) $>$
+  mutate(variant = fct_relevel(variant, variants)) %>% # order variants by list
   mutate(neglog10EC50_nM = -log10(EC50_nM))
-# set factors so things get plotted and colored in input order
-Abl_factors <- distinct(EC_data, Abl)$Abl
-EC_data <- EC_data %>%
-  mutate(Abl = fct_relevel(Abl, Abl_factors))
 # plot ECs in points---------------------------------------------------------------
 EC_data %>%
   ggplot(aes(x = compound, y = EC50_nM)) +
-  geom_point(aes(shape = assay, color = Abl), size = 4, alpha = 1) +
+  geom_point(aes(shape = assay, color = variant), size = 4, alpha = 1) +
   scale_shape(labels = c("CellTiter-Glo, K562", "SelectScreen, Abl1"),
               guide = guide_legend(order = 1)) + # force to top of legend
   scale_x_discrete(guide = guide_axis(angle = -90)) +
   # -log10 transform to show most potent on top
   scale_y_continuous(trans = c("log10","reverse")) +
-  scale_color_manual(
-                     values = c("black","red3"),
-                     labels = c("Abl wt", "Abl T315I")) +
-                     # values = c("black","red3","blue2"),
-                     # labels = c("Abl wt", "Abl T315I", "Abl V468F")) +
+  scale_color_manual(values = c("black","red3","blue2"),
+                     labels = c("Abl wt", "Abl T315I", "Abl V468F")) +
   theme_prism() + # make it look fancy like prism
   labs(x = "compound",
        y = "EC50 (nM) [more potent ->]",
@@ -70,7 +55,7 @@ ggsave(str_glue("output/EC50_points.{plot_type}"),
 EC_data %>%
   filter(linker_length > 0) %>% # only plot compounds with linkers
   ggplot(aes(x = linker_length, y = EC50_nM,
-             shape = assay, color = Abl)) +
+             shape = assay, color = variant)) +
   scale_shape(labels = c("CellTiter-Glo, K562", "SelectScreen, Abl1"),
               guide = guide_legend(order = 1)) + # force to top of legend
   theme_prism() + # make it look fancy like prism
@@ -79,11 +64,8 @@ EC_data %>%
                      breaks = seq(11,23,2)) + # manual x ticks
   scale_y_continuous(trans = c("log10", "reverse"),
                      guide = "prism_offset_minor") +
-  scale_color_manual(
-                     values = c("black","red3"),
-                     labels = c("Abl wt", "Abl T315I")) +
-                     # values = c("black","red3","blue2"),
-                     # labels = c("Abl wt", "Abl T315I", "Abl V468F")) +
+  scale_color_manual(values = c("black","red3","blue2"),
+                     labels = c("Abl wt", "Abl T315I", "Abl V468F")) +
   #scale_color_viridis(discrete = TRUE, begin = 0.3, end = 0.8) +
   # remove placeholder shape from color legend with 32, the nonshape
   guides(color=guide_legend(override.aes=list(shape=32))) +
@@ -99,8 +81,8 @@ ggsave(str_glue("output/EC50_linker.{plot_type}"),
        height = 4)
 # prepare data to plot ECs across assays----------------------------------------
 linker_data <- EC_data %>%
-  pivot_wider(names_from = assay, values_from = EC50_nM, id_cols = c(linker_length, Abl)) %>%
-  mutate(Abl = recode(Abl, "wt" = "Abl wt", "T315I" = "Abl T315I")) %>%
+  pivot_wider(names_from = assay, values_from = EC50_nM, id_cols = c(linker_length, variant)) %>%
+  mutate(variant = recode(variant, "wt" = "Abl wt", "T315I" = "Abl T315I")) %>%
   filter(linker_length > 0) # only plot compounds with linkers
 linker_min <- min(linker_data$linker_length)
 linker_max <- max(linker_data$linker_length)
@@ -109,7 +91,7 @@ linker_seq <- seq(linker_min, linker_max, 2)
 linker_data %>%
   ggplot(aes(x = CTG, y = SelectScreen)) +
   theme_prism() + # make it look fancy like prism
-  lemon::facet_rep_wrap(vars(Abl), repeat.tick.labels = "left") + # repeat y axis
+  lemon::facet_rep_wrap(vars(variant), repeat.tick.labels = "left") + # repeat y axis
   theme(panel.spacing = unit(.5, "inches")) +
   scale_x_continuous(trans = c("log10", "reverse")) +
   scale_y_continuous(trans = c("log10", "reverse"),
