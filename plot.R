@@ -130,6 +130,7 @@ plate_summarize <- function(x){
 plot_global <- function(plot){
   plot +
     scale_x_continuous(guide = "prism_offset_minor", # end at last tick
+                       breaks = breaks_width(1),
                        minor_breaks = minor_x) + # manual minor ticks
     scale_y_continuous(guide = "prism_offset",  # end at last tick
                        breaks = c(0,25,50,75,100)) + # manual y axis ticks
