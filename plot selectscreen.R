@@ -78,19 +78,7 @@ plate_summarize <- function(x){
   )
 }
 # helper function to add ggplot objects common to all plots--------------------
-plot_global <- function(plot){
-  plot +
-    scale_x_continuous(guide = "prism_offset_minor", # end at last tick
-                       minor_breaks = minor_x) + # manual minor ticks
-    scale_y_continuous(guide = "prism_offset",  # end at last tick
-                       breaks = c(0,25,50,75,100)) + # manual y axis ticks
-    coord_cartesian(xlim = x_limits, # set x axis zoom from global values
-                    ylim = c(0,NA)) + # set y axis zoom locally
-    theme_prism() + # make it look fancy like prism
-    theme(plot.background = element_blank()) + # need for transparent background
-    labs(x = "log [compound] (M)",
-         y = "kinase activity (%)")
-}
+source("plot_global.R")
 # helper function to plot one compound----------------------------------------
 plot_compound <- function(cpd){
   plate_summary <- plate_data %>%
@@ -109,7 +97,8 @@ plot_compound <- function(cpd){
     theme(aspect.ratio = 1) +
     scale_color_viridis(discrete = TRUE, begin = 1, end = 0) +
     # scale_color_manual(values = c("black","darkred")) +
-    labs(title = cpd)
+    labs(title = cpd,
+         y = "kinase activity (%)")
 }
 # plot data for each compound separately----------------------------------------
 for (cpd in all_compounds){
@@ -156,7 +145,8 @@ for (k in all_targets){
     plot_global() +
     #scale_color_grey(start = grey_start, end = grey_end) +
     scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_start, end = viridis_end) +
-    labs(title = k)
+    labs(title = k,
+         y = "kinase activity (%)")
   save_plot(str_glue("output/{k}.{plot_type}"))
 }
 # plot data for all targets at once-----------------------------------------
@@ -172,5 +162,6 @@ plate_summary <- plate_data %>%
               se = FALSE, linewidth = 1, alpha = alpha_val)} %>%
   plot_global() +
   scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_start, end = viridis_end) +
-  labs(title = "All data")
+  labs(title = "All data",
+       y = "kinase activity (%)")
 save_plot(str_glue("output/all_data.{plot_type}"))
