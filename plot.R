@@ -163,7 +163,7 @@ plot_compound <- function(cpd){
     plate_summarize()
   # bracket ggplot so it can be piped to helper function
   {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = target)) +
-      geom_point() +
+      geom_point(shape = target) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
       # use drm method from drc package to fit dose response curve
