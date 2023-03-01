@@ -50,7 +50,7 @@ EC_summary <- plate_data %>%
   )
 write_csv(EC_summary, "output/EC_summary_selectscreen.csv")
 # generate global parameters for all plots------------------------------------------
-pt_size = 2 # size for all geom_point
+pt_size = 3 # size for all geom_point
 all_compounds <- distinct(plate_data["compound"])$compound
 all_targets <- distinct(plate_data["target"])$target
 # find x-axis min/max values for consistent zoom window between all plots
@@ -74,7 +74,7 @@ plate_summarize <- function(x){
             sem = sd(activity, na.rm = TRUE)/sqrt(n()),
             # get mean normalized readout value for plotting
             mean_read = mean(activity),
-            w = 0.06 * n() # necessary for consistent error bar widths across plots
+            w = 0.12 * n()
   )
 }
 # helper function to add ggplot objects common to all plots--------------------
@@ -86,7 +86,7 @@ plot_compound <- function(cpd){
     group_by(target, log.conc) %>%  # get set of replicates for each condition
     plate_summarize()
   # bracket ggplot so it can be piped to helper function
-  {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = target)) +
+  {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = target, shape = target)) +
       geom_point(size = pt_size) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
