@@ -123,7 +123,7 @@ save_plot(str_glue("output/compound_facets.{plot_type}"), ncol = cols, nrow = ro
 # set color parameters for overlaid plots--------------------------------------
 alpha_val <- 1
 color_scale <- "viridis"
-viridis_start <- .95
+viridis_start <- 1
 viridis_end <- 0
 grey_start <- .7
 grey_end <- 0
@@ -144,7 +144,7 @@ for (k in all_targets){
                 se = FALSE, linewidth = 1, alpha = alpha_val)} %>%
     plot_global() +
     #scale_color_grey(start = grey_start, end = grey_end) +
-    scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_start, end = viridis_end) +
+    scale_color_viridis(option = "viridis", discrete = TRUE, begin = viridis_start, end = viridis_end) +
     labs(title = k,
          y = "kinase activity (%)")
   save_plot(str_glue("output/{k}.{plot_type}"))
