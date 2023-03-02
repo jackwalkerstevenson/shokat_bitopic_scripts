@@ -138,7 +138,7 @@ EC_data %>%
         # legend.position = "bottom",
         strip.text.x = element_text(size = 14)) + # size facet labels
   labs(y = "CellTiter-Glo EC50 (nM)",
-       x = "SelectScreen EC50  (nM)",
+       x = "SelectScreen EC50 (nM)",
        title = str_wrap("PonatiLink-2 cell-based vs. biochemical potency", width = 70))
 ggsave(str_glue("output/EC50_assays.{plot_type}"),
        bg = "transparent",
