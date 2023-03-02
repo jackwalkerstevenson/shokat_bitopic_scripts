@@ -130,7 +130,7 @@ plate_summarize <- function(x){
 plot_global <- function(plot){
   plot +
     scale_x_continuous(guide = "prism_offset_minor", # end at last tick
-                       breaks = breaks_width(1),
+                       breaks = scales::breaks_width(1),
                        minor_breaks = minor_x) + # manual minor ticks
     scale_y_continuous(guide = "prism_offset",  # end at last tick
                        breaks = c(0,25,50,75,100)) + # manual y axis ticks
@@ -163,7 +163,7 @@ plot_compound <- function(cpd){
     plate_summarize()
   # bracket ggplot so it can be piped to helper function
   {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = target)) +
-      geom_point(shape = target) +
+      geom_point(aes(shape = target)) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
       # use drm method from drc package to fit dose response curve
