@@ -98,6 +98,8 @@ plate_data <- plate_data %>%
   mutate(compound = fct_relevel(compound, compounds)) # compounds in order of input list
 # set default font size for plots
 font_base_size <- 14 # 14 is theme_prism default
+# set default point size for plots
+pt_size = 3
 # helper function for saving plots----------------------------------------------
 scale_facet <- 4.5 # plot width per col/height per row
 legend_pad <- 0.3 # extra width for legend icon
@@ -163,7 +165,7 @@ plot_compound <- function(cpd){
     plate_summarize()
   # bracket ggplot so it can be piped to helper function
   {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = target)) +
-      geom_point(aes(shape = target)) +
+      geom_point(aes(shape = target), size = pt_size) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
       # use drm method from drc package to fit dose response curve
@@ -210,7 +212,7 @@ for (t in targets){
     plate_summarize()
   # bracket ggplot so it can be piped to helper function
   {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = compound)) +
-      geom_point(aes(shape = compound), size = 3) +
+      geom_point(aes(shape = compound), size = pt_size) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
       # use drm method from drc package to fit dose response curve
@@ -228,7 +230,7 @@ plate_summary <- plate_data %>%
   group_by(target, compound, log.conc) %>% # group into replicates for each condition
   plate_summarize()
 {ggplot(plate_summary,aes(x = log.conc, y = mean_read, color = compound)) +
-    geom_point(aes(shape = compound), size = 3) +
+    geom_point(aes(shape = compound), size = pt_size) +
     # error bars = mean plus or minus standard error
     geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
     # use drm method from drc package to fit dose response curve
