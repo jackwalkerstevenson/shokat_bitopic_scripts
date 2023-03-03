@@ -3,7 +3,8 @@ assay_labels <- c(
   "SelectScreen" = "Thermo SelectScreen, Abl1"
 )
 variant_colors <- c(
-  "wt" = "black",
-  "T315I" = "red3",
-  "V468F" = "blue2"
+  "Abl wt" = "black",
+  "Abl T315I" = "red3",
+  "Abl V468F" = "blue2"
 )
+group_name <- "PonatiLink-2"
