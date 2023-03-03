@@ -32,11 +32,11 @@ EC_data <- read_csv(input_filename) %>%
   mutate(target = fct_relevel(target, targets)) %>% # order targets by list
   mutate(variant = fct_relevel(variant, variants)) %>% # order variants by list
   mutate(neglog10EC50_nM = -log10(EC50_nM))
-# plot ECs in points---------------------------------------------------------------
+# plot ECs in points--------- ------------------------------------------------------
 EC_data %>%
   ggplot(aes(x = compound, y = EC50_nM)) +
   geom_point(aes(shape = assay, color = variant), size = 4, alpha = 1) +
-  scale_shape(labels = shape_labels,
+  scale_shape(labels = assay_labels,
               guide = guide_legend(order = 1)) + # force to top of legend
   scale_x_discrete(guide = guide_axis(angle = -90)) +
   # reverse and log10 transform to show most potent on top
@@ -44,7 +44,7 @@ EC_data %>%
   scale_color_manual(values = variant_colors) +
   theme_prism() + # make it look fancy like prism
   labs(x = "compound",
-       y = "EC50 (nM) [more potent ->]",
+       y = "EC50 (nM)",
        title = ("PonatiLink-2 cell-based vs. biochemical potency")) +
   theme(plot.background = element_blank()) # need for transparent background
 ggsave(str_glue("output/EC50_points.{plot_type}"),
@@ -64,7 +64,7 @@ EC_data %>%
   filter(linker_length > 0) %>% # only plot compounds with linkers
   ggplot(aes(x = linker_length, y = EC50_nM,
              shape = assay, color = variant)) +
-  scale_shape(labels = shape_labels,
+  scale_shape(labels = assay_labels,
               guide = guide_legend(order = 1)) + # force to top of legend
   theme_prism() + # make it look fancy like prism
   scale_x_continuous(
@@ -79,7 +79,7 @@ EC_data %>%
   geom_line() +
   theme(plot.background = element_blank()) + # need for transparent background
   labs(x = "linker length (PEG units)",
-       y = "EC50 (nM) [more potent ->]",
+       y = "EC50 (nM)",
        title = "PonatiLink-2 cell-based vs. biochemical potency")
 ggsave(str_glue("output/EC50_linker.{plot_type}"),
         bg = "transparent",
