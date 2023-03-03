@@ -17,10 +17,10 @@ input_filename <- "EC50s.csv"
 dir.create("output/", showWarnings = FALSE)
 plot_type <- "pdf"
 # import and order compounds and targets to plot
-source("compounds.R")
-source("targets.R")
-source("variants.R")
-source("keys.R")
+source("parameters/compounds.R")
+source("parameters/targets.R")
+source("parameters/variants.R")
+source("parameters/keys.R")
 EC_data <- read_csv(input_filename) %>%
   mutate(linker_length = as.numeric(linker_length)) %>%
   mutate(EC50_nM = as.numeric(EC50_nM)) %>%
@@ -45,7 +45,7 @@ EC_data %>%
   theme_prism() + # make it look fancy like prism
   labs(x = "compound",
        y = "EC50 (nM)",
-       title = ("PonatiLink-2 cell-based vs. biochemical potency")) +
+       title = (glue::glue("{group_name} cell-based vs. biochemical potency"))) +
   theme(plot.background = element_blank()) # need for transparent background
 ggsave(str_glue("output/EC50_points.{plot_type}"),
           bg = "transparent",
@@ -80,7 +80,7 @@ EC_data %>%
   theme(plot.background = element_blank()) + # need for transparent background
   labs(x = "linker length (PEG units)",
        y = "EC50 (nM)",
-       title = "PonatiLink-2 cell-based vs. biochemical potency")
+       title = glue::glue("{group_name} cell-based vs. biochemical potency"))
 ggsave(str_glue("output/EC50_linker.{plot_type}"),
         bg = "transparent",
        width = 8,
@@ -139,7 +139,7 @@ EC_data %>%
         strip.text.x = element_text(size = 14)) + # size facet labels
   labs(y = "CellTiter-Glo EC50 (nM)",
        x = "SelectScreen EC50 (nM)",
-       title = str_wrap("PonatiLink-2 cell-based vs. biochemical potency", width = 70))
+       title = str_wrap(glue::glue("{group_name} cell-based vs. biochemical potency"), width = 70))
 ggsave(str_glue("output/EC50_assays.{plot_type}"),
        bg = "transparent",
        width = 10,
