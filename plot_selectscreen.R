@@ -19,8 +19,8 @@ library(assertthat) # for QC assertions
 input_filename <- "ZLYTE_compiled_results_complete.csv"
 plot_type <- "pdf" # file type for saved output plots
 dir.create("output/", showWarnings = FALSE) # silently create output directory
-source("compounds.R")
-source("targets.R")
+source("parameters/compounds.R")
+source("parameters/targets.R")
 # import and tidy data---------------------------------
 # note the order compounds are imported is the order they will be plotted
 plate_data <- read_csv(input_filename) %>%
@@ -87,7 +87,7 @@ plot_compound <- function(cpd){
     plate_summarize()
   # bracket ggplot so it can be piped to helper function
   {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = target)) +
-      geom_point(size = pt_size, shape = target) +
+      geom_point(aes(shape = target), size = pt_size) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
       # use drm method from drc package to fit dose response curve
