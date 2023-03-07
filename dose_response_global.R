@@ -1,4 +1,4 @@
-plot_global <- function(plot){
+dose_response_global <- function(plot, x_limits){
   plot +
     scale_x_continuous(guide = "prism_offset_minor", # end at last tick
                        breaks = scales::breaks_width(1),

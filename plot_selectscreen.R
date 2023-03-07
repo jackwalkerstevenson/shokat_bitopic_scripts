@@ -64,7 +64,7 @@ plate_summarize <- function(x){
   )
 }
 # helper function to add ggplot objects common to all plots--------------------
-source("plot_global.R")
+source("dose_response_global.R")
 # helper function to plot one compound----------------------------------------
 plot_compound <- function(cpd){
   plate_summary <- plate_data %>%
@@ -79,7 +79,7 @@ plot_compound <- function(cpd){
       # use drm method from drc package to fit dose response curve
       geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
                 se = FALSE, linewidth = 1)} %>%
-    plot_global() +
+    dose_response_global(x_limits) +
     theme(aspect.ratio = 1) +
     scale_color_viridis(discrete = TRUE, begin = 1, end = 0) +
     # scale_color_manual(values = c("black","darkred")) +
@@ -128,7 +128,7 @@ for (k in all_targets){
       geom_line(#aes(linetype = compound),
         stat = "smooth", method = "drm", method.args = list(fct = L.4()),
                 se = FALSE, linewidth = 1, alpha = alpha_val)} %>%
-    plot_global() +
+    dose_response_global(x_limits) +
     #scale_color_grey(start = grey_start, end = grey_end) +
     scale_color_viridis(option = "viridis", discrete = TRUE, begin = viridis_start, end = viridis_end) +
     labs(title = k,
@@ -146,7 +146,7 @@ plate_summary <- plate_data %>%
     # use drm method from drc package to fit dose response curve
     geom_line(aes(linetype = target), stat = "smooth", method = "drm", method.args = list(fct = L.4()),
               se = FALSE, linewidth = 1, alpha = alpha_val)} %>%
-  plot_global() +
+  dose_response_global(x_limits) +
   scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_start, end = viridis_end) +
   labs(title = "All data",
        y = "kinase activity (%)")
