@@ -10,7 +10,6 @@
 library(drc)  # for dose response curves
 library(tidyverse) # for tidy data handling
 library(ggprism)  # for pretty prism-like plots
-library(plater)  # for tidy importing of plate data
 library(viridis) # for color schemes
 library(patchwork) # for plot organization
 library(assertthat) # for QC assertions
