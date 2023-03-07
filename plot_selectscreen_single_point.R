@@ -24,23 +24,26 @@ inhibition_summarize <- function(x){
             compound = compound,
             # standard error for error bars = standard deviation / square root of n
             sem = sd(pct_inhibition, na.rm = TRUE)/sqrt(n()),
-            # get mean normalized readout value for plotting
+            # get mean value for plotting
             mean_pct_inhibition = mean(pct_inhibition),
-            w = 0.06 * n()
+            w = 0.12 * n() # error bar width
   )
 }
-# pilot plot--------------------------------------------------------------------
+# aesthetic parameters---------------------------------------------------------
 pt_size = 3 # size for all geom_point
-alpha_val = 0.6
+alpha = 0.7 # opacity for all geom_point and geom_errorbar
+viridis_begin = .9
+viridis_end = 0
+# scatter plot-----------------------------------------------------------------
+source("scatter_plot.R")
+scatter_plot(all_data, plot_name = "single_point_all_targets_scatter",
+             viridis_begin = 0.95)
+# box plot----------------------------------------------------------------------
 all_data %>%
   group_by(compound, target) %>%
   inhibition_summarize() %>%
-ggplot(aes(x = target, color = compound)) +
-  geom_point(aes(y = mean_pct_inhibition), size = pt_size, alpha = alpha_val) +
-  # geom_line(aes(y = mean_pct_inhibition)) +
-  geom_errorbar(aes(ymax = mean_pct_inhibition+sem, ymin = mean_pct_inhibition-sem, width = w), alpha = alpha_val) +
-  scale_color_viridis(discrete = TRUE, begin = .9, end = 0) +
-  guides(color = guide_legend(override.aes = list(alpha = 1))) +
+  ggplot(aes(x = target)) +
+  geom_boxplot(aes(y = mean_pct_inhibition)) +
   theme_prism() +
   # rotated, right-justified x labels
   theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
@@ -48,4 +51,5 @@ ggplot(aes(x = target, color = compound)) +
        caption = "Note: concentrations not equal between kinases",
        x = "target kinase",
        y = "percent inhibition")
-  
+ggsave(str_glue("output/single_point_all_targets_boxplot.{plot_type}"),
+       bg = "transparent", width = 6, height = 7)
