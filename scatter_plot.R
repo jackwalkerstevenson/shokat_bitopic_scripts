@@ -1,4 +1,5 @@
-scatter_plot <- function(data, pt_size = 3, alpha = 0.7,
+scatter_plot <- function(data,
+                         pt_size = 3, alpha = 0.7, bar_height = 1,
                          viridis_begin = 1, viridis_end = 0,
                          width = 7, height = 7, dodge_width = .2,
                          plot_name = "scatter_plot"){
@@ -11,7 +12,7 @@ scatter_plot <- function(data, pt_size = 3, alpha = 0.7,
     # geom_line(aes(x = mean_pct_inhibition)) +
     geom_errorbarh(aes(xmax = mean_pct_inhibition+sem,
                        xmin = mean_pct_inhibition-sem,
-                       height = 1),
+                       height = bar_height),
                        position = position_dodge(dodge_width),
                   alpha = alpha) +
     scale_color_viridis(discrete = TRUE, begin = viridis_begin, end = viridis_end) +
