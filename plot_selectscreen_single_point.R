@@ -33,7 +33,7 @@ text_factor <- font_base_size / 130 # assume font base size 14
 # scatter plot-----------------------------------------------------------------
 source("scatter_plot.R")
 scatter_plot(all_data, plot_name = "single_point_all_targets_scatter",
-             viridis_begin = 0.95, width = 12, height = 9)
+             viridis_begin = 0.95, width = 10, height = 9, pt_size = 4)
 all_targets <- distinct(all_data["target"])$target
 for(t in all_targets){
   text_width <- text_factor * str_length(t)
