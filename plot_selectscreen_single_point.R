@@ -24,7 +24,8 @@ inhibition_summarize <- function(x){
             # standard error for error bars = standard deviation / square root of n
             sem = sd(pct_inhibition, na.rm = TRUE)/sqrt(n()),
             # get mean value for plotting
-            mean_pct_inhibition = mean(pct_inhibition)
+            mean_pct_inhibition = mean(pct_inhibition),
+            bar_size = .1 * n()
   )
 }
 # aesthetic parameters---------------------------------------------------------
@@ -41,6 +42,6 @@ for(t in all_targets){
   all_data %>% filter(target == t) %>%
     scatter_plot(plot_name = str_glue("target_scatter_plot_{t}"),
                  width = 7 + text_width, height = 3,
-                 pt_size = 5, alpha = 0.7, bar_height = 0.5,
+                 pt_size = 5, alpha = 0.7,
                  viridis_begin = 0.95)
 }
