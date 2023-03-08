@@ -10,6 +10,7 @@ library(tidyverse) # for tidy data handling
 library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
 library(assertthat) # for QC assertions
+options(dplyr.summarize.inform = FALSE)
 # set global variables----------------------------------------------------------
 input_filename <- "ZLYTE_compiled_results_single_point.csv"
 plot_type <- "pdf" # file type for saved output plots
@@ -20,21 +21,25 @@ source("import_selectscreen.R")
 all_data <- import_selectscreen(input_filename, compounds)
 # helper summary function-------------------------------------------------------
 inhibition_summarize <- function(x){
-  summarize(x,
-            # standard error for error bars = standard deviation / square root of n
-            sem = sd(pct_inhibition, na.rm = TRUE)/sqrt(n()),
-            # get mean value for plotting
-            mean_pct_inhibition = mean(pct_inhibition),
-            bar_size = .1 * n()
-  )
-}
+  x %>% group_by(target) %>%
+    summarize(across(c(compound, pct_inhibition)), # don't drop nongroup variables
+              # scale error bars by group size: dodge issue workaround
+              bar_size = .1 * n()) %>%
+    group_by(target, compound) %>%
+    summarize(bar_size, # don't drop nongroup variables
+      # standard error for error bars = standard deviation / square root of n
+      sem = sd(pct_inhibition, na.rm = TRUE)/sqrt(n()),
+      # get mean value for plotting
+      mean_pct_inhibition = mean(pct_inhibition),
+  )}
 # aesthetic parameters---------------------------------------------------------
 font_base_size <- 14
 text_factor <- font_base_size / 130 # assume font base size 14
 # scatter plot-----------------------------------------------------------------
 source("scatter_plot.R")
 scatter_plot(all_data, plot_name = "single_point_all_targets_scatter",
-             viridis_begin = 0.95, width = 10, height = 9, pt_size = 4)
+             viridis_begin = 0.95, width = 10, height = 9, pt_size = 4, dodge_width = .2)
+# multiple scatter plots---------------------------------
 all_targets <- distinct(all_data["target"])$target
 for(t in all_targets){
   text_width <- text_factor * str_length(t)
