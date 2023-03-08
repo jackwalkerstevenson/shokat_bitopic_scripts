@@ -21,35 +21,26 @@ all_data <- import_selectscreen(input_filename, compounds)
 # helper summary function-------------------------------------------------------
 inhibition_summarize <- function(x){
   summarize(x,
-            compound = compound,
             # standard error for error bars = standard deviation / square root of n
             sem = sd(pct_inhibition, na.rm = TRUE)/sqrt(n()),
             # get mean value for plotting
-            mean_pct_inhibition = mean(pct_inhibition),
-            w = 0.12 * n() # error bar width
+            mean_pct_inhibition = mean(pct_inhibition)
   )
 }
 # aesthetic parameters---------------------------------------------------------
-pt_size = 3 # size for all geom_point
-alpha = 0.7 # opacity for all geom_point and geom_errorbar
-viridis_begin = .9
-viridis_end = 0
+font_base_size <- 14
+text_factor <- font_base_size / 130 # assume font base size 14
 # scatter plot-----------------------------------------------------------------
 source("scatter_plot.R")
 scatter_plot(all_data, plot_name = "single_point_all_targets_scatter",
-             viridis_begin = 0.95)
-# box plot----------------------------------------------------------------------
-all_data %>%
-  group_by(compound, target) %>%
-  inhibition_summarize() %>%
-  ggplot(aes(x = target)) +
-  geom_boxplot(aes(y = mean_pct_inhibition)) +
-  theme_prism() +
-  # rotated, right-justified x labels
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  labs(title = "Single-point SelectScreen inhibition",
-       caption = "Note: concentrations not equal between kinases",
-       x = "target kinase",
-       y = "percent inhibition")
-ggsave(str_glue("output/single_point_all_targets_boxplot.{plot_type}"),
-       bg = "transparent", width = 6, height = 7)
+             viridis_begin = 0.95, width = 12, height = 9)
+all_targets <- distinct(all_data["target"])$target
+for(t in all_targets){
+  text_width <- text_factor * str_length(t)
+  print(str_glue("plotting single target {t}"))
+  all_data %>% filter(target == t) %>%
+    scatter_plot(plot_name = str_glue("target_scatter_plot_{t}"),
+                 width = 7 + text_width, height = 3,
+                 pt_size = 5, alpha = 0.7, bar_height = 0.5,
+                 viridis_begin = 0.95)
+}
