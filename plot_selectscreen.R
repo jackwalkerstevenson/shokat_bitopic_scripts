@@ -13,7 +13,7 @@ library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
 library(patchwork) # for plot organization
 library(assertthat) # for QC assertions
-
+options(dplyr.summarise.inform = FALSE)
 # set global variables---------------------------------------------------------
 input_filename <- "ZLYTE_compiled_results_complete.csv"
 plot_type <- "pdf" # file type for saved output plots
