@@ -10,7 +10,7 @@ library(tidyverse) # for tidy data handling
 library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
 library(assertthat) # for QC assertions
-options(dplyr.summarize.inform = FALSE)
+options(dplyr.summarise.inform = FALSE)
 # set global variables----------------------------------------------------------
 input_filename <- "ZLYTE_compiled_results_single_point.csv"
 plot_type <- "pdf" # file type for saved output plots
@@ -38,7 +38,7 @@ text_factor <- font_base_size / 130 # assume font base size 14
 # scatter plot-----------------------------------------------------------------
 source("scatter_plot.R")
 scatter_plot(all_data, plot_name = "single_point_all_targets_scatter",
-             viridis_begin = 0.95, width = 10, height = 9, pt_size = 4, dodge_width = .2)
+             viridis_begin = 0.95, width = 10, height = 9, pt_size = 4)
 # multiple scatter plots---------------------------------
 all_targets <- distinct(all_data["target"])$target
 for(t in all_targets){
