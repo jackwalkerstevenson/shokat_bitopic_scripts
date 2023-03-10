@@ -1,7 +1,7 @@
 scatter_plot <- function(data,
                          pt_size = 3, alpha = 0.7,
                          viridis_begin = 1, viridis_end = 0,
-                         width = 7, height = 7, dodge_width = .2,
+                         width = 7, height = 7, dodge_width = -.2,
                          plot_name = "scatter_plot"){
   data %>%
     inhibition_summarize() %>%
