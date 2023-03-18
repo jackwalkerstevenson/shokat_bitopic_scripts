@@ -30,9 +30,9 @@ source("get_EC.R")
 EC_summary <- plate_data %>%
   group_by(compound, target) %>%
   summarize(
-    EC50_nM = 10^get_EC(plate_data, compound, target, 50) * 1e9, # convert M to nM
+    EC50_nM = get_EC_nM(plate_data, compound, target, 50), # convert M to nM
     # for negative-response data like this, the EC75 is the drop to 25%
-    EC75_nM = 10^get_EC(plate_data, compound, target, 25) * 1e9
+    EC75_nM = get_EC_nM(plate_data, compound, target, 25), # convert M to nM
   )
 write_csv(EC_summary, "output/EC_summary_selectscreen.csv")
 # generate global parameters for all plots------------------------------------------
@@ -77,6 +77,7 @@ plot_compound <- function(cpd){
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
       # use drm method from drc package to fit dose response curve
+      #L.4 method is 4-param logistic curve. The more common LL.4() works on nonlog
       geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
                 se = FALSE, linewidth = 1)} %>%
     dose_response_global(x_limits) +
