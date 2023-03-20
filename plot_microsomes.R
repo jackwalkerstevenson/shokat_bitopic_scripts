@@ -48,7 +48,7 @@ all_data %>%
                     xmax = CLint + CLint_SE),
                 width = .5) +
   # label appropriate subset of data with 'less than' symbol
-  geom_text(data = CLint_less, aes(x = CLint * 2, label = ifelse(CLint_less_than, "<", ""))) +
+  geom_text(data = CLint_less, aes(x = CLint * 2, label = "<")) +
   labs(
     title = str_glue("Clearance rate in {microsome_species} liver microsomes"),
     x = "Intrinsic clearance (µL/min/mg protein)",
@@ -71,7 +71,7 @@ all_data %>%
                     xmax = half_life + half_life_SE),
                 width = .5) +
   # label appropriate subset of data with 'less than' symbol
-  geom_text(data = half_life_greater, aes(x = half_life * 1.1, label = ifelse(half_life_greater_than, ">", ""))) +
+  geom_text(data = half_life_greater, aes(x = half_life * 1.1, label = ">")) +
   labs(
     title = str_glue("Half-life in {microsome_species} liver microsomes"),
     x = "Half life (minutes)",
