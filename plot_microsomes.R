@@ -4,13 +4,21 @@
 #'date: "2023-03-19"
 #' ---
 #'started 2023-03-18
-#'# load required libraries-----------------------------------------------------
+#'expects the following columns:
+#'- 'compound'
+#'- 'species'
+#'- 'half_life' (minutes)
+#'- 'half_life_SE' (standard error)
+#'- 'CLint' (intrinsic clearance, µg/mL/mg protein)
+#'- 'CLint_SE' (standard error)
+
+# load required libraries------------------------------------------------------
 library(tidyverse) # for tidy data handling
 library(scales) # for fancy plotting scales
 library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
 library(assertthat) # for QC assertions
-# set global variables----------------------------------------------------------
+# set global variables---------------------------------------------------------
 input_filename <- "microsomes.xlsx"
 plot_type <- "pdf" # file type for saved output plots
 dir.create("output/", showWarnings = FALSE) # silently create output directory
@@ -20,12 +28,16 @@ all_data <- readxl::read_excel(input_filename, .name_repair = "universal") %>%
   mutate(CLint_less_than = if_else(startsWith(CLint, "<"), TRUE, FALSE)) %>%
   mutate(across(c(half_life, CLint), ~ str_replace_all(.x, "[><]", ""))) %>%
   mutate(across(c(half_life, CLint), as.numeric))
+# check that data is from only one species
+microsome_species <- distinct(all_data["species"])$species %>% str_to_lower()
+assert_that(length(microsome_species) == 1,
+            msg = "Attempting to plot data from multiple species at once")
 # reorder compound factors so they plot in input order
 compounds <- distinct(all_data["compound"])$compound
 all_data <- all_data %>% mutate(compound = fct_relevel(compound, compounds))
 # global axis labels-----------------------------------------------------------
 ylab = "compound"
-# plot CLint------------------------------------------------------------------
+# plot CLint-------------------------------------------------------------------
 CLint_less <- all_data %>% filter(CLint_less_than) # select data to note less than
 all_data %>%
   ggplot(aes(y = compound)) +
@@ -36,9 +48,10 @@ all_data %>%
                     xmin = CLint - CLint_SE,
                     xmax = CLint + CLint_SE),
                 width = .5) +
+  # label appropriate subset of data with 'less than' symbol
   geom_text(data = CLint_less, aes(x = CLint * 2, label = ifelse(CLint_less_than, "<", ""))) +
   labs(
-    title = "Clearance rate in human liver microsomes",
+    title = str_glue("Clearance rate in {microsome_species} liver microsomes"),
     x = "Intrinsic clearance (µg/mL/mg protein)",
     y = ylab) +
   theme_prism() +
@@ -46,7 +59,7 @@ all_data %>%
 
 ggsave(str_glue("output/CLint.{plot_type}"),
        bg = "transparent", width = 7, height = 4)
-# plot half life------------------------------------------------------------
+# plot half life---------------------------------------------------------------
 half_life_greater <- all_data %>% filter(half_life_greater_than) # select data to note greater than
 all_data %>%
   ggplot(aes(y = compound)) +
@@ -58,9 +71,10 @@ all_data %>%
                     xmin = half_life - half_life_SE,
                     xmax = half_life + half_life_SE),
                 width = .5) +
+  # label appropriate subset of data with 'less than' symbol
   geom_text(data = half_life_greater, aes(x = half_life * 1.1, label = ifelse(half_life_greater_than, ">", ""))) +
   labs(
-    title = "Half life in human liver microsomes",
+    title = str_glue("Half life in {microsome_species} liver microsomes"),
     x = "Half life (minutes)",
     y = ylab) +
   theme_prism() +
