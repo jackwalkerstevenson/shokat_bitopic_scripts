@@ -25,6 +25,7 @@ scatter_plot <- function(data,
     theme_prism() +
     # rotated, right-justified x labels
     theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+    theme(plot.background = element_blank()) + # need for transparent background
     labs(title = title,
          caption = caption,
          x = xlab,
