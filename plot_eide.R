@@ -1,5 +1,5 @@
 #' ---
-#'title: "plateplotr Eide"
+#'title: "plot Eide"
 #'author: "Jack Stevenson"
 #'date: "2023-03-19"
 #' ---
@@ -12,7 +12,6 @@ library(tidyverse) # for tidy data handling
 library(scales) # for fancy plotting scales
 library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
-library(assertthat) # for QC assertions
 library(Cairo) # for special characters in legend label
 # set global variables---------------------------------------------------------
 input_filename <- "Eide asciminib potency.xlsx"
