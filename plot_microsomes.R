@@ -16,7 +16,6 @@
 library(tidyverse) # for tidy data handling
 library(scales) # for fancy plotting scales
 library(ggprism)  # for pretty prism-like plots
-library(viridis) # for color schemes
 library(assertthat) # for QC assertions
 # set global variables---------------------------------------------------------
 input_filename <- "microsomes.xlsx"
@@ -52,7 +51,7 @@ all_data %>%
   geom_text(data = CLint_less, aes(x = CLint * 2, label = ifelse(CLint_less_than, "<", ""))) +
   labs(
     title = str_glue("Clearance rate in {microsome_species} liver microsomes"),
-    x = "Intrinsic clearance (µg/mL/mg protein)",
+    x = "Intrinsic clearance (µL/min/mg protein)",
     y = ylab) +
   theme_prism() +
   theme(plot.background = element_blank()) # need for transparent background
@@ -74,7 +73,7 @@ all_data %>%
   # label appropriate subset of data with 'less than' symbol
   geom_text(data = half_life_greater, aes(x = half_life * 1.1, label = ifelse(half_life_greater_than, ">", ""))) +
   labs(
-    title = str_glue("Half life in {microsome_species} liver microsomes"),
+    title = str_glue("Half-life in {microsome_species} liver microsomes"),
     x = "Half life (minutes)",
     y = ylab) +
   theme_prism() +
