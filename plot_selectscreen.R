@@ -33,6 +33,7 @@ EC_summary <- plate_data %>%
     EC50_nM = get_EC_nM(plate_data, compound, target, 50), # convert M to nM
     # for negative-response data like this, the EC75 is the drop to 25%
     EC75_nM = get_EC_nM(plate_data, compound, target, 25), # convert M to nM
+    hill_slope = get_hill_slope(plate_data, compound, target)
   )
 write_csv(EC_summary, "output/EC_summary_selectscreen.csv")
 # generate global parameters for all plots------------------------------------------
