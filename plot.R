@@ -151,7 +151,7 @@ EC_summary <- plate_data %>%
 write_csv(EC_summary, "output/EC_summary.csv")
 # set parameters for compound plots--------------------------------------------
 source("viridis_range.R")
-vr <- viridis_range(length(compounds))
+vr <- viridis_range(length(targets))
 viridis_begin <- vr[1]
 viridis_end <- vr[2]
 # helper function to plot one compound----------------------------------------
@@ -200,11 +200,9 @@ for (cpd in compounds){
 alpha_val <- 1
 color_scale <- "viridis"
 source("viridis_range.R")
-vr <- viridis_range(length(targets))
+vr <- viridis_range(length(compounds))
 viridis_begin <- vr[1]
 viridis_end <- vr[2]
-# viridis_start <- .7
-# viridis_end <- .1
 grey_start <- 0.7
 grey_end <- 0
 # plot data for each target separately------------------------------------------
@@ -226,7 +224,7 @@ for (t in targets){
                 se = FALSE, linewidth = 1, alpha = alpha_val)} %>%
     plot_global() +
     #scale_color_grey(start = grey_start, end = grey_end) +
-    scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_start, end = viridis_end) +
+    scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
     labs(title = t)
   save_plot(str_glue("output/{t}.{plot_type}"), legend_len = longest(compounds))
 }
@@ -242,6 +240,6 @@ plate_summary <- plate_data %>%
     geom_line(aes(linetype = target), stat = "smooth", method = "drm", method.args = list(fct = L.4()),
               se = FALSE, linewidth = 1, alpha = alpha_val)} %>%
   plot_global() +
-  scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_start, end = viridis_end) +
+  scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
   labs(title = "All data")
 save_plot(str_glue("output/all_data.{plot_type}"), legend_len = longest(append(targets, compounds)))
