@@ -48,7 +48,7 @@ make_log_conc <- function(df){
     error = function(e){ # if no conc_uM, try to convert from conc_nM
       df %>% mutate(log.conc = log10(conc_nM/1e9))})}
 # the order of the compound list is the order they will be plotted
-source("compounds.R") # import list of compounds to include in plots
+source("parameters/compounds.R") # import list of compounds to include in plots
 # create input and output directories, since git doesn't track empty directories
 dir.create("input/", showWarnings = FALSE) # do nothing if directory already exists
 dir.create("output/", showWarnings = FALSE)
@@ -100,6 +100,8 @@ plate_data <- plate_data %>%
 font_base_size <- 14 # 14 is theme_prism default
 # set default point size for plots
 pt_size = 3
+# import helper function for summarizing plate data
+source("summarize_activity.R")
 # helper function for saving plots----------------------------------------------
 scale_facet <- 4.5 # plot width per col/height per row
 legend_pad <- 0.3 # extra width for legend icon
@@ -117,16 +119,6 @@ save_plot <- function(filename, legend_len = 0, nrow = 1, ncol = 1, width = 0, h
 longest <- function(strings){
   lengths <- map(strings, nchar)
   lengths[[which.max(lengths)]]
-}
-# helper function for summarizing replicate data for plotting------------------
-plate_summarize <- function(x){
-  summarize(x,
-            # standard error for error bars = standard deviation / square root of n
-            sem = sd(activity, na.rm = TRUE)/sqrt(n()),
-            # get mean normalized readout value for plotting
-            mean_read = mean(activity),
-            w = 0.06 * n() # necessary for consistent error bar widths across plots
-  )
 }
 # helper function to add ggplot objects common to all plots--------------------
 plot_global <- function(plot){
@@ -151,29 +143,36 @@ source("get_hill_slope.R")
 EC_summary <- plate_data %>%
   group_by(compound, target) %>%
   summarize(
-    EC50_nM = 10^get_EC(plate_data, compound, target, 50) * 1e9, # convert M to nM
+    EC50_nM = get_EC_nM(plate_data, compound, target, 50), # convert M to nM
     # for negative-response data like this, the EC75 is the drop to 25%
-    EC75_nM = 10^get_EC(plate_data, compound, target, 25) * 1e9,
+    EC75_nM = get_EC_nM(plate_data, compound, target, 25), # convert M to nM
     hill_slope = get_hill_slope(plate_data, compound, target)
   )
 write_csv(EC_summary, "output/EC_summary.csv")
+# set parameters for compound plots--------------------------------------------
+source("viridis_range.R")
+vr <- viridis_range(length(compounds))
+viridis_begin <- vr[1]
+viridis_end <- vr[2]
 # helper function to plot one compound----------------------------------------
 plot_compound <- function(cpd){
   plate_summary <- plate_data %>%
     filter(compound == cpd) %>% # get data from one compound to work with
     group_by(target, log.conc) %>%  # get set of replicates for each condition
-    plate_summarize()
+    summarize_activity()
   # bracket ggplot so it can be piped to helper function
   {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = target)) +
       geom_point(aes(shape = target), size = pt_size) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
+      # second error bars for 95% CI
+      geom_errorbar(aes(ymin = ymin_activity, ymax = ymax_activity, width = w), alpha = 0.4) +
       # use drm method from drc package to fit dose response curve
       geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
                 se = FALSE, linewidth = 1)} %>%
     plot_global() +
     theme(aspect.ratio = 1) +
-    scale_color_viridis(discrete = TRUE) +
+    scale_color_viridis(discrete = TRUE, begin = viridis_begin, end = viridis_end) +
     #scale_color_manual(values = c("black","darkred")) +
     labs(title = cpd)
 }
@@ -197,24 +196,30 @@ for (cpd in compounds){
 #         plot.background = element_blank(),
 #         legend.text= element_text(face = "bold", size = 16))
 # save_plot(str_glue("output/compound_facets.{plot_type}"), ncol = cols, nrow = rows, legend_len = longest(targets))
-# set color parameters for overlaid plots--------------------------------------
+# set color parameters for target plots--------------------------------------
 alpha_val <- 1
 color_scale <- "viridis"
-viridis_start <- 1
-viridis_end <- .1
+source("viridis_range.R")
+vr <- viridis_range(length(targets))
+viridis_begin <- vr[1]
+viridis_end <- vr[2]
+# viridis_start <- .7
+# viridis_end <- .1
 grey_start <- 0.7
 grey_end <- 0
-# plot data for each target separately-------------------------------------------------
+# plot data for each target separately------------------------------------------
 for (t in targets){
   plate_summary <- plate_data %>%
     filter(target == t) %>%
     group_by(compound, log.conc) %>% # group into replicates for each condition
-    plate_summarize()
+    summarize_activity()
   # bracket ggplot so it can be piped to helper function
   {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = compound)) +
       geom_point(aes(shape = compound), size = pt_size) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
+      # second error bars for 95% CI
+      geom_errorbar(aes(ymin = ymin_activity, ymax = ymax_activity, width = w), alpha = 0.4) +
       # use drm method from drc package to fit dose response curve
       geom_line(#aes(linetype = compound),  # linetype for better grayscale
                 stat = "smooth", method = "drm", method.args = list(fct = L.4()),
@@ -228,7 +233,7 @@ for (t in targets){
 # plot data for all targets at once-----------------------------------------
 plate_summary <- plate_data %>%
   group_by(target, compound, log.conc) %>% # group into replicates for each condition
-  plate_summarize()
+  summarize_activity()
 {ggplot(plate_summary,aes(x = log.conc, y = mean_read, color = compound)) +
     geom_point(aes(shape = compound), size = pt_size) +
     # error bars = mean plus or minus standard error
