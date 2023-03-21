@@ -166,7 +166,7 @@ plot_compound <- function(cpd){
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
       # second error bars for 95% CI
-      geom_errorbar(aes(ymin = ymin_activity, ymax = ymax_activity, width = w), alpha = 0.4) +
+      # geom_errorbar(aes(ymin = ymin_activity, ymax = ymax_activity, width = w), alpha = 0.4) +
       # use drm method from drc package to fit dose response curve
       geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
                 se = FALSE, linewidth = 1)} %>%
@@ -217,7 +217,7 @@ for (t in targets){
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
       # second error bars for 95% CI
-      geom_errorbar(aes(ymin = ymin_activity, ymax = ymax_activity, width = w), alpha = 0.4) +
+      # geom_errorbar(aes(ymin = ymin_activity, ymax = ymax_activity, width = w), alpha = 0.4) +
       # use drm method from drc package to fit dose response curve
       geom_line(#aes(linetype = compound),  # linetype for better grayscale
                 stat = "smooth", method = "drm", method.args = list(fct = L.4()),
