@@ -54,14 +54,18 @@ save_plot <- function(plot, nrow = 1, ncol = 1, ...){
          width = ncol*scale_facet + 2,
          height = nrow*scale_facet, ...)}
 # helper function for summarizing replicate data for plotting------------------
+# source("activity_summarize.R")
 plate_summarize <- function(x){
   summarize(x,
             # standard error for error bars = standard deviation / square root of n
+            confidence_intervals = list(mean_cl_normal(activity) |>
+                                          rename(mean_activity = y, ymin_activity = ymin, ymax_activity = ymax)),
             sem = sd(activity, na.rm = TRUE)/sqrt(n()),
             # get mean normalized readout value for plotting
             mean_read = mean(activity),
-            w = 0.12 * n()
-  )
+            w = 0.12 * n() # necessary for consistent error bar widths across plots
+  ) |>
+    tidyr::unnest(cols = confidence_intervals)
 }
 # helper function to add ggplot objects common to all plots--------------------
 source("dose_response_global.R")
@@ -76,6 +80,8 @@ plot_compound <- function(cpd, viridis_begin = 1, viridis_end = 0){
       geom_point(aes(shape = target), size = pt_size) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
+      # second error bars for 95% CI
+      # geom_errorbar(aes(ymin = ymin_activity, ymax = ymax_activity, width = w), alpha = 0.4) +
       # use drm method from drc package to fit dose response curve
       #L.4 method is 4-param logistic curve. The more common LL.4() works on nonlog
       geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
@@ -128,6 +134,8 @@ for (tgt in all_targets){
       geom_point(aes(shape = compound), size = pt_size) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
+      # second error bars for 95% CI
+      # geom_errorbar(aes(ymin = ymin_activity, ymax = ymax_activity, width = w), alpha = 0.4) +
       # use drm method from drc package to fit dose response curve
       geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
                 se = FALSE, linewidth = 1, alpha = alpha_val)} %>%
@@ -145,6 +153,8 @@ plate_summary <- plate_data %>%
     geom_point(aes(shape = compound), size = pt_size) +
     # error bars = mean plus or minus standard error
     geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
+    # second error bars for 95% CI
+    # geom_errorbar(aes(ymin = ymin_activity, ymax = ymax_activity, width = w), alpha = 0.4) +
     # use drm method from drc package to fit dose response curve
     geom_line(aes(linetype = target), stat = "smooth", method = "drm", method.args = list(fct = L.4()),
               se = FALSE, linewidth = 1, alpha = alpha_val)} %>%
