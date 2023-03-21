@@ -20,13 +20,12 @@ plot_type <- "pdf" # file type for saved output plots
 dir.create("output/", showWarnings = FALSE) # silently create output directory
 source("parameters/compounds.R")
 source("parameters/targets.R")
+source("get_EC.R")
+source("get_hill_slope.R")
 # import and tidy data---------------------------------
 source("import_selectscreen.R")
 plate_data <- import_selectscreen(input_filename, compounds, targets)
 # fit models to output EC values------------------------------------------------
-# seems like you should be able to just pipe group_by into drm(), but nope, so doing this instead
-# helper function for getting EC for one compound, cell line, and EC threshold
-source("get_EC.R")
 EC_summary <- plate_data %>%
   group_by(compound, target) %>%
   summarize(
@@ -67,7 +66,7 @@ plate_summarize <- function(x){
 # helper function to add ggplot objects common to all plots--------------------
 source("dose_response_global.R")
 # helper function to plot one compound----------------------------------------
-plot_compound <- function(cpd){
+plot_compound <- function(cpd, viridis_begin = 1, viridis_end = 0){
   plate_summary <- plate_data %>%
     filter(compound == cpd) %>% # get data from one compound to work with
     group_by(target, log.conc) %>%  # get set of replicates for each condition
@@ -83,14 +82,18 @@ plot_compound <- function(cpd){
                 se = FALSE, linewidth = 1)} %>%
     dose_response_global(x_limits) +
     theme(aspect.ratio = 1) +
-    scale_color_viridis(discrete = TRUE, begin = 1, end = 0) +
+    scale_color_viridis(discrete = TRUE, begin = viridis_begin, end = viridis_end) +
     # scale_color_manual(values = c("black","darkred")) +
     labs(title = cpd,
          y = "kinase activity (%)")
 }
 # plot data for each compound separately----------------------------------------
+source("viridis_range.R")
+vr <- viridis_range(length(targets))
+viridis_begin <- vr[1]
+viridis_end <- vr[2]
 for (cpd in all_compounds){
-  plot_compound(cpd)
+  plot_compound(cpd, viridis_begin, viridis_end)
   # save plot with manually optimized aspect ratio
   save_plot(str_glue("output/{cpd}.{plot_type}"))
 }  
@@ -106,19 +109,18 @@ rows = ceiling(length(compounds)/cols)
 wrap_plots(compound_plots, guides = "collect", ncol = cols, nrow = rows) &
   theme(plot.margin = unit(c(plot_mar,plot_mar,plot_mar,plot_mar), "pt"),
         plot.background = element_blank(),
-        legend.text= element_text(face = "bold", size = 16))
+        legend.text= element_text(face = "bold", size = 12))
 save_plot(str_glue("output/compound_facets.{plot_type}"), ncol = cols, nrow = rows)
-# set color parameters for overlaid plots--------------------------------------
+# set color parameters for target plots--------------------------------------
 alpha_val <- 1
 color_scale <- "viridis"
-viridis_start <- 1
-viridis_end <- 0
-grey_start <- .7
-grey_end <- 0
+vr <- viridis_range(length(compounds))
+viridis_begin <- vr[1]
+viridis_end <- vr[2]
 # plot data for each target separately------------------------------------------
-for (k in all_targets){
+for (tgt in all_targets){
   plate_summary <- plate_data %>%
-    filter(target == k) %>%
+    filter(target == tgt) %>%
     group_by(compound, log.conc) %>% # group into replicates for each condition
     plate_summarize()
   # bracket ggplot so it can be piped to helper function
@@ -127,15 +129,13 @@ for (k in all_targets){
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
       # use drm method from drc package to fit dose response curve
-      geom_line(#aes(linetype = compound),
-        stat = "smooth", method = "drm", method.args = list(fct = L.4()),
+      geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
                 se = FALSE, linewidth = 1, alpha = alpha_val)} %>%
     dose_response_global(x_limits) +
-    #scale_color_grey(start = grey_start, end = grey_end) +
-    scale_color_viridis(option = "viridis", discrete = TRUE, begin = viridis_start, end = viridis_end) +
-    labs(title = k,
+    scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
+    labs(title = tgt,
          y = "kinase activity (%)")
-  save_plot(str_glue("output/{k}.{plot_type}"))
+  save_plot(str_glue("output/{tgt}.{plot_type}"))
 }
 # plot data for all targets at once-----------------------------------------
 plate_summary <- plate_data %>%
@@ -149,7 +149,7 @@ plate_summary <- plate_data %>%
     geom_line(aes(linetype = target), stat = "smooth", method = "drm", method.args = list(fct = L.4()),
               se = FALSE, linewidth = 1, alpha = alpha_val)} %>%
   dose_response_global(x_limits) +
-  scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_start, end = viridis_end) +
+  scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
   labs(title = "All data",
        y = "kinase activity (%)")
 save_plot(str_glue("output/all_data.{plot_type}"))
