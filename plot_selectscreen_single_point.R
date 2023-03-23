@@ -15,17 +15,17 @@ options(dplyr.summarise.inform = FALSE)
 input_filename <- "ZLYTE_compiled_results_single_point.csv"
 plot_type <- "pdf" # file type for saved output plots
 dir.create("output/", showWarnings = FALSE) # silently create output directory
-source("parameters/compounds.R")
+source("parameters/treatments.R")
 source("parameters/targets.R")
 source("import_selectscreen.R")
-all_data <- import_selectscreen(input_filename, compounds)
+all_data <- import_selectscreen(input_filename, treatments)
 # helper summary function-------------------------------------------------------
 inhibition_summarize <- function(x){
   x %>% group_by(target) %>%
-    summarize(across(c(compound, pct_inhibition)), # don't drop nongroup variables
+    summarize(across(c(treatment, pct_inhibition)), # don't drop nongroup variables
               # scale error bars by group size: dodge issue workaround
               bar_size = .1 * n()) %>%
-    group_by(target, compound) %>%
+    group_by(target, treatment) %>%
     summarize(bar_size, # don't drop nongroup variables
       # standard error for error bars = standard deviation / square root of n
       sem = sd(pct_inhibition, na.rm = TRUE)/sqrt(n()),

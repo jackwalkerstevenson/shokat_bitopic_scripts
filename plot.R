@@ -11,20 +11,20 @@
 #' 
 #'Variables expected in input platemaps:
 #' 
-#'- 'compound': name of compound used
+#'- 'treament': name of treatment used
 #'
-#'note: if a dilution series includes a vehicle (zero-concentration) well, it should be labeled as the same compound
+#'note: if a dilution series includes a vehicle (zero-concentration) well, it should be labeled as the same treatment
 #'
-#'- 'conc_nM' or 'conc_uM': concentration of compound used in µM or nM
+#'- 'conc_nM' or 'conc_uM': concentration of treatment used in µM or nM
 #'- 'target': target of treatment, e.g. cell line or purified protein
 #'- 'read_norm': normalized plate reader data (calculated in the platemap)
 #'- 'replicate': replicate of condition (included for possible future QC)
 #'
 #'How to use plateplotr:
 #'
-#'1. Fill in "compounds.R" with the list of compounds you want to plot
+#'1. Fill in "treatments.R" with the list of treatments you want to plot
 #'2. Make a copy of the import platemap for each plate of data you want to import
-#'3. Fill out each platemap with compound(s), target(s) (e.g. cell line) and concentrations used
+#'3. Fill out each platemap with treatment(s), target(s) (e.g. cell line) and concentrations used
 #'4. Copy the corresponding raw plate reader data into each platemap
 #'5. Copy input platemaps into a directory called "input" in the same directory as this script
 #'6. Run plot.R
@@ -47,8 +47,8 @@ make_log_conc <- function(df){
     df %>% mutate(log.conc = log10(conc_uM/1e6))},
     error = function(e){ # if no conc_uM, try to convert from conc_nM
       df %>% mutate(log.conc = log10(conc_nM/1e9))})}
-# the order of the compound list is the order they will be plotted
-source("parameters/compounds.R") # import list of compounds to include in plots
+# the order of the treatment list is the order they will be plotted
+source("parameters/treatments.R") # import list of treatments to include in plots
 # create input and output directories, since git doesn't track empty directories
 dir.create("input/", showWarnings = FALSE) # do nothing if directory already exists
 dir.create("output/", showWarnings = FALSE)
@@ -70,18 +70,20 @@ plate_filenames <- c(list.files(input_directory, pattern = "*.csv")) # get file 
 plate_paths <- paste0(input_directory, plate_filenames) # full file paths
 plate_names <- seq(1,length(plate_filenames))  # create sequential plate IDs
 plate_data <- read_plates(plate_paths, plate_names) %>% # import with plater
-  rename(activity = read_norm) %>%
-  filter(compound != "N/A") %>% # drop empty wells
-  filter(compound %in% compounds) %>% # take only specified compounds
+  rename(activity = read_norm) %>% # seems clearer for now to have "read_norm" in import template
+  # backward compatibility for "compound" in imports. rename if present
+  rename(any_of(c(treatment = "compound"))) %>%
+  filter(treatment != "N/A") %>% # drop empty wells
+  filter(treatment %in% treatments) %>% # take only specified treatments
   make_log_conc %>% # convert conc_nM or conc_uM to log molar concentration
   # drop 0 concs before plotting and curve fitting
   # note this is only OK because normalization happens before import
   filter(log.conc != -Inf)
-# assert that all compounds listed are actually present in imported data
-imported_compounds <- distinct(plate_data["compound"])$compound
-for(compound in compounds){
-  assert_that(compound %in% imported_compounds,
-  msg = glue::glue("compound '{compound}' from the list of compounds to plot was not found in imported data"))
+# assert that all treatments listed are actually present in imported data
+imported_treatments <- distinct(plate_data["treatment"])$treatment
+for(treatment in treatments){
+  assert_that(treatment %in% imported_treatments,
+  msg = glue::glue("treatment '{treatment}' from the list of treatments to plot was not found in imported data"))
 }
 # generate global parameters for all plots------------------------------------------
 targets <- distinct(plate_data["target"])$target
@@ -89,13 +91,13 @@ targets <- distinct(plate_data["target"])$target
 x_min <- floor(min(plate_data$log.conc))
 x_max <- ceiling(max(plate_data$log.conc))
 x_limits <- c(x_min, x_max)
-# create logistic minor breaks for all compounds
+# create logistic minor breaks for all treatments
 minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
 # set factors so targets get plotted and colored in input order
 target_factors <- distinct(plate_data, target)$target # targets in order of appearance in data
 plate_data <- plate_data %>% 
   mutate(target = fct_relevel(target, target_factors)) %>%
-  mutate(compound = fct_relevel(compound, compounds)) # compounds in order of input list
+  mutate(treatment = fct_relevel(treatment, treatments)) # treatments in order of input list
 # set default font size for plots
 font_base_size <- 14 # 14 is theme_prism default
 # set default point size for plots
@@ -137,27 +139,27 @@ plot_global <- function(plot){
 }
 # fit models to output EC values------------------------------------------------
 # seems like you should be able to just pipe group_by into drm(), but nope, so doing this instead
-# helper function for getting EC for one compound, target, and EC threshold
+# helper function for getting EC for one treatment, target, and EC threshold
 source("get_EC.R")
 source("get_hill_slope.R")
 EC_summary <- plate_data %>%
-  group_by(compound, target) %>%
+  group_by(treatment, target) %>%
   summarize(
-    EC50_nM = get_EC_nM(plate_data, compound, target, 50), # convert M to nM
+    EC50_nM = get_EC_nM(plate_data, treatment, target, 50), # convert M to nM
     # for negative-response data like this, the EC75 is the drop to 25%
-    EC75_nM = get_EC_nM(plate_data, compound, target, 25), # convert M to nM
-    hill_slope = get_hill_slope(plate_data, compound, target)
+    EC75_nM = get_EC_nM(plate_data, treatment, target, 25), # convert M to nM
+    hill_slope = get_hill_slope(plate_data, treatment, target)
   )
 write_csv(EC_summary, "output/EC_summary.csv")
-# set parameters for compound plots--------------------------------------------
+# set parameters for treatment plots--------------------------------------------
 source("viridis_range.R")
 vr <- viridis_range(length(targets))
 viridis_begin <- vr[1]
 viridis_end <- vr[2]
-# helper function to plot one compound----------------------------------------
-plot_compound <- function(cpd){
+# helper function to plot one treatment----------------------------------------
+plot_treatment <- function(trt){
   plate_summary <- plate_data %>%
-    filter(compound == cpd) %>% # get data from one compound to work with
+    filter(treatment == trt) %>% # get data from one treatment to work with
     group_by(target, log.conc) %>%  # get set of replicates for each condition
     summarize_activity()
   # bracket ggplot so it can be piped to helper function
@@ -171,36 +173,36 @@ plot_compound <- function(cpd){
       geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
                 se = FALSE, linewidth = 1)} %>%
     plot_global() +
-    theme(aspect.ratio = 1) +
+    # theme(aspect.ratio = 1) +
     scale_color_viridis(discrete = TRUE, begin = viridis_begin, end = viridis_end) +
     #scale_color_manual(values = c("black","darkred")) +
-    labs(title = cpd)
+    labs(title = trt)
 }
-# plot data for each compound separately----------------------------------------
-for (cpd in compounds){
-  plot_compound(cpd)
+# plot data for each treatment separately----------------------------------------
+for (trt in treatments){
+  plot_treatment(trt)
   # save plot with manually optimized aspect ratio
-  save_plot(str_glue("output/{cpd}.{plot_type}"), legend_len = longest(targets))
+  save_plot(str_glue("output/{trt}.{plot_type}"), legend_len = longest(targets))
 }  
-# plot data for all compounds in facets----------------------------------
-# compound_plots = list()
-# for (cpd in compounds){
-#   compound_plots <- append(compound_plots, list(plot_compound(cpd)))
+# plot data for all treatments in facets----------------------------------
+# treatment_plots = list()
+# for (trt in treatments){
+#   treatment_plots <- append(treatment_plots, list(plot_treatment(trt)))
 # }
 # 
 # plot_mar <- 15 # margin between wrapped plots, in points
 # cols = 4
 # rows = 2
-# wrap_plots(compound_plots, guides = "collect", ncol = cols, nrow = rows) &
+# wrap_plots(treatment_plots, guides = "collect", ncol = cols, nrow = rows) &
 #   theme(plot.margin = unit(c(plot_mar,plot_mar,plot_mar,plot_mar), "pt"),
 #         plot.background = element_blank(),
 #         legend.text= element_text(face = "bold", size = 16))
-# save_plot(str_glue("output/compound_facets.{plot_type}"), ncol = cols, nrow = rows, legend_len = longest(targets))
+# save_plot(str_glue("output/treatment_facets.{plot_type}"), ncol = cols, nrow = rows, legend_len = longest(targets))
 # set color parameters for target plots--------------------------------------
 alpha_val <- 1
 color_scale <- "viridis"
 source("viridis_range.R")
-vr <- viridis_range(length(compounds))
+vr <- viridis_range(length(treatments))
 viridis_begin <- vr[1]
 viridis_end <- vr[2]
 grey_start <- 0.7
@@ -209,31 +211,31 @@ grey_end <- 0
 for (t in targets){
   plate_summary <- plate_data %>%
     filter(target == t) %>%
-    group_by(compound, log.conc) %>% # group into replicates for each condition
+    group_by(treatment, log.conc) %>% # group into replicates for each condition
     summarize_activity()
   # bracket ggplot so it can be piped to helper function
-  {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = compound)) +
-      geom_point(aes(shape = compound), size = pt_size) +
+  {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = treatment)) +
+      geom_point(aes(shape = treatment), size = pt_size) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
       # second error bars for 95% CI
       # geom_errorbar(aes(ymin = ymin_activity, ymax = ymax_activity, width = w), alpha = 0.4) +
       # use drm method from drc package to fit dose response curve
-      geom_line(#aes(linetype = compound),  # linetype for better grayscale
+      geom_line(#aes(linetype = treatment),  # linetype for better grayscale
                 stat = "smooth", method = "drm", method.args = list(fct = L.4()),
                 se = FALSE, linewidth = 1, alpha = alpha_val)} %>%
     plot_global() +
     #scale_color_grey(start = grey_start, end = grey_end) +
     scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
     labs(title = t)
-  save_plot(str_glue("output/{t}.{plot_type}"), legend_len = longest(compounds))
+  save_plot(str_glue("output/{t}.{plot_type}"), legend_len = longest(treatments))
 }
 # plot data for all targets at once-----------------------------------------
 plate_summary <- plate_data %>%
-  group_by(target, compound, log.conc) %>% # group into replicates for each condition
+  group_by(target, treatment, log.conc) %>% # group into replicates for each condition
   summarize_activity()
-{ggplot(plate_summary,aes(x = log.conc, y = mean_read, color = compound)) +
-    geom_point(aes(shape = compound), size = pt_size) +
+{ggplot(plate_summary,aes(x = log.conc, y = mean_read, color = treatment)) +
+    geom_point(aes(shape = treatment), size = pt_size) +
     # error bars = mean plus or minus standard error
     geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
     # use drm method from drc package to fit dose response curve
@@ -242,4 +244,4 @@ plate_summary <- plate_data %>%
   plot_global() +
   scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
   labs(title = "All data")
-save_plot(str_glue("output/all_data.{plot_type}"), legend_len = longest(append(targets, compounds)))
+save_plot(str_glue("output/all_data.{plot_type}"), legend_len = longest(append(targets, treatments)))

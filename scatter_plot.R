@@ -1,5 +1,5 @@
 # plot a scatter plot grouped by target
-# each group of compounds is dodged top to bottom for visibility without overlap
+# each group of treatments is dodged top to bottom for visibility without overlap
 scatter_plot <- function(data,
                          pt_size = 3, alpha = 0.7,
                          viridis_begin = 1, viridis_end = 0,
@@ -12,7 +12,7 @@ scatter_plot <- function(data,
                          ){
   data %>%
     inhibition_summarize() %>%
-    ggplot(aes(y = target, color = compound)) +
+    ggplot(aes(y = target, color = treatment)) +
     geom_point(aes(x = mean_pct_inhibition), size = pt_size, alpha = alpha,
                position = position_dodge(width = dodge_width)) +
     geom_errorbar(aes(xmax = mean_pct_inhibition+sem,

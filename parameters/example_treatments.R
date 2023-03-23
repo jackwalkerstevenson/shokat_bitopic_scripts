@@ -1,4 +1,4 @@
-compounds <- c(
+treatments <- c(
   # "ponatinib",
   # "PonatiLink-1",
   "ponatinib + asciminib",
