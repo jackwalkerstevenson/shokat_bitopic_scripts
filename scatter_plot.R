@@ -14,6 +14,7 @@ scatter_plot <- function(data,
     inhibition_summarize() %>%
     ggplot(aes(y = target, color = treatment)) +
     geom_point(aes(x = mean_pct_inhibition), size = pt_size, alpha = alpha,
+               shape = 16, # no border line for pretty circles
                position = position_dodge(width = dodge_width)) +
     geom_errorbar(aes(xmax = mean_pct_inhibition+sem,
                       xmin = mean_pct_inhibition-sem,
