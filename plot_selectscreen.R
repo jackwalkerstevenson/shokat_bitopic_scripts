@@ -96,17 +96,20 @@ plot_treatment <- function(trt, viridis_begin = 1, viridis_end = 0){
 }
 # plot data for each treatment separately----------------------------------------
 vr <- viridis_range(length(targets))
-viridis_begin <- vr[1]
-viridis_end <- vr[2]
+vr_begin <- vr[1]
+vr_end <- vr[2]
 for (trt in all_treatments){
-  plot_treatment(trt, viridis_begin, viridis_end)
+  plot_treatment(trt, viridis_begin = vr_begin, viridis_end = vr_end)
   # save plot with manually optimized aspect ratio
   save_plot(str_glue("output/{trt}.{plot_type}"))
 }  
 # plot data for all treatments in facets----------------------------------
 treatment_plots = list()
 for (trt in all_treatments){
-  treatment_plots <- append(treatment_plots, list(plot_treatment(trt)))
+  treatment_plots <- append(treatment_plots,
+                            list(plot_treatment(trt,
+                                                viridis_begin = vr_begin,
+                                                viridis_end = vr_end)))
 }
 
 plot_mar <- 15 # margin between wrapped plots, in points
