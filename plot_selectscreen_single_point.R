@@ -18,6 +18,8 @@ dir.create("output/", showWarnings = FALSE) # silently create output directory
 source("parameters/treatments.R")
 source("parameters/targets.R")
 source("import_selectscreen.R")
+source("viridis_range.R")
+source("scatter_plot.R")
 all_data <- import_selectscreen(input_filename, treatments)
 # helper summary function-------------------------------------------------------
 inhibition_summarize <- function(x){
@@ -38,13 +40,17 @@ text_factor <- font_base_size / 130 # assume font base size 14
 # global axis labels
 xlab = "percent inhibition"
 ylab = "target kinase"
+vr <- viridis_range(length(treatments))
+vr_begin <- vr[1]
+vr_end <- vr[2]
+print(str_glue("viridis range calculated {vr_begin} to {vr_end}"))
 # scatter plot-----------------------------------------------------------------
-source("scatter_plot.R")
 scatter_plot(all_data, file_name = "single_point_all_targets_scatter",
              title = "Single-point SelectScreen inhibition",
-             xlab = xlab,
-             ylab = ylab,
-             viridis_begin = 0.95, width = 10, height = 9, pt_size = 4)
+             caption = "Note: compound concentrations not equal between kinases",
+             xlab = xlab, ylab = ylab,
+             viridis_begin = vr_begin, viridis_end = vr_end,
+             width = 10, height = 9, pt_size = 4,)
 # multiple scatter plots---------------------------------
 all_targets <- distinct(all_data["target"])$target
 for(t in all_targets){
@@ -54,9 +60,8 @@ for(t in all_targets){
     scatter_plot(file_name = str_glue("target_scatter_plot_{t}"),
                  title = "Single-point SelectScreen inhibition",
                  caption = "Note: compound concentrations not equal between kinases",
-                 xlab = xlab,
-                 ylab = ylab,
+                 xlab = xlab, ylab = ylab,
+                 viridis_begin = vr_begin, viridis_end = vr_end,
                  width = 7 + text_width, height = 3,
-                 pt_size = 5, alpha = 0.7,
-                 viridis_begin = 0.95)
+                 pt_size = 5, alpha = 0.7)
 }

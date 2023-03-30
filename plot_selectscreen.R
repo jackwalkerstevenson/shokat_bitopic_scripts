@@ -22,6 +22,7 @@ source("parameters/treatments.R")
 source("parameters/targets.R")
 source("get_EC.R")
 source("get_hill_slope.R")
+source("viridis_range.R")
 # import and tidy data---------------------------------
 source("import_selectscreen.R")
 plate_data <- import_selectscreen(input_filename, treatments, targets)
@@ -94,7 +95,6 @@ plot_treatment <- function(trt, viridis_begin = 1, viridis_end = 0){
          y = "kinase activity (%)")
 }
 # plot data for each treatment separately----------------------------------------
-source("viridis_range.R")
 vr <- viridis_range(length(targets))
 viridis_begin <- vr[1]
 viridis_end <- vr[2]
