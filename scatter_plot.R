@@ -13,6 +13,7 @@ scatter_plot <- function(data,
   data %>%
     inhibition_summarize() %>%
     ggplot(aes(y = target, color = treatment)) +
+    scale_y_discrete(limits = rev) +
     geom_point(aes(x = mean_pct_inhibition), size = pt_size, alpha = alpha,
                shape = 16, # no border line for pretty circles
                position = position_dodge(width = dodge_width)) +
