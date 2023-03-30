@@ -30,9 +30,9 @@ plate_data <- import_selectscreen(input_filename, treatments, targets)
 EC_summary <- plate_data %>%
   group_by(treatment, target) %>%
   summarize(
-    EC50_nM = get_EC_nM(plate_data, treatment, target, 50), # convert M to nM
+    EC50_nM = get_EC_nM(plate_data, treatment, target, 50),
     # for negative-response data like this, the EC75 is the drop to 25%
-    EC75_nM = get_EC_nM(plate_data, treatment, target, 25), # convert M to nM
+    EC75_nM = get_EC_nM(plate_data, treatment, target, 25),
     hill_slope = get_hill_slope(plate_data, treatment, target)
   )
 write_csv(EC_summary, "output/EC_summary_selectscreen.csv")
