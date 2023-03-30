@@ -19,7 +19,7 @@ source("predict_activity.R")
 dir.create("output/", showWarnings = FALSE) # silently create output directory
 # set global variables---------------------------------------------------------
 source("parameters/treatments.R")
-dose_nM <-  1.1 # dose for which to predict activity of treatments
+dose_nM <-  1 # dose for which to predict activity of treatments
 target <- "ABL1" # target for which to predict activity of treatments
 # vectorized function to predict activity from targets inside mutate()
 predict_targets <- Vectorize(predict_activity, vectorize.args = "trt")
@@ -27,10 +27,11 @@ predict_targets <- Vectorize(predict_activity, vectorize.args = "trt")
 input_filename <- "ZLYTE_compiled_results_complete.csv"
 all_data <- import_selectscreen(input_filename, treatments)
 # predict activity and write output--------------------------------------------
-#treatment_predictions <- map(treatments, wrapper_test)
 output <- tibble(treatment = treatments) |>
-  mutate(prediction_dose = dose_nM,
-         #predicted_activity = predict_activity(all_data, treatment = treatment, target = target, dose_nM = dose_nM))
+  mutate(prediction_dose_nM = dose_nM,
          name_of_treatment = treatment,
-         predicted_activity = predict_targets(all_data, trt = treatment, tgt = target, dose_nM = dose_nM))
-write_csv(output, "output/predicted_treatment_activity.csv")
+         predicted_pct_inhibition = 100 - predict_targets(all_data,
+                                                          trt = treatment,
+                                                          tgt = target,
+                                                          dose_nM = dose_nM))
+write_csv(output, "output/predicted_treatment_inhibition.csv")
