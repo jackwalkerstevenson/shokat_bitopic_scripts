@@ -7,16 +7,21 @@ import_selectscreen <- function(input_filename, treatments, targets, filter = !(
     # wrangle: convert conc to log molar and convert percent inhibition to activity
     mutate(log.conc = log10(Compound_Conc_nM/1e9)) %>%
     mutate(activity = 100 - pct_inhibition)
+  target_factors <- distinct(data, target)$target # targets in order of appearance in data
+  treatment_factors <- distinct(data, treatment)$treatment # treatments in order of appearance in data
+  data <- data %>% 
+    mutate(target = fct_relevel(target, target_factors)) %>%
+    mutate(treatment = fct_relevel(treatment, treatment_factors))
   # filter for desired treatments and targets, if given, and order by given lists
   if(filter){
     if(!missing(treatments)){
-      print("treatments not missing")
+      print("selectscreen import: filtering treatments")
       data <- data %>%
         filter(treatment %in% treatments) %>%
         mutate(treatment = fct_relevel(treatment, treatments))
     }
     if(!missing(targets)){
-      print("targets not missing")
+      print("selectscreen import: filtering targets")
       data <- data %>%
         filter(target %in% targets) %>%
         mutate(target = fct_relevel(target, targets))
