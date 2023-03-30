@@ -20,7 +20,7 @@ dir.create("output/", showWarnings = FALSE) # silently create output directory
 # set global variables---------------------------------------------------------
 source("parameters/treatments.R")
 dose_nM <-  1 # dose for which to predict activity of treatments
-target <- "ABL1" # target for which to predict activity of treatments
+tgt <- "ABL1" # target for which to predict activity of treatments
 # vectorized function to predict activity from targets inside mutate()
 predict_targets <- Vectorize(predict_activity, vectorize.args = "trt")
 # import data------------------------------------------------------------------
@@ -29,9 +29,9 @@ all_data <- import_selectscreen(input_filename, treatments)
 # predict activity and write output--------------------------------------------
 output <- tibble(treatment = treatments) |>
   mutate(prediction_dose_nM = dose_nM,
-         name_of_treatment = treatment,
+         target = tgt,
          predicted_pct_inhibition = 100 - predict_targets(all_data,
                                                           trt = treatment,
-                                                          tgt = target,
+                                                          tgt = tgt,
                                                           dose_nM = dose_nM))
 write_csv(output, "output/predicted_treatment_inhibition.csv")
