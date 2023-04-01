@@ -1,4 +1,4 @@
-# get the drc dose-response model for a combination of treatment and target
+# fit a drc dose-response model for a treatment on a target
 get_drm <- function(data, trt, tgt){
   data_subset <- data %>%
     filter(treatment == trt, target == tgt)
