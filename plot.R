@@ -39,14 +39,9 @@ library(ggprism)  # for pretty prism-like plots
 library(plater)  # for tidy importing of plate data
 library(viridis) # for color schemes
 library(patchwork) # for plot organization
+library(doseplotr) # you bet
 
 # import data---------------------------------
-# helper function for reading concentration from nM or uM input data
-make_log_conc <- function(df){
-  tryCatch({ # try to convert from conc_uM
-    df %>% mutate(log.conc = log10(conc_uM/1e6))},
-    error = function(e){ # if no conc_uM, try to convert from conc_nM
-      df %>% mutate(log.conc = log10(conc_nM/1e9))})}
 # the order of the treatment list is the order they will be plotted
 source("parameters/treatments.R") # import list of treatments to include in plots
 # create input and output directories, since git doesn't track empty directories
