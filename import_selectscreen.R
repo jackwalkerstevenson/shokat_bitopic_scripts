@@ -5,7 +5,7 @@ import_selectscreen <- function(input_filename, treatments, targets, filter = !(
     # tidy by pivoting duplicates to one measurement per row
     pivot_longer(cols = c(pct_inhibition_1, pct_inhibition_2), names_to = NULL, values_to = "pct_inhibition") %>%
     # wrangle: convert conc to log molar and convert percent inhibition to activity
-    mutate(log.conc = log10(Compound_Conc_nM/1e9)) %>%
+    mutate(conc_logM = log10(Compound_Conc_nM/1e9)) %>%
     mutate(activity = 100 - pct_inhibition)
   target_factors <- distinct(data, target)$target # targets in order of appearance in data
   treatment_factors <- distinct(data, treatment)$treatment # treatments in order of appearance in data
