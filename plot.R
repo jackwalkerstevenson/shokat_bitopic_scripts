@@ -11,7 +11,7 @@
 #' 
 #'Variables expected in input platemaps:
 #' 
-#'- 'treament': name of treatment used
+#'- 'treatment': name of treatment used
 #'
 #'note: if a dilution series includes a vehicle (zero-concentration) well, it should be labeled as the same treatment
 #'
