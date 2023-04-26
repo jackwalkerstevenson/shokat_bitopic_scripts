@@ -13,6 +13,7 @@ library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
 library(patchwork) # for plot organization
 library(assertthat) # for QC assertions
+library(doseplotr) # you bet
 options(dplyr.summarise.inform = FALSE)
 # set global variables---------------------------------------------------------
 input_filename <- "ZLYTE_compiled_results_complete.csv"
@@ -22,7 +23,6 @@ source("parameters/treatments.R")
 source("parameters/targets.R")
 source("get_EC.R")
 source("get_hill_slope.R")
-source("viridis_range.R")
 # import and tidy data---------------------------------
 source("import_selectscreen.R")
 plate_data <- import_selectscreen(input_filename, treatments, targets)
@@ -41,9 +41,9 @@ pt_size = 3 # size for all geom_point
 all_treatments <- distinct(plate_data["treatment"])$treatment
 all_targets <- distinct(plate_data["target"])$target
 # find x-axis min/max values for consistent zoom window between all plots
-x_min <- floor(min(plate_data$log.conc))
+x_min <- floor(min(plate_data$conc_logM))
 # x_min <- -10
-x_max <- ceiling(max(plate_data$log.conc))
+x_max <- ceiling(max(plate_data$conc_logM))
 x_limits <- c(x_min, x_max)
 # create logistic minor breaks for all conc plots
 minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
@@ -74,10 +74,10 @@ source("dose_response_global.R")
 plot_treatment <- function(trt, viridis_begin = 1, viridis_end = 0){
   plate_summary <- plate_data %>%
     filter(treatment == trt) %>% # get data from one treatment to work with
-    group_by(target, log.conc) %>%  # get set of replicates for each condition
+    group_by(target, conc_logM) %>%  # get set of replicates for each condition
     plate_summarize()
   # bracket ggplot so it can be piped to helper function
-  {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = target)) +
+  {ggplot(plate_summary, aes(x = conc_logM, y = mean_read, color = target)) +
       geom_point(aes(shape = target), size = pt_size) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
@@ -130,10 +130,10 @@ viridis_end <- vr[2]
 for (tgt in all_targets){
   plate_summary <- plate_data %>%
     filter(target == tgt) %>%
-    group_by(treatment, log.conc) %>% # group into replicates for each condition
+    group_by(treatment, conc_logM) %>% # group into replicates for each condition
     plate_summarize()
   # bracket ggplot so it can be piped to helper function
-  {ggplot(plate_summary, aes(x = log.conc, y = mean_read, color = treatment)) +
+  {ggplot(plate_summary, aes(x = conc_logM, y = mean_read, color = treatment)) +
       geom_point(aes(shape = treatment), size = pt_size) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
@@ -150,9 +150,9 @@ for (tgt in all_targets){
 }
 # plot data for all targets at once-----------------------------------------
 plate_summary <- plate_data %>%
-  group_by(target, treatment, log.conc) %>% # group into replicates for each condition
+  group_by(target, treatment, conc_logM) %>% # group into replicates for each condition
   plate_summarize()
-{ggplot(plate_summary,aes(x = log.conc, y = mean_read, color = treatment)) +
+{ggplot(plate_summary,aes(x = conc_logM, y = mean_read, color = treatment)) +
     geom_point(aes(shape = treatment), size = pt_size) +
     # error bars = mean plus or minus standard error
     geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
