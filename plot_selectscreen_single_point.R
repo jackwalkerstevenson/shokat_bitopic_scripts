@@ -15,7 +15,6 @@ options(dplyr.summarise.inform = FALSE)
 source("parameters/treatments.R")
 source("parameters/targets.R")
 source("import_selectscreen.R")
-source("viridis_range.R")
 source("scatter_plot.R")
 dir.create("output/", showWarnings = FALSE) # silently create output directory
 plot_type <- "pdf" # file type for saved output plots
