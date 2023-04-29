@@ -20,14 +20,15 @@ source("scatter_plot.R")
 dir.create("output/", showWarnings = FALSE) # silently create output directory
 plot_type <- "pdf" # file type for saved output plots
 input_filename <- "ZLYTE_compiled_results_single_point.csv"
-all_data <- import_selectscreen(input_filename, treatments)
+all_data <- import_selectscreen(input_filename, treatments) |> 
+  mutate(target = str_glue("{target} ({Compound_Conc_nM} nM cpd)"))
 # helper summary function-------------------------------------------------------
 inhibition_summarize <- function(x){
-  x %>% group_by(target) %>%
+  x |> group_by(target) |>
     summarize(across(c(treatment, pct_inhibition)), # keep variables not in current group
               # scale error bars by size of target group: workaround for dodge issue
-              bar_size = .1 * n()) %>%
-    group_by(target, treatment) %>%
+              bar_size = .1 * n()) |>
+    group_by(target, treatment) |>
     summarize(bar_size, # keep variable not in current group
       # standard error for error bars = standard deviation / square root of n
       sem = sd(pct_inhibition, na.rm = TRUE)/sqrt(n()),
@@ -56,7 +57,7 @@ all_targets <- distinct(all_data["target"])$target
 for(t in all_targets){
   text_width <- text_factor * str_length(t)
   print(str_glue("plotting single target {t}"))
-  all_data %>% filter(target == t) %>%
+  all_data |> filter(target == t) |>
     scatter_plot(file_name = str_glue("target_scatter_plot_{t}"),
                  title = "Single-point SelectScreen inhibition",
                  caption = "Note: compound concentrations not equal between kinases",
