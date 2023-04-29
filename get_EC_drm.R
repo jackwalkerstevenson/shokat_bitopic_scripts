@@ -1,4 +1,4 @@
-get_EC_nM <- function(data, trt, tgt, EC_threshold){
+get_EC_nM_drm <- function(data, trt, tgt, EC_threshold){
   cpd_data <- data %>%
     filter(treatment == trt, target == tgt)
   # fit 4-param logistic model, then extract EC value
