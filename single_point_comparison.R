@@ -22,7 +22,8 @@ source("parameters/treatments.R")
 dose_nM <-  1 # dose for which to predict activity of treatments
 tgt <- "ABL1" # target for which to predict activity of treatments
 # vectorized function to predict activity from targets inside mutate()
-predict_targets <- Vectorize(predict_activity, vectorize.args = "trt")
+# to do: change this to drda/doseplotr
+predict_targets <- Vectorize(predict_activity_drm, vectorize.args = "trt")
 # import data------------------------------------------------------------------
 input_filename <- "ZLYTE_compiled_results_complete.csv"
 all_data <- import_selectscreen(input_filename, treatments)
