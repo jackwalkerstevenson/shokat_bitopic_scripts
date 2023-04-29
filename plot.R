@@ -133,18 +133,7 @@ plot_global <- function(plot){
          y = "relative cell viability (%)")
 }
 # fit models to output EC values------------------------------------------------
-# seems like you should be able to just pipe group_by into drm(), but nope, so doing this instead
-# helper function for getting EC for one treatment, target, and EC threshold
-source("get_EC.R")
-source("get_hill_slope.R")
-EC_summary <- plate_data %>%
-  group_by(treatment, target) %>%
-  summarize(
-    EC50_nM = get_EC_nM(plate_data, treatment, target, 50), # convert M to nM
-    # for negative-response data like this, the EC75 is the drop to 25%
-    EC75_nM = get_EC_nM(plate_data, treatment, target, 25), # convert M to nM
-    hill_slope = get_hill_slope(plate_data, treatment, target)
-  )
+EC_summary <- summarize_models(plate_data)
 write_csv(EC_summary, "output/EC_summary.csv")
 # set parameters for treatment plots--------------------------------------------
 vr <- viridis_range(length(targets))
