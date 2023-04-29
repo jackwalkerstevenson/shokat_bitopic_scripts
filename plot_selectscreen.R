@@ -27,22 +27,7 @@ source("parameters/targets.R")
 source("import_selectscreen.R")
 plate_data <- import_selectscreen(input_filename, treatments, targets)
 # fit models to output EC values------------------------------------------------
-EC_summary <- plate_data %>%
-  group_by(treatment, target) %>%
-  summarize(
-    # kind of silly to be fitting the whole model 3x. fine for now
-    # EC50_nM = get_EC_nM(plate_data, treatment, target, 50), # old drm version
-    # for negative-response data like this, the EC75 is the drop to 25%
-    # EC75_nM = get_EC_nM(plate_data, treatment, target, 25), # old drm version
-    EC50_nM = plate_data |> filter_trt_tgt(treatment, target) |> get_drda()|>
-      get_EC_nM(50),
-    # doseplotr get_EC_nM() should correctly take 75 for EC75
-    EC75_nM = plate_data |> filter_trt_tgt(treatment, target) |> get_drda() |>
-      get_EC_nM(75),
-    # hill_slope = get_hill_slope(plate_data, treatment, target) # old drm version
-    hill_slope = plate_data |> filter_trt_tgt(treatment, target) |>
-      get_drda() |> get_hill_slope()
-  )
+EC_summary <- summarize_models(plate_data)
 write_csv(EC_summary, "output/EC_summary_selectscreen.csv")
 # generate global parameters for all plots------------------------------------------
 pt_size = 3 # size for all geom_point
