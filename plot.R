@@ -50,11 +50,7 @@ dir.create("output/", showWarnings = FALSE)
 input_directory <- "input/"
 plot_type <- "pdf"
 dir_excel_to_csv(input_directory) # convert input Excel files to csv
-# gather all CSVs in directory and import them
-plate_filenames <- c(list.files(input_directory, pattern = "*.csv")) # get file names
-plate_paths <- paste0(input_directory, plate_filenames) # full file paths
-plate_names <- seq(1,length(plate_filenames))  # create sequential plate IDs
-plate_data <- read_plates(plate_paths, plate_names) %>% # import with plater
+plate_data <- import_plater_CSVs(input_directory) %>% # import CSVs with plater
   rename(activity = read_norm) %>% # seems clearer for now to have "read_norm" in import template
   # backward compatibility for "compound" in imports. rename if present
   rename(any_of(c(treatment = "compound"))) %>%
