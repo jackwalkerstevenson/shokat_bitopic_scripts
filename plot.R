@@ -14,7 +14,7 @@
 #'- 'treatment': name of treatment used
 #'
 #'note: if a dilution series includes a vehicle (zero-concentration) well, it should be labeled as the same treatment
-#'
+#'  
 #'- 'conc_nM' or 'conc_uM': concentration of treatment used in µM or nM
 #'- 'target': target of treatment, e.g. cell line or purified protein
 #'- 'read_norm': normalized plate reader data (calculated in the platemap)
@@ -49,17 +49,7 @@ dir.create("input/", showWarnings = FALSE) # do nothing if directory already exi
 dir.create("output/", showWarnings = FALSE)
 input_directory <- "input/"
 plot_type <- "pdf"
-# get excel filenames that start with an alphanumeric character (no hidden files)
-excel_filenames <- c(list.files(input_directory, pattern = "^[[:alnum:]].*.xls"))
-# convert any excel files to csv so plater can import them
-excel_to_csv <- function(filename){
-  excel_path <- paste0(input_directory, filename) # full file path
-  excel_data <- read_excel(excel_path) # get data from excel file
-  # create a new file path that replaces the excel extension with csv
-  csv_path <- paste0(input_directory, tools::file_path_sans_ext(filename), ".csv")
-  write_csv(excel_data, file = csv_path) # write data to new csv file
-}
-map(excel_filenames, excel_to_csv)
+dir_excel_to_csv(input_directory) # convert input Excel files to csv
 # gather all CSVs in directory and import them
 plate_filenames <- c(list.files(input_directory, pattern = "*.csv")) # get file names
 plate_paths <- paste0(input_directory, plate_filenames) # full file paths
