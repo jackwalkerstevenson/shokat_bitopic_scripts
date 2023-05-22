@@ -1,4 +1,5 @@
 # predict the EC50 of a treatment in selectscreen assuming model parameters
+# created 2023-05-22
 library(dplyr)
 library(doseplotr)
 SS_data <- import_selectscreen("ZLYTE_compiled_results_complete.csv")
