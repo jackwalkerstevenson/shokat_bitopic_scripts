@@ -44,6 +44,7 @@ library(doseplotr) # you bet
 # import data---------------------------------
 # the order of the treatment list is the order they will be plotted
 source("parameters/treatments.R") # import list of treatments to include in plots
+source("parameters/targets.R") # import list of treatments to include in plots
 # create input and output directories, since git doesn't track empty directories
 dir.create("input/", showWarnings = FALSE) # do nothing if directory already exists
 dir.create("output/", showWarnings = FALSE)
@@ -56,6 +57,7 @@ plate_data <- import_plater_CSVs(input_directory) %>% # import CSVs with plater
   rename(any_of(c(treatment = "compound"))) %>%
   filter(treatment != "N/A") %>% # drop empty wells
   filter(treatment %in% treatments) %>% # take only specified treatments
+  filter(target %in% target_list) %>% # take only specified treatments
   make_log_conc %>% # convert conc_nM or conc_uM to log molar concentration
   # drop 0 concs before plotting and curve fitting
   # note this is only OK because normalization happens before import
@@ -115,7 +117,8 @@ plot_global <- function(plot){
                     ylim = c(0,NA)) + # set y axis zoom locally
     theme_prism(base_size = font_base_size) + # make it look fancy like prism
     theme(plot.background = element_blank()) + # need for transparent background
-    labs(x = "log [compound] (M)",
+    # can't figure out how to make 10 subscript and still bold
+    labs(x = "log10[compound] (M)",
          y = "relative cell viability (%)")
 }
 # fit models to output EC values------------------------------------------------
