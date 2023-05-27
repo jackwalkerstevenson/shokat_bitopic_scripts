@@ -50,18 +50,9 @@ dir.create("input/", showWarnings = FALSE) # do nothing if directory already exi
 dir.create("output/", showWarnings = FALSE)
 input_directory <- "input/"
 plot_type <- "pdf"
-dir_excel_to_csv(input_directory) # convert input Excel files to csv
-plate_data <- import_plater_CSVs(input_directory) %>% # import CSVs with plater
-  rename(activity = read_norm) %>% # seems clearer for now to have "read_norm" in import template
-  # backward compatibility for "compound" in imports. rename if present
-  rename(any_of(c(treatment = "compound"))) %>%
-  filter(treatment != "N/A") %>% # drop empty wells
-  filter(treatment %in% treatments) %>% # take only specified treatments
-  filter(target %in% target_list) %>% # take only specified treatments
-  make_log_conc %>% # convert conc_nM or conc_uM to log molar concentration
-  # drop 0 concs before plotting and curve fitting
-  # note this is only OK because normalization happens before import
-  filter(conc_logM != -Inf)
+plate_data <- import_plates(input_directory) |>
+  filter(treatment %in% treatments) |>  # take only specified treatments
+  filter(target %in% target_list) # take only specified treatments
 # assert that all treatments listed are actually present in imported data
 imported_treatments <- distinct(plate_data["treatment"])$treatment
 for(treatment in treatments){
@@ -71,8 +62,8 @@ for(treatment in treatments){
 # generate global parameters for all plots------------------------------------------
 targets <- distinct(plate_data["target"])$target
 # find x-axis min/max values for consistent zoom window between all plots
-x_min <- floor(min(plate_data$conc_logM))
-x_max <- ceiling(max(plate_data$conc_logM))
+x_min <- floor(min(plate_data$log_dose))
+x_max <- ceiling(max(plate_data$log_dose))
 x_limits <- c(x_min, x_max)
 # create logistic minor breaks for all treatments
 minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
@@ -132,10 +123,10 @@ viridis_end <- vr[2]
 plot_treatment <- function(trt){
   plate_summary <- plate_data %>%
     filter(treatment == trt) %>% # get data from one treatment to work with
-    group_by(target, conc_logM) %>%  # get set of replicates for each condition
+    group_by(target, log_dose) %>%  # get set of replicates for each condition
     summarize_activity()
   # bracket ggplot so it can be piped to helper function
-  {ggplot(plate_summary, aes(x = conc_logM, y = mean_read, color = target)) +
+  {ggplot(plate_summary, aes(x = log_dose, y = mean_read, color = target)) +
       geom_point(aes(shape = target), size = pt_size) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
@@ -182,10 +173,10 @@ grey_end <- 0
 for (t in targets){
   plate_summary <- plate_data %>%
     filter(target == t) %>%
-    group_by(treatment, conc_logM) %>% # group into replicates for each condition
+    group_by(treatment, log_dose) %>% # group into replicates for each condition
     summarize_activity()
   # bracket ggplot so it can be piped to helper function
-  {ggplot(plate_summary, aes(x = conc_logM, y = mean_read, color = treatment)) +
+  {ggplot(plate_summary, aes(x = log_dose, y = mean_read, color = treatment)) +
       geom_point(aes(shape = treatment), size = pt_size) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
@@ -203,9 +194,9 @@ for (t in targets){
 }
 # plot data for all targets at once-----------------------------------------
 plate_summary <- plate_data %>%
-  group_by(target, treatment, conc_logM) %>% # group into replicates for each condition
+  group_by(target, treatment, log_dose) %>% # group into replicates for each condition
   summarize_activity()
-{ggplot(plate_summary,aes(x = conc_logM, y = mean_read, color = treatment)) +
+{ggplot(plate_summary,aes(x = log_dose, y = mean_read, color = treatment)) +
     geom_point(aes(shape = treatment), size = pt_size) +
     # error bars = mean plus or minus standard error
     geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
