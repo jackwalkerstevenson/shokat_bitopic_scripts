@@ -24,8 +24,8 @@ source("parameters/targets.R")
 # source("get_EC.R") # replacing with doseplotr
 # source("get_hill_slope.R")
 # import and tidy data---------------------------------
-source("import_selectscreen.R")
-plate_data <- import_selectscreen(input_filename, treatments, targets)
+plate_data <- import_selectscreen(input_filename) |>
+  filter_trt_tgt(treatments, targets)
 # fit models to output EC values------------------------------------------------
 EC_summary <- summarize_models(plate_data)
 write_csv(EC_summary, "output/EC_summary_selectscreen.csv")
