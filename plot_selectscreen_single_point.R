@@ -10,17 +10,19 @@ library(tidyverse) # for tidy data handling
 library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
 library(assertthat) # for QC assertions
+library(doseplotr)
 options(dplyr.summarise.inform = FALSE)
 # set global variables----------------------------------------------------------
 source("parameters/treatments.R")
 source("parameters/targets.R")
-source("import_selectscreen.R")
+# source("import_selectscreen.R")
 source("scatter_plot.R")
 dir.create("output/", showWarnings = FALSE) # silently create output directory
 plot_type <- "pdf" # file type for saved output plots
-input_filename <- "ZLYTE_compiled_results_single_point.csv"
-all_data <- import_selectscreen(input_filename, treatments) |> 
-  mutate(target = str_glue("{target} ({Compound_Conc_nM} nM cpd)"))
+input_filename <- "ZLYTE_single_point.csv"
+all_data <- import_selectscreen(input_filename) |>
+  filter_trt_tgt(trt = treatments, tgt = target_list) |> 
+  mutate(target = str_glue("{target} ({Compound.Conc} nM cpd)"))
 # helper summary function-------------------------------------------------------
 inhibition_summarize <- function(x){
   x |> group_by(target) |>
