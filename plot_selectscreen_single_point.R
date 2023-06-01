@@ -22,7 +22,6 @@ all_data <- import_selectscreen(input_filename) |>
   filter_trt_tgt(trt = treatments)
 data_conc_labeled <- all_data |> 
   mutate(target = str_glue("{target} ({Compound.Conc} nM cpd)"))
-concs <- unique(all_data$Compound.Conc)
 # helper summary function-------------------------------------------------------
 inhibition_summarize <- function(x){
   x |> group_by(target) |>
@@ -35,8 +34,10 @@ inhibition_summarize <- function(x){
       mean_pct_inhibition = mean(pct_inhibition),
     )}
 # table plot--------------------------------------------------------------------
-for(t in treatments){}
-  all_data |> inhibition_summarize() |> 
+for(t in treatments){
+  all_data |>
+    filter(treatment == t) |> 
+    inhibition_summarize() |> 
     ggplot(aes(x = factor(Compound.Conc),
                y = target,
                label = mean_pct_inhibition)) +
@@ -49,8 +50,8 @@ for(t in treatments){}
                      # remove space from bottom of table
                      expand = expansion(mult = c(0, 0))) +
     scale_fill_viridis(option = "viridis",
-                       begin = .2, end = 1) +
-                       # limits = c(-5,100)) +
+                       begin = .2, end = 1,
+                       limits = c(-5,100)) +
     geom_tile(aes(fill = mean_pct_inhibition)) +
     geom_text() +
     labs(x = "[compound] (nM)",
@@ -58,7 +59,9 @@ for(t in treatments){}
          title = str_glue("Single-point potency measurements for {t}"),
          fill = "percent inhibition"
     )
-
+  ggsave(str_glue("output/single_pt_all_targets_all_concs_{t}.pdf"),
+         width = 10, height = 10)
+}
 # aesthetic parameters for scatter plots----------------------------------------
 font_base_size <- 14
 text_factor <- font_base_size / 130 # assume font base size 14
@@ -69,19 +72,24 @@ vr <- viridis_range(length(treatments))
 vr_begin <- vr[1]
 vr_end <- vr[2]
 # scatter plot for all targets for each conc------------------------------------
-for(conc in concs){
-  all_data |> 
-    filter(Compound.Conc == conc) |> 
-    scatter_plot(file_name =
-                   str_glue("single_point_all_targets_scatter_{conc}_nM"),
-                 title = "Single-point SelectScreen inhibition",
-                 caption = "Note: compound concentrations not equal between kinases",
-                 xlab = xlab, ylab = ylab,
-                 viridis_begin = vr_begin, viridis_end = vr_end,
-                 width = 10, height = 9, pt_size = 4,)
+for(t in treatments){
+  trt_data <- all_data |> 
+    filter(treatment == t)
+  trt_concs <- unique(trt_data$Compound.Conc) # list of concs for this treatment
+  for(conc in trt_concs){
+    trt_data |> 
+      filter(Compound.Conc == conc) |> 
+      scatter_plot(file_name =
+                     str_glue("single_pt_all_targets_scatter_{t}_{conc}_nM"),
+                   title = "Single-point SelectScreen inhibition",
+                   # caption = "Note: compound concentrations not equal between kinases",
+                   xlab = xlab, ylab = ylab,
+                   viridis_begin = vr_begin, viridis_end = vr_end,
+                   width = 10, height = 9, pt_size = 4,)
+  }
 }
 # # individual scatter plots by target---------------------------------
-# all_targets <- distinct(all_data["target"])$target
+# targets <- unique(all_data$target)
 # for(t in all_targets){
 #   for(conc in concs){
 #     text_width <- text_factor * str_length(t)
