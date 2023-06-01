@@ -35,10 +35,10 @@ inhibition_summarize <- function(x){
     )}
 # table plot--------------------------------------------------------------------
 for(t in treatments){
-  all_data |>
+  trt_data <- all_data |>
     filter(treatment == t) |> 
-    inhibition_summarize() |> 
-    ggplot(aes(x = factor(Compound.Conc),
+    inhibition_summarize()
+    ggplot(trt_data, aes(x = factor(Compound.Conc),
                y = target,
                label = mean_pct_inhibition)) +
     theme_prism() +
@@ -56,11 +56,41 @@ for(t in treatments){
     geom_text() +
     labs(x = "[compound] (nM)",
          y = "target kinase",
-         title = str_glue("Single-point potency measurements for {t}"),
+         title = str_glue("Single-point SelectScreen potency of {t}"),
          fill = "percent inhibition"
     )
   ggsave(str_glue("output/single_pt_raster_all_targets_all_concs_{t}.pdf"),
          width = 10, height = 10)
+  # each conc individually
+  trt_concs <- unique(trt_data$Compound.Conc) # list of concs for this treatment
+  for(conc in trt_concs){
+    trt_data |>
+      filter(Compound.Conc == conc) |> 
+      ggplot(aes(x = factor(Compound.Conc),
+                 y = target,
+                 label = mean_pct_inhibition)) +
+      theme_prism() +
+      # reinstitute legend title dropped by theme_prism
+      theme(legend.title = element_text()) +
+      # remove space from side of table
+      scale_x_discrete(expand = expansion(mult = c(0, 0.05))) +
+      scale_y_discrete(limits = rev, # reverse y axis to put first on top
+                       # remove space from bottom of table
+                       expand = expansion(mult = c(0, 0))) +
+      scale_fill_viridis(option = "magma",
+                         begin = .25, end = 1,
+                         # begin = .2, end = 1,
+                         limits = c(-5,100)) +
+      geom_tile(aes(fill = mean_pct_inhibition)) +
+      geom_text() +
+      labs(x = "[compound] (nM)",
+           y = "target kinase",
+           title = str_glue("Single-point SelectScreen potency of {t}"),
+           fill = "percent inhibition"
+      )
+    ggsave(str_glue("output/single_pt_raster_all_targets_{conc}_nM_{t}.pdf"),
+           width = 8, height = 10)
+  }
 }
 # aesthetic parameters for scatter plots----------------------------------------
 font_base_size <- 14
