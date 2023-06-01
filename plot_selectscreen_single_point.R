@@ -59,7 +59,7 @@ for(t in treatments){
          title = str_glue("Single-point potency measurements for {t}"),
          fill = "percent inhibition"
     )
-  ggsave(str_glue("output/single_pt_all_targets_all_concs_{t}.pdf"),
+  ggsave(str_glue("output/single_pt_raster_all_targets_all_concs_{t}.pdf"),
          width = 10, height = 10)
 }
 # aesthetic parameters for scatter plots----------------------------------------
@@ -71,7 +71,7 @@ ylab = "target kinase"
 vr <- viridis_range(length(treatments))
 vr_begin <- vr[1]
 vr_end <- vr[2]
-# scatter plot for all targets for each conc------------------------------------
+# scatter plot for all targets for each treatment/conc--------------------------
 for(t in treatments){
   trt_data <- all_data |> 
     filter(treatment == t)
@@ -80,7 +80,7 @@ for(t in treatments){
     trt_data |> 
       filter(Compound.Conc == conc) |> 
       scatter_plot(file_name =
-                     str_glue("single_pt_all_targets_scatter_{t}_{conc}_nM"),
+                     str_glue("single_pt_scatter_all_targets_{t}_{conc}_nM"),
                    title = "Single-point SelectScreen inhibition",
                    # caption = "Note: compound concentrations not equal between kinases",
                    xlab = xlab, ylab = ylab,
@@ -88,6 +88,16 @@ for(t in treatments){
                    width = 10, height = 9, pt_size = 4,)
   }
 }
+# scatter plots for all treatments and targets-----------------------------------
+# assuming same conc per target for all treatments
+data_conc_labeled |> 
+  scatter_plot(file_name =
+                 str_glue("single_pt_scatter_all_targets_all_treatments"),
+               title = "Single-point SelectScreen inhibition",
+               caption = "Note: compound concentrations not equal between kinases",
+               xlab = xlab, ylab = ylab,
+               viridis_begin = vr_begin, viridis_end = vr_end,
+               width = 10, height = 9, pt_size = 4)
 # # individual scatter plots by target---------------------------------
 # targets <- unique(all_data$target)
 # for(t in all_targets){
