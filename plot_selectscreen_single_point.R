@@ -14,12 +14,16 @@ library(doseplotr)
 options(dplyr.summarise.inform = FALSE)
 # set global variables----------------------------------------------------------
 source("parameters/treatments.R")
+source("parameters/targets.R")
 source("scatter_plot.R")
 dir.create("output/", showWarnings = FALSE) # silently create output directory
 plot_type <- "pdf" # file type for saved output plots
 input_filename <- "ZLYTE_single_point.csv"
 all_data <- import_selectscreen(input_filename) |>
-  filter_trt_tgt(trt = treatments)
+  filter_trt_tgt(trt = treatments, tgt = target_list) |> 
+  # sort treatments, targets in list order
+  mutate(treatment = fct_relevel(treatment, treatments)) |> 
+  mutate(target = fct_relevel(target, target_list))
 data_conc_labeled <- all_data |> 
   mutate(target = str_glue("{target} ({Compound.Conc} nM cpd)"))
 # helper summary function-------------------------------------------------------
@@ -33,7 +37,7 @@ inhibition_summarize <- function(x){
       # mean value for plotting
       mean_pct_inhibition = mean(pct_inhibition),
     )}
-# helper plot function----------------------------------------------------------
+# helper raster plot function----------------------------------------------------------
 plot_raster <- function(plot){
   plot +
     theme_prism() +
@@ -46,11 +50,12 @@ plot_raster <- function(plot){
                      expand = expansion(mult = c(0, 0))) +
     scale_fill_viridis(option = "magma",
                        begin = .25, end = 1,
-                       limits = c(-5,100)) +
+                       limits = c(-5,103)) +
     geom_tile(aes(fill = mean_pct_inhibition)) +
     geom_text()
 }
-# raster plot for each treatment, all concs-------------------------------------
+# raster plots-----------------------------------------------------------------
+# raster plot for each treatment, all concs
 for(t in treatments){
   trt_data <- all_data |>
     filter_trt_tgt(trt = t) |> 
@@ -64,7 +69,7 @@ for(t in treatments){
          title = str_glue("Single-point SelectScreen potency of {t}"),
          fill = "percent inhibition")
   ggsave(str_glue("output/single_pt_raster_all_targets_all_concs_{t}.pdf"),
-         width = 10, height = 10)
+         bg = "transparent", width = 10, height = 10)
   # raster plot for each conc of the treatment, less labeled
   trt_concs <- unique(trt_data$Compound.Conc) # list of concs for this treatment
   for(conc in trt_concs){
@@ -74,14 +79,34 @@ for(t in treatments){
                  y = target,
                  label = mean_pct_inhibition)) |> 
       plot_raster() +
+      theme(axis.text.x = element_blank(),
+            axis.ticks.x = element_blank()) +
       labs(x = str_glue("{t}, {conc} nM"),
            y = "target kinase",
            title = str_glue("Single-point SelectScreen potency of {t}"),
            fill = "percent inhibition")
     ggsave(str_glue("output/single_pt_raster_all_targets_{conc}_nM_{t}.pdf"),
-           width = 8, height = 10)
+           bg = "transparent", width = 8, height = 10)
     }
 }
+# raster plot for multiple treatments together at one conc each----------------
+# helper function to append concentration to treatment name
+test <- all_data |> 
+  filter(Compound.Conc %in% c(3.1, 14.8)) |> # manually select EC90 concs
+  # mutate(treatment = str_glue("{treatment}, {Compound.Conc} nM")) |> 
+  inhibition_summarize() |> 
+  ggplot(aes(x = treatment, y = target, label = mean_pct_inhibition)) |> 
+  plot_raster() +
+  theme(axis.title.x = element_blank()) +
+  scale_x_discrete(expand = expansion(mult = c(0, 0.05)),
+                   # WARNING MANUAL CONCENTRATION ANNOTATION
+                   labels = c("PonatiLink-2-7-10" = "PonatiLink-2-7-10, 3.1 nM",
+                              "ponatinib + asciminib" = "ponatinib + asciminib, 14.8 nM")) +
+  labs(y = "target kinase",
+       title = str_glue("SelectScreen potency at Abl1 ~EC90"),
+       fill = "percent inhibition")
+  ggsave("output/single_pt_raster_EC90_comparison.pdf",
+       bg = "transparent", width = 10, height = 10)
 # aesthetic parameters for scatter plots----------------------------------------
 font_base_size <- 14
 text_factor <- font_base_size / 130 # assume font base size 14
