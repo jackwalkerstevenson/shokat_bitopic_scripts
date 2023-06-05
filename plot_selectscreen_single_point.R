@@ -38,7 +38,7 @@ inhibition_summarize <- function(x){
       mean_pct_inhibition = mean(pct_inhibition),
     )}
 # helper raster plot function----------------------------------------------------------
-plot_raster <- function(plot){
+raster_helper <- function(plot){
   plot +
     theme_prism() +
     # reinstitute legend title dropped by theme_prism
@@ -63,7 +63,7 @@ for(t in treatments){
     ggplot(trt_data, aes(x = factor(Compound.Conc),
                y = target,
                label = mean_pct_inhibition)) |> 
-      plot_raster() +
+      raster_helper() +
       labs(x = "[compound] (nM)",
          y = "target kinase",
          title = str_glue("Single-point SelectScreen potency of {t}"),
@@ -78,7 +78,7 @@ for(t in treatments){
       ggplot(aes(x = factor(Compound.Conc),
                  y = target,
                  label = mean_pct_inhibition)) |> 
-      plot_raster() +
+      raster_helper() +
       theme(axis.text.x = element_blank(),
             axis.ticks.x = element_blank()) +
       labs(x = str_glue("{t}, {conc} nM"),
@@ -96,7 +96,7 @@ test <- all_data |>
   # mutate(treatment = str_glue("{treatment}, {Compound.Conc} nM")) |> 
   inhibition_summarize() |> 
   ggplot(aes(x = treatment, y = target, label = mean_pct_inhibition)) |> 
-  plot_raster() +
+  raster_helper() +
   theme(axis.title.x = element_blank()) +
   scale_x_discrete(expand = expansion(mult = c(0, 0.05)),
                    # WARNING MANUAL CONCENTRATION ANNOTATION
