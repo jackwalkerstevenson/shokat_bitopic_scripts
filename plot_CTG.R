@@ -44,15 +44,16 @@ library(doseplotr) # you bet
 # import data---------------------------------
 # the order of the treatment list is the order they will be plotted
 source("parameters/treatments.R") # import list of treatments to include in plots
-source("parameters/targets.R") # import list of treatments to include in plots
+source("parameters/targets.R") # import list of targets to include in plots
 # create input and output directories, since git doesn't track empty directories
 dir.create("input/", showWarnings = FALSE) # do nothing if directory already exists
 dir.create("output/", showWarnings = FALSE)
 input_directory <- "input/"
 plot_type <- "pdf"
+no_legend <- FALSE # global variable for removing all legends from plots
 plate_data <- import_plates(input_directory) |>
-  filter(treatment %in% treatments) |>  # take only specified treatments
-  filter(target %in% target_list) # take only specified treatments
+  filter(treatment %in% treatments) |>   # take only specified treatments
+  filter(target %in% target_list) # take only specified targets
 # assert that all treatments listed are actually present in imported data
 imported_treatments <- distinct(plate_data["treatment"])$treatment
 for(treatment in treatments){
@@ -85,7 +86,9 @@ text_factor <- font_base_size / 120 # approx width per character of longest lege
 save_plot <- function(filename, legend_len = 0, nrow = 1, ncol = 1, width = 0, height = 0, ...){
   # if width is not provided, calculate width from length of legend text
   if(width == 0){
-    width <- ncol * scale_facet + legend_pad + legend_len * text_factor
+    if(!no_legend){
+      width <- ncol * scale_facet + legend_pad + legend_len * text_factor}
+    else{width <- ncol * scale_facet}
   }
   if(height == 0){
     height <- nrow * scale_facet
@@ -108,6 +111,7 @@ plot_global <- function(plot){
                     ylim = c(0,NA)) + # set y axis zoom locally
     theme_prism(base_size = font_base_size) + # make it look fancy like prism
     theme(plot.background = element_blank()) + # need for transparent background
+    {if(no_legend)theme(legend.position = "none")} +
     # can't figure out how to make 10 subscript and still bold
     labs(x = "log10[compound] (M)",
          y = "relative cell viability (%)")
