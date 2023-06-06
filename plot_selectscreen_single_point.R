@@ -26,10 +26,20 @@ all_data <- import_selectscreen(input_filename) |>
   mutate(target = fct_relevel(target, target_list))
 data_conc_labeled <- all_data |> 
   mutate(target = str_glue("{target} ({Compound.Conc} nM cpd)"))
+# aesthetic parameters for scatter plots----------------------------------------
+font_base_size <- 14
+text_factor <- font_base_size / 130 # assume font base size 14
+# global axis labels
+xlab = "percent inhibition"
+ylab = "target kinase"
+vr <- viridis_range(length(treatments))
+vr_begin <- vr[1]
+vr_end <- vr[2]
 # helper summary function-------------------------------------------------------
 inhibition_summarize <- function(x){
-  x |> group_by(target) |>
-    mutate(bar_size = .1 * n()) |>
+  x |> group_by(treatment, target) |>
+    mutate(bar_size = .2 * n()) |>
+    ungroup() |> 
     # keep variables not in current group
     group_by(target, treatment, Compound.Conc, bar_size) |>
     summarize(# standard error for error bars = standard deviation / square root of n
@@ -54,7 +64,7 @@ raster_helper <- function(plot){
     geom_tile(aes(fill = mean_pct_inhibition)) +
     geom_text()
 }
-# raster plots-----------------------------------------------------------------
+# raster plots for individual treatments----------------------------------------
 # raster plot for each treatment, all concs
 for(t in treatments){
   trt_data <- all_data |>
@@ -90,8 +100,7 @@ for(t in treatments){
     }
 }
 # raster plot for multiple treatments together at one conc each----------------
-# helper function to append concentration to treatment name
-test <- all_data |> 
+all_data |> 
   filter(Compound.Conc %in% c(3.1, 14.8)) |> # manually select EC90 concs
   # mutate(treatment = str_glue("{treatment}, {Compound.Conc} nM")) |> 
   inhibition_summarize() |> 
@@ -101,21 +110,47 @@ test <- all_data |>
   scale_x_discrete(expand = expansion(mult = c(0, 0.05)),
                    # WARNING MANUAL CONCENTRATION ANNOTATION
                    labels = c("PonatiLink-2-7-10" = "PonatiLink-2-7-10, 3.1 nM",
-                              "ponatinib + asciminib" = "ponatinib + asciminib, 14.8 nM")) +
+                              "ponatinib + asciminib" =
+                                "ponatinib + asciminib, 14.8 nM")) +
   labs(y = "target kinase",
        title = str_glue("SelectScreen potency at Abl1 ~EC90"),
        fill = "percent inhibition")
-  ggsave("output/single_pt_raster_EC90_comparison.pdf",
-       bg = "transparent", width = 10, height = 10)
-# aesthetic parameters for scatter plots----------------------------------------
-font_base_size <- 14
-text_factor <- font_base_size / 130 # assume font base size 14
-# global axis labels
-xlab = "percent inhibition"
-ylab = "target kinase"
-vr <- viridis_range(length(treatments))
-vr_begin <- vr[1]
-vr_end <- vr[2]
+ggsave("output/single_pt_raster_EC90_comparison.pdf",
+         bg = "transparent", width = 10, height = 10)
+# bar plot for multiple treatments at one conc each-----------------------------
+geom_barwidth <- 0.75
+all_data |> 
+  filter(Compound.Conc %in% c(3.1, 14.8)) |> # manually select EC90 concs
+  # mutate(treatment = str_glue("{treatment}, {Compound.Conc} nM")) |> 
+  inhibition_summarize() |> 
+  ggplot(aes(y = target,
+             x = mean_pct_inhibition,
+             fill = treatment,
+             label = mean_pct_inhibition)) +
+  scale_fill_viridis(discrete = TRUE, begin = vr_begin, end = vr_end,
+                     # WARNING MANUAL CONCENTRATION LABELS
+                     labels = c("ponatinib + asciminib" =
+                                  "ponatinib + asciminib, 14.8 nM",
+                                "PonatiLink-2-7-10" =
+                                  "PonatiLink-2-7-10, 3.1 nM")) +
+  theme_prism() +
+  theme(plot.background = element_blank()) + # need for transparent background
+  scale_y_discrete(limits = rev) +
+  geom_bar(stat = "identity",
+           width = geom_barwidth,
+           position = position_dodge2(reverse = TRUE)) +
+  geom_errorbar(aes(xmin = mean_pct_inhibition - sem,
+                    xmax = mean_pct_inhibition + sem),
+                width = geom_barwidth,
+                position = position_dodge2(reverse = TRUE,
+                                           width = geom_barwidth)) +
+  # remove extra space around bars
+  scale_x_continuous(limits = c(0, 100), expand = expansion(mult = c(0, 0.05))) +
+  labs(y = "target kinase",
+       x = "percent inhibition",
+       title = str_glue("SelectScreen potency at Abl1 ~EC90"),)
+ggsave("output/single_pt_bar_EC90_comparison.pdf",
+       bg = "transparent", width = 10, height = 14)
 # scatter plot for all targets for each treatment/conc--------------------------
 for(t in treatments){
   trt_data <- all_data |> 
