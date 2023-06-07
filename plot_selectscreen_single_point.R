@@ -53,13 +53,14 @@ raster_helper <- function(plot){
     theme_prism() +
     # reinstitute legend title dropped by theme_prism
     theme(legend.title = element_text()) +
+    theme(plot.background = element_blank()) + # need for transparent background
     # remove space from side of table
     scale_x_discrete(expand = expansion(mult = c(0, 0.05))) +
     scale_y_discrete(limits = rev, # reverse y axis to put first on top
                      # remove space from bottom of table
                      expand = expansion(mult = c(0, 0))) +
-    scale_fill_viridis(option = "magma",
-                       begin = .25, end = 1,
+    scale_fill_viridis(option = "mako",
+                       begin = .3, end = 1,
                        limits = c(-5,103)) +
     geom_tile(aes(fill = mean_pct_inhibition)) +
     geom_text()
@@ -108,15 +109,16 @@ all_data |>
   raster_helper() +
   theme(axis.title.x = element_blank()) +
   scale_x_discrete(expand = expansion(mult = c(0, 0.05)),
+                   position = "top",
                    # WARNING MANUAL CONCENTRATION ANNOTATION
-                   labels = c("PonatiLink-2-7-10" = "PonatiLink-2-7-10, 3.1 nM",
+                   labels = c("PonatiLink-2-7-10" = "PonatiLink-2-7-10\n3.1 nM",
                               "ponatinib + asciminib" =
-                                "ponatinib + asciminib, 14.8 nM")) +
+                                "ponatinib + asciminib\n14.8 nM")) +
   labs(y = "target kinase",
        title = str_glue("SelectScreen potency at Abl1 ~EC90"),
-       fill = "percent inhibition")
+       fill = "% inhibition")
 ggsave("output/single_pt_raster_EC90_comparison.pdf",
-         bg = "transparent", width = 10, height = 10)
+         bg = "transparent", width = 7.5, height = 10)
 # bar plot for multiple treatments at one conc each-----------------------------
 geom_barwidth <- 0.75
 all_data |> 
