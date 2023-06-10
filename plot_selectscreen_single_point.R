@@ -59,9 +59,14 @@ raster_helper <- function(plot){
     scale_y_discrete(limits = rev, # reverse y axis to put first on top
                      # remove space from bottom of table
                      expand = expansion(mult = c(0, 0))) +
-    scale_fill_viridis(option = "mako",
-                       begin = .3, end = 1,
-                       limits = c(-5,103)) +
+    # scale_fill_viridis(option = "rocket",
+    #                    begin = 1, end = .35,
+    #                    limits = c(-5,103)) +
+    # scale_fill_gradient(low = "white", high = "red") +
+    scale_fill_distiller(palette = "Reds", direction = 1) +
+    # scale_fill_scico(palette = "bamako",  
+    #                  begin = 1, end = 0.35,
+    #                  limits = c(-5,103)) +
     geom_tile(aes(fill = mean_pct_inhibition)) +
     geom_text()
 }
@@ -102,20 +107,23 @@ for(t in treatments){
 }
 # raster plot for multiple treatments together at one conc each----------------
 all_data |> 
-  filter(Compound.Conc %in% c(3.1, 14.8)) |> # manually select EC90 concs
+  filter(Compound.Conc %in% c(5.4, 27)) |> # manually select EC90 concs
   # mutate(treatment = str_glue("{treatment}, {Compound.Conc} nM")) |> 
   inhibition_summarize() |> 
   ggplot(aes(x = treatment, y = target, label = mean_pct_inhibition)) |> 
   raster_helper() +
   theme(axis.title.x = element_blank()) +
+  # theme(axis.text.x = element_text(margin = margin(b = 100, unit = "mm"))) +
+  # theme(axis.ticks.length.x = unit(1, "mm")) +
+  # theme(axis.ticks.x = element_blank()) +
   scale_x_discrete(expand = expansion(mult = c(0, 0.05)),
                    position = "top",
                    # WARNING MANUAL CONCENTRATION ANNOTATION
-                   labels = c("PonatiLink-2-7-10" = "PonatiLink-2-7-10\n3.1 nM",
+                   labels = c("PonatiLink-2-7-10" = "PonatiLink-2-7-10\n5.4 nM",
                               "ponatinib + asciminib" =
-                                "ponatinib + asciminib\n14.8 nM")) +
+                                "ponatinib + asciminib\n27 nM")) +
   labs(y = "target kinase",
-       title = str_glue("SelectScreen potency at Abl1 ~EC90"),
+       title = str_glue("Kinase selectivity in vitro at Abl1 ~EC90"),
        fill = "% inhibition")
 ggsave("output/single_pt_raster_EC90_comparison.pdf",
          bg = "transparent", width = 7.5, height = 10)
