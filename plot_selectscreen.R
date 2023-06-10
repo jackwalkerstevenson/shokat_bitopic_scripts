@@ -25,17 +25,19 @@ source("parameters/targets.R")
 # source("get_hill_slope.R")
 # import and tidy data---------------------------------
 plate_data <- import_selectscreen(input_filename) |>
-  filter_trt_tgt(treatments, targets)
+  filter_trt_tgt(treatments, target_list)
+plate_data <- plate_data |> 
+  mutate(treatment = fct_relevel(treatment, treatments))
 # fit models to output EC values------------------------------------------------
-EC_summary <- summarize_models(plate_data)
+EC_summary <- summarize_models(plate_data, activity_col = "response")
 write_csv(EC_summary, "output/EC_summary_selectscreen.csv")
 # generate global parameters for all plots------------------------------------------
 pt_size = 3 # size for all geom_point
 all_treatments <- distinct(plate_data["treatment"])$treatment
 all_targets <- distinct(plate_data["target"])$target
 # find x-axis min/max values for consistent zoom window between all plots
-x_min <- floor(min(plate_data$conc_logM))
-x_max <- ceiling(max(plate_data$conc_logM))
+x_min <- floor(min(plate_data$log_dose))
+x_max <- ceiling(max(plate_data$log_dose))
 x_limits <- c(x_min, x_max)
 # create logistic minor breaks for all conc plots
 minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
@@ -51,11 +53,11 @@ save_plot <- function(plot, nrow = 1, ncol = 1, ...){
 plate_summarize <- function(x){
   summarize(x,
             # standard error for error bars = standard deviation / square root of n
-            confidence_intervals = list(mean_cl_normal(activity) |>
+            confidence_intervals = list(mean_cl_normal(response) |>
                                           rename(mean_activity = y, ymin_activity = ymin, ymax_activity = ymax)),
-            sem = sd(activity, na.rm = TRUE)/sqrt(n()),
+            sem = sd(response, na.rm = TRUE)/sqrt(n()),
             # get mean normalized readout value for plotting
-            mean_read = mean(activity),
+            mean_read = mean(response),
             w = 0.12 * n() # necessary for consistent error bar widths across plots
   ) |>
     tidyr::unnest(cols = confidence_intervals)
@@ -66,10 +68,10 @@ source("dose_response_global.R")
 plot_treatment <- function(trt, viridis_begin = 1, viridis_end = 0){
   plate_summary <- plate_data %>%
     filter(treatment == trt) %>% # get data from one treatment to work with
-    group_by(target, conc_logM) %>%  # get set of replicates for each condition
+    group_by(target, log_dose) %>%  # get set of replicates for each condition
     plate_summarize()
   # bracket ggplot so it can be piped to helper function
-  {ggplot(plate_summary, aes(x = conc_logM, y = mean_read, color = target)) +
+  {ggplot(plate_summary, aes(x = log_dose, y = mean_read, color = target)) +
       geom_point(aes(shape = target), size = pt_size) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
@@ -87,7 +89,7 @@ plot_treatment <- function(trt, viridis_begin = 1, viridis_end = 0){
          y = "kinase activity (%)")
 }
 # plot data for each treatment separately----------------------------------------
-vr <- viridis_range(length(targets))
+vr <- viridis_range(length(all_targets))
 vr_begin <- vr[1]
 vr_end <- vr[2]
 for (trt in all_treatments){
@@ -122,10 +124,10 @@ viridis_end <- vr[2]
 for (tgt in all_targets){
   plate_summary <- plate_data %>%
     filter(target == tgt) %>%
-    group_by(treatment, conc_logM) %>% # group into replicates for each condition
+    group_by(treatment, log_dose) %>% # group into replicates for each condition
     plate_summarize()
   # bracket ggplot so it can be piped to helper function
-  {ggplot(plate_summary, aes(x = conc_logM, y = mean_read, color = treatment)) +
+  {ggplot(plate_summary, aes(x = log_dose, y = mean_read, color = treatment)) +
       geom_point(aes(shape = treatment), size = pt_size) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
@@ -142,9 +144,9 @@ for (tgt in all_targets){
 }
 # plot data for all targets at once-----------------------------------------
 plate_summary <- plate_data %>%
-  group_by(target, treatment, conc_logM) %>% # group into replicates for each condition
+  group_by(target, treatment, log_dose) %>% # group into replicates for each condition
   plate_summarize()
-{ggplot(plate_summary,aes(x = conc_logM, y = mean_read, color = treatment)) +
+{ggplot(plate_summary,aes(x = log_dose, y = mean_read, color = treatment)) +
     geom_point(aes(shape = treatment), size = pt_size) +
     # error bars = mean plus or minus standard error
     geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
