@@ -47,7 +47,7 @@ EC_data %>%
        y = "EC50 (nM)",
        title = (glue::glue("{group_name} cell-based vs. biochemical potency"))) +
   theme(plot.background = element_blank()) # need for transparent background
-ggsave(str_glue("output/EC50_points.{plot_type}"),
+ggsave(str_glue("output/EC50_points_{get_timestamp()}.{plot_type}"),
           bg = "transparent",
           width = 8,
           height = 6)
@@ -81,7 +81,7 @@ EC_data %>%
   labs(x = "linker length (PEG units)",
        y = "EC50 (nM)",
        title = glue::glue("{group_name} cell-based vs. biochemical potency"))
-ggsave(str_glue("output/EC50_linker.{plot_type}"),
+ggsave(str_glue("output/EC50_linker_{get_timestamp()}.{plot_type}"),
         bg = "transparent",
        width = 8,
        height = 4)
@@ -140,7 +140,7 @@ EC_data %>%
   labs(y = "CellTiter-Glo EC50 (nM)",
        x = "SelectScreen EC50 (nM)",
        title = str_wrap(glue::glue("{group_name} cell-based vs. biochemical potency"), width = 70))
-ggsave(str_glue("output/EC50_assays.{plot_type}"),
+ggsave(str_glue("output/EC50_assays_{get_timestamp()}.{plot_type}"),
        bg = "transparent",
        width = 10,
        height = 5)
