@@ -52,8 +52,8 @@ input_directory <- "input/"
 plot_type <- "pdf"
 no_legend <- FALSE # global variable for removing all legends from plots
 plate_data <- import_plates(input_directory) |>
-  filter(treatment %in% treatments) |>   # take only specified treatments
-  filter(target %in% target_list) # take only specified targets
+  filter(treatment %in% treatments)   # take only specified treatments
+  # filter(target %in% target_list) # take only specified targets
 # assert that all treatments listed are actually present in imported data
 imported_treatments <- distinct(plate_data["treatment"])$treatment
 for(treatment in treatments){
@@ -118,7 +118,7 @@ plot_global <- function(plot){
 }
 # fit models to output EC values------------------------------------------------
 EC_summary <- summarize_models(plate_data)
-write_csv(EC_summary, "output/EC_summary.csv")
+write_csv(EC_summary, str_glue("output/EC_summary_{get_timestamp_text()}.csv"))
 # set parameters for treatment plots--------------------------------------------
 vr <- viridis_range(length(targets))
 viridis_begin <- vr[1]
@@ -149,7 +149,7 @@ plot_treatment <- function(trt){
 for (trt in treatments){
   plot_treatment(trt)
   # save plot with manually optimized aspect ratio
-  save_plot(str_glue("output/{trt}.{plot_type}"), legend_len = longest(targets))
+  save_plot(str_glue("output/{trt}_{get_timestamp()}.{plot_type}"), legend_len = longest(targets))
 }  
 # plot data for all treatments in facets----------------------------------
 # treatment_plots = list()
@@ -164,7 +164,7 @@ for (trt in treatments){
 #   theme(plot.margin = unit(c(plot_mar,plot_mar,plot_mar,plot_mar), "pt"),
 #         plot.background = element_blank(),
 #         legend.text= element_text(face = "bold", size = 16))
-# save_plot(str_glue("output/treatment_facets.{plot_type}"), ncol = cols, nrow = rows, legend_len = longest(targets))
+# save_plot(str_glue("output/treatment_facets_{get_timestamp()}.{plot_type}"), ncol = cols, nrow = rows, legend_len = longest(targets))
 # set color parameters for target plots--------------------------------------
 alpha_val <- 1
 color_scale <- "viridis"
@@ -194,7 +194,7 @@ for (t in targets){
     #scale_color_grey(start = grey_start, end = grey_end) +
     scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
     labs(title = t)
-  save_plot(str_glue("output/{t}.{plot_type}"), legend_len = longest(treatments))
+  save_plot(str_glue("output/{t}_{get_timestamp()}.{plot_type}"), legend_len = longest(treatments))
 }
 # plot data for all targets at once-----------------------------------------
 plate_summary <- plate_data %>%
@@ -210,4 +210,4 @@ plate_summary <- plate_data %>%
   plot_global() +
   scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
   labs(title = "All data")
-save_plot(str_glue("output/all_data.{plot_type}"), legend_len = longest(append(targets, treatments)))
+save_plot(str_glue("output/all_data_{get_timestamp()}.{plot_type}"), legend_len = longest(append(targets, treatments)))

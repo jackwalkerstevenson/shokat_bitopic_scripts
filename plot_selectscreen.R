@@ -30,7 +30,7 @@ plate_data <- plate_data |>
   mutate(treatment = fct_relevel(treatment, treatments))
 # fit models to output EC values------------------------------------------------
 EC_summary <- summarize_models(plate_data, activity_col = "response")
-write_csv(EC_summary, "output/EC_summary_selectscreen.csv")
+write_csv(EC_summary, str_glue("output/EC_summary_selectscreen_{get_timestamp()}.csv"))
 # generate global parameters for all plots------------------------------------------
 pt_size = 3 # size for all geom_point
 all_treatments <- distinct(plate_data["treatment"])$treatment
@@ -95,7 +95,7 @@ vr_end <- vr[2]
 for (trt in all_treatments){
   plot_treatment(trt, viridis_begin = vr_begin, viridis_end = vr_end)
   # save plot with manually optimized aspect ratio
-  save_plot(str_glue("output/{trt}.{plot_type}"))
+  save_plot(str_glue("output/{trt}_{get_timestamp()}.{plot_type}"))
 }  
 # plot data for all treatments in facets----------------------------------
 treatment_plots = list()
@@ -113,7 +113,7 @@ wrap_plots(treatment_plots, guides = "collect", ncol = cols, nrow = rows) &
   theme(plot.margin = unit(c(plot_mar,plot_mar,plot_mar,plot_mar), "pt"),
         plot.background = element_blank(),
         legend.text= element_text(face = "bold", size = 12))
-save_plot(str_glue("output/treatment_facets.{plot_type}"), ncol = cols, nrow = rows)
+save_plot(str_glue("output/treatment_facets_{get_timestamp()}.{plot_type}"), ncol = cols, nrow = rows)
 # set color parameters for target plots--------------------------------------
 alpha_val <- 1
 color_scale <- "viridis"
@@ -140,7 +140,7 @@ for (tgt in all_targets){
     scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
     labs(title = tgt,
          y = "kinase activity (%)")
-  save_plot(str_glue("output/{tgt}.{plot_type}"))
+  save_plot(str_glue("output/{tgt}_{get_timestamp()}.{plot_type}"))
 }
 # plot data for all targets at once-----------------------------------------
 plate_summary <- plate_data %>%
@@ -159,4 +159,4 @@ plate_summary <- plate_data %>%
   scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
   labs(title = "All data",
        y = "kinase activity (%)")
-save_plot(str_glue("output/all_data.{plot_type}"))
+save_plot(str_glue("output/all_data_{get_timestamp()}.{plot_type}"))
