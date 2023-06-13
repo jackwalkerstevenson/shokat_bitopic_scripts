@@ -17,6 +17,7 @@ library(tidyverse) # for tidy data handling
 library(scales) # for fancy plotting scales
 library(ggprism)  # for pretty prism-like plots
 library(assertthat) # for QC assertions
+library(doseplotr) # you bet
 # set global variables---------------------------------------------------------
 input_filename <- "microsomes.xlsx"
 plot_type <- "pdf" # file type for saved output plots
@@ -79,5 +80,5 @@ all_data %>%
   theme_prism() +
   theme(plot.background = element_blank()) # need for transparent background
 
-ggsave(str_glue("output/half_life.{plot_type}"),
+ggsave(str_glue("output/half_life_{get_timestamp()}.{plot_type}"),
        bg = "transparent", width = 7, height = 4)

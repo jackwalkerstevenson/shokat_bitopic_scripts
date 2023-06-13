@@ -65,6 +65,6 @@ shared_data |>
         legend.title = element_text(size = 12),  # reinstate legend title bc theme_prism removes)
         axis.text.y = element_text(hjust = 0)) # left-justify axis labels to line up
 
-ggsave(str_glue("output/eide.{plot_type}"),
+ggsave(str_glue("output/eide_{get_timestamp()}.{plot_type}"),
        bg = "transparent", width = 7, height = 4,
        device = cairo_pdf)

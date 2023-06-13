@@ -84,7 +84,7 @@ for(t in treatments){
          y = "target kinase",
          title = str_glue("Single-point SelectScreen potency of {t}"),
          fill = "percent inhibition")
-  ggsave(str_glue("output/single_pt_raster_all_targets_all_concs_{t}.pdf"),
+  ggsave(str_glue("output/single_pt_raster_all_targets_all_concs_{t}_{get_timestamp()}.pdf"),
          bg = "transparent", width = 10, height = 10)
   # raster plot for each conc of the treatment, less labeled
   trt_concs <- unique(trt_data$Compound.Conc) # list of concs for this treatment
@@ -101,7 +101,7 @@ for(t in treatments){
            y = "target kinase",
            title = str_glue("Single-point SelectScreen potency of {t}"),
            fill = "percent inhibition")
-    ggsave(str_glue("output/single_pt_raster_all_targets_{conc}_nM_{t}.pdf"),
+    ggsave(str_glue("output/single_pt_raster_all_targets_{conc}_nM_{t}_{get_timestamp()}.pdf"),
            bg = "transparent", width = 8, height = 10)
     }
 }
@@ -125,7 +125,7 @@ all_data |>
   labs(y = "target kinase",
        title = str_glue("Kinase selectivity in vitro at Abl1 ~EC90"),
        fill = "% inhibition")
-ggsave("output/single_pt_raster_EC90_comparison.pdf",
+ggsave("output/single_pt_raster_EC90_comparison_{get_timestamp()}.pdf",
          bg = "transparent", width = 7.5, height = 10)
 # bar plot for multiple treatments at one conc each-----------------------------
 geom_barwidth <- 0.75
@@ -159,7 +159,7 @@ all_data |>
   labs(y = "target kinase",
        x = "percent inhibition",
        title = str_glue("SelectScreen potency at Abl1 ~EC90"),)
-ggsave("output/single_pt_bar_EC90_comparison.pdf",
+ggsave("output/single_pt_bar_EC90_comparison_{get_timestamp()}.pdf",
        bg = "transparent", width = 10, height = 14)
 # scatter plot for all targets for each treatment/conc--------------------------
 for(t in treatments){
