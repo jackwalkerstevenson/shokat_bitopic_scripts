@@ -47,7 +47,11 @@ inhibition_summarize <- function(x){
       # mean value for plotting
       mean_pct_inhibition = mean(pct_inhibition),
     )}
-# helper raster plot function----------------------------------------------------------
+# helper raster plot functions--------------------------------------------------
+# empirical formula for pleasant widths of side-by-side raster plots
+raster_plot_width <- function(num_cols){
+  5.8 + 1.7*(num_cols - 1)
+}
 raster_helper <- function(plot){
   plot +
     theme_prism() +
@@ -55,7 +59,8 @@ raster_helper <- function(plot){
     theme(legend.title = element_text()) +
     theme(plot.background = element_blank()) + # need for transparent background
     # remove space from side of table
-    scale_x_discrete(expand = expansion(mult = c(0, 0.05))) +
+    scale_x_discrete(expand = expansion(mult = c(0, 0.05)),
+                     position = "top") +
     scale_y_discrete(limits = rev, # reverse y axis to put first on top
                      # remove space from bottom of table
                      expand = expansion(mult = c(0, 0))) +
@@ -76,18 +81,19 @@ for(t in treatments){
   trt_data <- all_data |>
     filter_trt_tgt(trt = t) |> 
     inhibition_summarize()
+  trt_concs <- unique(trt_data$Compound.Conc)
     ggplot(trt_data, aes(x = factor(Compound.Conc),
                y = target,
                label = mean_pct_inhibition)) |> 
       raster_helper() +
-      labs(x = "[compound] (nM)",
+      labs(x = "concentration (nM)",
          y = "target kinase",
-         title = str_glue("Single-point SelectScreen potency of {t}"),
+         title = str_glue("Single-point SelectScreen potency\n{t}"),
          fill = "percent inhibition")
   ggsave(str_glue("output/single_pt_raster_all_targets_all_concs_{t}_{get_timestamp()}.pdf"),
-         bg = "transparent", width = 10, height = 10)
+         bg = "transparent", width = raster_plot_width(length(trt_concs)),
+         height = 10)
   # raster plot for each conc of the treatment, less labeled
-  trt_concs <- unique(trt_data$Compound.Conc) # list of concs for this treatment
   for(conc in trt_concs){
     trt_data |>
       filter(Compound.Conc == conc) |> 
@@ -97,18 +103,25 @@ for(t in treatments){
       raster_helper() +
       theme(axis.text.x = element_blank(),
             axis.ticks.x = element_blank()) +
-      labs(x = str_glue("{t}, {conc} nM"),
+      labs(x = str_glue("{conc} nM"),
            y = "target kinase",
-           title = str_glue("Single-point SelectScreen potency of {t}"),
+           title = str_glue("Single-point SelectScreen potency\n{t}"),
            fill = "percent inhibition")
-    ggsave(str_glue("output/single_pt_raster_all_targets_{conc}_nM_{t}_{get_timestamp()}.pdf"),
-           bg = "transparent", width = 8, height = 10)
+    ggsave(str_glue("output/single_pt_raster_all_targets_{t}_{conc}_nM_{get_timestamp()}.pdf"),
+           bg = "transparent", width = raster_plot_width(1), height = 10)
     }
 }
 # raster plot for multiple treatments together at one conc each----------------
+concs_to_plot <- c("ponatinib + asciminib" = 27,
+                   "PonatiLink-1-24" = 500,
+                   "PonatiLink-2-7-10" = 5.4)
+label_treatment <- function(trt){
+  trt_conc <- concs_to_plot[trt]
+  str_glue("{trt}\n{trt_conc} nM")
+}
+treatment_labels <- sapply(treatments, label_treatment)
 all_data |> 
-  filter(Compound.Conc %in% c(5.4, 27)) |> # manually select EC90 concs
-  # mutate(treatment = str_glue("{treatment}, {Compound.Conc} nM")) |> 
+  filter(Compound.Conc == concs_to_plot[treatment]) |> 
   inhibition_summarize() |> 
   ggplot(aes(x = treatment, y = target, label = mean_pct_inhibition)) |> 
   raster_helper() +
@@ -118,15 +131,14 @@ all_data |>
   # theme(axis.ticks.x = element_blank()) +
   scale_x_discrete(expand = expansion(mult = c(0, 0.05)),
                    position = "top",
-                   # WARNING MANUAL CONCENTRATION ANNOTATION
-                   labels = c("PonatiLink-2-7-10" = "PonatiLink-2-7-10\n5.4 nM",
-                              "ponatinib + asciminib" =
-                                "ponatinib + asciminib\n27 nM")) +
+                   labels = treatment_labels) +
   labs(y = "target kinase",
-       title = str_glue("Kinase selectivity in vitro at Abl1 ~EC90"),
+       title = str_glue("Kinase selectivity in vitro"),
        fill = "% inhibition")
-ggsave("output/single_pt_raster_EC90_comparison_{get_timestamp()}.pdf",
-         bg = "transparent", width = 7.5, height = 10)
+ggsave(str_glue(
+  "output/single_pt_raster_EC90_comparison_{get_timestamp()}.pdf"),
+  bg = "transparent",
+  width = raster_plot_width(length(concs_to_plot)), height = 10)
 # bar plot for multiple treatments at one conc each-----------------------------
 geom_barwidth <- 0.75
 all_data |> 
@@ -159,7 +171,7 @@ all_data |>
   labs(y = "target kinase",
        x = "percent inhibition",
        title = str_glue("SelectScreen potency at Abl1 ~EC90"),)
-ggsave("output/single_pt_bar_EC90_comparison_{get_timestamp()}.pdf",
+ggsave(str_glue("output/single_pt_bar_EC90_comparison_{get_timestamp()}.pdf"),
        bg = "transparent", width = 10, height = 14)
 # scatter plot for all targets for each treatment/conc--------------------------
 for(t in treatments){
