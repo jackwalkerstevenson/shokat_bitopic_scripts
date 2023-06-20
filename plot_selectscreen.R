@@ -65,8 +65,8 @@ plate_summarize <- function(x){
 # helper function to add ggplot objects common to all plots--------------------
 source("dose_response_global.R")
 # helper function to plot one treatment----------------------------------------
-plot_treatment <- function(trt, viridis_begin = 1, viridis_end = 0){
-  plate_summary <- plate_data %>%
+plot_treatment <- function(data, trt, viridis_begin = 1, viridis_end = 0){
+  plate_summary <- data %>%
     filter(treatment == trt) %>% # get data from one treatment to work with
     group_by(target, log_dose) %>%  # get set of replicates for each condition
     plate_summarize()
@@ -89,22 +89,29 @@ plot_treatment <- function(trt, viridis_begin = 1, viridis_end = 0){
          y = "kinase activity (%)")
 }
 # plot data for each treatment separately----------------------------------------
-vr <- viridis_range(length(all_targets))
-vr_begin <- vr[1]
-vr_end <- vr[2]
+treatment_plots = list()
 for (trt in all_treatments){
-  plot_treatment(trt, viridis_begin = vr_begin, viridis_end = vr_end)
+  trt_data <- filter_trt_tgt(plate_data, trt)
+  num_tgts <- length(unique(trt_data$target))
+  vr <- viridis_range(num_tgts)
+  vr_begin <- vr[1]
+  vr_end <- vr[2]
+  treatment_plots <- append(treatment_plots,
+                            list(plot_treatment(trt_data, trt,
+                                                viridis_begin = vr_begin,
+                                                viridis_end = vr_end)))
+  plot_treatment(trt_data, trt, viridis_begin = vr_begin, viridis_end = vr_end)
   # save plot with manually optimized aspect ratio
   save_plot(str_glue("output/{trt}_{get_timestamp()}.{plot_type}"))
 }  
 # plot data for all treatments in facets----------------------------------
-treatment_plots = list()
-for (trt in all_treatments){
-  treatment_plots <- append(treatment_plots,
-                            list(plot_treatment(trt,
-                                                viridis_begin = vr_begin,
-                                                viridis_end = vr_end)))
-}
+# treatment_plots = list()
+# for (trt in all_treatments){
+#   treatment_plots <- append(treatment_plots,
+#                             list(plot_treatment(trt,
+#                                                 viridis_begin = vr_begin,
+#                                                 viridis_end = vr_end)))
+# }
 
 plot_mar <- 15 # margin between wrapped plots, in points
 cols = ceiling(sqrt(length(treatments)))
