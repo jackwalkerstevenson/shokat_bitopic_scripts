@@ -41,7 +41,7 @@ library(viridis) # for color schemes
 library(patchwork) # for plot organization
 library(doseplotr) # you bet
 
-# import data---------------------------------
+# prepare global variables---------------------------------
 # the order of the treatment list is the order they will be plotted
 source("parameters/treatments.R") # import list of treatments to include in plots
 source("parameters/targets.R") # import list of targets to include in plots
@@ -51,27 +51,30 @@ dir.create("output/", showWarnings = FALSE)
 input_directory <- "input/"
 plot_type <- "pdf"
 no_legend <- FALSE # global variable for removing all legends from plots
+# import data----------------------------------------------------------------
 plate_data <- import_plates(input_directory) |>
-  filter(treatment %in% treatments)   # take only specified treatments
-  # filter(target %in% target_list) # take only specified targets
+# input_filename <- "input/import.csv"
+# plate_data <- readr::read_csv(input_filename) |>
+  preprocess_plate_data() |> 
+  filter(treatment %in% treatments) |> # take only specified treatments
+  filter(target %in% targets) # take only specified targets
 # assert that all treatments listed are actually present in imported data
-imported_treatments <- distinct(plate_data["treatment"])$treatment
+imported_treatments <- unique(plate_data$treatment)
 for(treatment in treatments){
   assert_that(treatment %in% imported_treatments,
   msg = glue::glue("treatment '{treatment}' from the list of treatments to plot was not found in imported data"))
 }
 # generate global parameters for all plots------------------------------------------
-targets <- distinct(plate_data["target"])$target
+if (is.null(targets)){
+  targets <- unique(plate_data$target)}
 # find x-axis min/max values for consistent zoom window between all plots
 x_min <- floor(min(plate_data$log_dose))
 x_max <- ceiling(max(plate_data$log_dose))
 x_limits <- c(x_min, x_max)
 # create logistic minor breaks for all treatments
 minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
-# set factors so targets get plotted and colored in input order
-target_factors <- distinct(plate_data, target)$target # targets in order of appearance in data
 plate_data <- plate_data %>% 
-  mutate(target = fct_relevel(target, target_factors)) %>%
+  mutate(target = fct_relevel(target, targets)) %>%
   mutate(treatment = fct_relevel(treatment, treatments)) # treatments in order of input list
 # set default font size for plots
 font_base_size <- 14 # 14 is theme_prism default
@@ -120,6 +123,7 @@ plot_global <- function(plot){
 EC_summary <- summarize_models(plate_data)
 write_csv(EC_summary, str_glue("output/EC_summary_{get_timestamp()}.csv"))
 # set parameters for treatment plots--------------------------------------------
+color_scale <- "turbo"
 vr <- viridis_range(length(targets))
 viridis_begin <- vr[1]
 viridis_end <- vr[2]
@@ -141,7 +145,9 @@ plot_treatment <- function(trt){
                 se = FALSE, linewidth = 1)} %>%
     plot_global() +
     # theme(aspect.ratio = 1) +
-    scale_color_viridis(discrete = TRUE, begin = viridis_begin, end = viridis_end) +
+    scale_color_viridis(option = color_scale,
+                        discrete = TRUE,
+                        begin = viridis_begin, end = viridis_end) +
     #scale_color_manual(values = c("black","darkred")) +
     labs(title = trt)
 }
