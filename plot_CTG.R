@@ -118,7 +118,7 @@ plot_global <- function(plot){
 }
 # fit models to output EC values------------------------------------------------
 EC_summary <- summarize_models(plate_data)
-write_csv(EC_summary, str_glue("output/EC_summary_{get_timestamp_text()}.csv"))
+write_csv(EC_summary, str_glue("output/EC_summary_{get_timestamp()}.csv"))
 # set parameters for treatment plots--------------------------------------------
 vr <- viridis_range(length(targets))
 viridis_begin <- vr[1]
