@@ -25,7 +25,7 @@ source("parameters/targets.R")
 # source("get_hill_slope.R")
 # import and tidy data---------------------------------
 plate_data <- import_selectscreen(input_filename) |>
-  filter_trt_tgt(treatments, target_list)
+  filter_trt_tgt(treatments, targets)
 plate_data <- plate_data |> 
   mutate(treatment = fct_relevel(treatment, treatments))
 # fit models to output EC values------------------------------------------------
@@ -33,8 +33,8 @@ EC_summary <- summarize_models(plate_data, activity_col = "response")
 write_csv(EC_summary, str_glue("output/EC_summary_selectscreen_{get_timestamp()}.csv"))
 # generate global parameters for all plots------------------------------------------
 pt_size = 3 # size for all geom_point
-all_treatments <- distinct(plate_data["treatment"])$treatment
-all_targets <- distinct(plate_data["target"])$target
+# all_treatments <- unique(plate_data$treatment)
+# all_targets <- unique(plate_data$target)
 # find x-axis min/max values for consistent zoom window between all plots
 x_min <- floor(min(plate_data$log_dose))
 x_max <- ceiling(max(plate_data$log_dose))
@@ -90,7 +90,7 @@ plot_treatment <- function(data, trt, viridis_begin = 1, viridis_end = 0){
 }
 # plot data for each treatment separately----------------------------------------
 treatment_plots = list()
-for (trt in all_treatments){
+for (trt in treatments){
   trt_data <- filter_trt_tgt(plate_data, trt)
   num_tgts <- length(unique(trt_data$target))
   vr <- viridis_range(num_tgts)
@@ -128,7 +128,7 @@ vr <- viridis_range(length(treatments))
 viridis_begin <- vr[1]
 viridis_end <- vr[2]
 # plot data for each target separately------------------------------------------
-for (tgt in all_targets){
+for (tgt in targets){
   plate_summary <- plate_data %>%
     filter(target == tgt) %>%
     group_by(treatment, log_dose) %>% # group into replicates for each condition
