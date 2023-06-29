@@ -80,28 +80,23 @@ plate_data <- plate_data %>%
 font_base_size <- 14 # 14 is theme_prism default
 # set default point size for plots
 pt_size = 3
-# import helper function for summarizing plate data
-source("summarize_activity.R")
-# helper function for saving plots----------------------------------------------
+# source("summarize_activity.R") # moved to doseplotr
+# helper function for saving plots (deprecating)----------------------------------------------
 scale_facet <- 4.5 # plot width per col/height per row
-legend_pad <- 0.3 # extra width for legend icon
-text_factor <- font_base_size / 120 # approx width per character of longest legend text
-save_plot <- function(filename, legend_len = 0, nrow = 1, ncol = 1, width = 0, height = 0, ...){
-  # if width is not provided, calculate width from length of legend text
-  if(width == 0){
-    if(!no_legend){
-      width <- ncol * scale_facet + legend_pad + legend_len * text_factor}
-    else{width <- ncol * scale_facet}
-  }
-  if(height == 0){
-    height <- nrow * scale_facet
-  }
-  ggsave(filename, bg = "transparent", width = width, height = height, ...)}
-# helper function for getting length of longest string in a list---------------
-longest <- function(strings){
-  lengths <- map(strings, nchar)
-  lengths[[which.max(lengths)]]
-}
+# moving plot logic to doseplotr
+# legend_pad <- 0.3 # extra width for legend icon
+# text_factor <- font_base_size / 120 # approx width per character of longest legend text
+# save_plot <- function(filename, legend_len = 0, nrow = 1, ncol = 1, width = 0, height = 0, ...){
+#   # if width is not provided, calculate width from length of legend text
+#   if(width == 0){
+#     if(!no_legend){
+#       width <- ncol * scale_facet + legend_pad + legend_len * text_factor}
+#     else{width <- ncol * scale_facet}
+#   }
+#   if(height == 0){
+#     height <- nrow * scale_facet
+#   }
+#   ggsave(filename, bg = "transparent", width = width, height = height, ...)}
 # helper function to add ggplot objects common to all plots--------------------
 plot_global <- function(plot){
   plot +
@@ -116,48 +111,47 @@ plot_global <- function(plot){
     theme(plot.background = element_blank()) + # need for transparent background
     {if(no_legend)theme(legend.position = "none")} +
     # can't figure out how to make 10 subscript and still bold
-    labs(x = "log10[compound] (M)",
+      labs(x = "log10[compound] (M)",
          y = "relative cell viability (%)")
 }
 # fit models to output EC values------------------------------------------------
 EC_summary <- summarize_models(plate_data)
 write_csv(EC_summary, str_glue("output/EC_summary_{get_timestamp()}.csv"))
 # set parameters for treatment plots--------------------------------------------
-color_scale <- "turbo"
+# color_scale <- "turbo"
 vr <- viridis_range(length(targets))
 viridis_begin <- vr[1]
 viridis_end <- vr[2]
-# helper function to plot one treatment----------------------------------------
-plot_treatment <- function(trt){
+# helper function to plot one treatment (moving to doseplotr)----------------------------------------
+plot_treatment_old <- function(trt){
   plate_summary <- plate_data %>%
     filter(treatment == trt) %>% # get data from one treatment to work with
     group_by(target, log_dose) %>%  # get set of replicates for each condition
-    summarize_activity()
+    summarize_response(response_col = "response_norm")
   # bracket ggplot so it can be piped to helper function
-  {ggplot(plate_summary, aes(x = log_dose, y = mean_read, color = target)) +
+  p <- {ggplot(plate_summary, aes(x = log_dose, y = mean_read, color = target)) +
       geom_point(aes(shape = target), size = pt_size) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
-      # second error bars for 95% CI
-      # geom_errorbar(aes(ymin = ymin_activity, ymax = ymax_activity, width = w), alpha = 0.4) +
-      # use drm method from drc package to fit dose response curve
+      # use drm method from drc package to plot dose response curve
+      # todo: replace this with same drda method that fits EC50s
       geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
-                se = FALSE, linewidth = 1)} %>%
+                se = FALSE, linewidth = 1)} |>
     plot_global() +
-    # theme(aspect.ratio = 1) +
     scale_color_viridis(option = color_scale,
                         discrete = TRUE,
                         begin = viridis_begin, end = viridis_end) +
     #scale_color_manual(values = c("black","darkred")) +
     labs(title = trt)
+  return(p)
 }
 # plot data for each treatment separately----------------------------------------
 for (trt in treatments){
-  plot_treatment(trt)
-  # save plot with manually optimized aspect ratio
-  save_plot(str_glue("output/{trt}_{get_timestamp()}.{plot_type}"), legend_len = longest(targets))
+  plot_treatment_old(trt) |> 
+  # plot_treatment(plate_data, trt, x_limits = x_limits) |> 
+    save_plot(str_glue("output/{trt}_{get_timestamp()}.{plot_type}"), legend_len = longest(targets))
 }  
-# plot data for all treatments in facets----------------------------------
+# plot data for all treatments in facets (paused)----------------------------------
 # treatment_plots = list()
 # for (trt in treatments){
 #   treatment_plots <- append(treatment_plots, list(plot_treatment(trt)))
@@ -184,9 +178,9 @@ for (t in targets){
   plate_summary <- plate_data %>%
     filter(target == t) %>%
     group_by(treatment, log_dose) %>% # group into replicates for each condition
-    summarize_activity()
+    summarize_response(response_col = "response_norm")
   # bracket ggplot so it can be piped to helper function
-  {ggplot(plate_summary, aes(x = log_dose, y = mean_read, color = treatment)) +
+  p <- {ggplot(plate_summary, aes(x = log_dose, y = mean_read, color = treatment)) +
       geom_point(aes(shape = treatment), size = pt_size) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
@@ -200,7 +194,7 @@ for (t in targets){
     #scale_color_grey(start = grey_start, end = grey_end) +
     scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
     labs(title = t)
-  save_plot(str_glue("output/{t}_{get_timestamp()}.{plot_type}"), legend_len = longest(treatments))
+  save_plot(p, str_glue("output/{t}_{get_timestamp()}.{plot_type}"), legend_len = longest(treatments))
 }
 # plot data for all targets at once-----------------------------------------
 plate_summary <- plate_data %>%
