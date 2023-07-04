@@ -11,6 +11,7 @@ library(scales)
 library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
 library(lemon) # for fancy facet wrapping
+library(doseplotr)
 # import parameter files and data---------------------------------
 # note the order treatments are imported is the order they will be plotted
 input_filename <- "input/EC50s.csv"
