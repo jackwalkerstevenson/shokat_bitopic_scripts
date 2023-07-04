@@ -6,10 +6,12 @@ library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
 library(doseplotr) # you bet
 # import precalculated IC50 table-----------------------------------------------
-input_filename <- "input/EC_summary_2023-06-29T104324.csv"
+input_filename <- "input/EC_summary_2023-07-03T204947.csv"
 source("parameters/treatments.R") # import list of treatments to include in plots
 source("parameters/targets.R") # import list of targets to include in plots
 data <- read_csv(input_filename) |> 
+  filter(treatment %in% treatments) |> # take only specified treatments
+  filter(target %in% targets) |> # take only specified targets
   mutate(target = fct_relevel(target, targets)) |> 
   mutate(treatment = fct_relevel(treatment, treatments))
 wt_IC50s <- data |>
@@ -42,6 +44,6 @@ p <- data |>
   labs(y = "fold change in IC50 vs wt")
 ggsave(str_glue("output/fold_change_{get_timestamp()}.{plot_type}"),
        bg = "transparent",
-       width = 10, height = 10)
+       width = 14, height = 10)
   # save_plot(p, str_glue("output/fold_change_{get_timestamp()}.{plot_type}"),
             # width = 12, height = 8))
