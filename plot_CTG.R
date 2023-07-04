@@ -52,10 +52,10 @@ input_directory <- "input/"
 plot_type <- "pdf"
 no_legend <- FALSE # global variable for removing all legends from plots
 # import data----------------------------------------------------------------
-plate_data <- import_plates(input_directory) |>
-# input_filename <- "input/import.csv"
-# plate_data <- readr::read_csv(input_filename) |>
-  preprocess_plate_data() |> 
+input_filename <- "input/2023-06-21 Ivan raw data names edited.csv"
+plate_data <- readr::read_csv(input_filename) |>
+  preprocess_plate_data() |>
+# plate_data <- import_plates(input_directory) |>
   filter(treatment %in% treatments) |> # take only specified treatments
   filter(target %in% targets) # take only specified targets
 # assert that all treatments listed are actually present in imported data
@@ -71,6 +71,8 @@ if (is.null(targets)){
 x_min <- floor(min(plate_data$log_dose))
 x_max <- ceiling(max(plate_data$log_dose))
 x_limits <- c(x_min, x_max)
+global_xlim <- FALSE
+# x_limits <- c(-11,-5)
 # create logistic minor breaks for all treatments
 minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
 plate_data <- plate_data %>% 
@@ -98,7 +100,7 @@ scale_facet <- 4.5 # plot width per col/height per row
 #   }
 #   ggsave(filename, bg = "transparent", width = width, height = height, ...)}
 # helper function to add ggplot objects common to all plots--------------------
-plot_global <- function(plot){
+plot_global <- function(plot, x_limits){
   plot +
     scale_x_continuous(guide = "prism_offset_minor", # end at last tick
                        breaks = scales::breaks_width(1),
@@ -118,7 +120,10 @@ plot_global <- function(plot){
 EC_summary <- summarize_models(plate_data)
 write_csv(EC_summary, str_glue("output/EC_summary_{get_timestamp()}.csv"))
 # set parameters for treatment plots--------------------------------------------
-# color_scale <- "turbo"
+color_scale <- "viridis"
+if(length(targets) > 7){
+  color_scale <- "turbo"
+}
 vr <- viridis_range(length(targets))
 viridis_begin <- vr[1]
 viridis_end <- vr[2]
@@ -128,6 +133,11 @@ plot_treatment_old <- function(trt){
     filter(treatment == trt) %>% # get data from one treatment to work with
     group_by(target, log_dose) %>%  # get set of replicates for each condition
     summarize_response(response_col = "response_norm")
+  if(!global_xlim){
+    x_min <- floor(min(plate_summary$log_dose))
+    x_max <- ceiling(max(plate_summary$log_dose))
+    x_limits <- c(x_min, x_max)
+  }
   # bracket ggplot so it can be piped to helper function
   p <- {ggplot(plate_summary, aes(x = log_dose, y = mean_read, color = target)) +
       geom_point(aes(shape = target), size = pt_size) +
@@ -137,7 +147,7 @@ plot_treatment_old <- function(trt){
       # todo: replace this with same drda method that fits EC50s
       geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
                 se = FALSE, linewidth = 1)} |>
-    plot_global() +
+    plot_global(x_limits) +
     scale_color_viridis(option = color_scale,
                         discrete = TRUE,
                         begin = viridis_begin, end = viridis_end) +
@@ -168,17 +178,25 @@ for (trt in treatments){
 # set color parameters for target plots--------------------------------------
 alpha_val <- 1
 color_scale <- "viridis"
+if(length(treatments) > 6){
+  color_scale <- "turbo"
+}
 vr <- viridis_range(length(treatments))
 viridis_begin <- vr[1]
 viridis_end <- vr[2]
-grey_start <- 0.7
-grey_end <- 0
+# grey_start <- 0.7
+# grey_end <- 0
 # plot data for each target separately------------------------------------------
 for (t in targets){
   plate_summary <- plate_data %>%
     filter(target == t) %>%
     group_by(treatment, log_dose) %>% # group into replicates for each condition
     summarize_response(response_col = "response_norm")
+  if(!global_xlim){
+    x_min <- floor(min(plate_summary$log_dose))
+    x_max <- ceiling(max(plate_summary$log_dose))
+    x_limits <- c(x_min, x_max)
+  }
   # bracket ggplot so it can be piped to helper function
   p <- {ggplot(plate_summary, aes(x = log_dose, y = mean_read, color = treatment)) +
       geom_point(aes(shape = treatment), size = pt_size) +
@@ -190,7 +208,7 @@ for (t in targets){
       geom_line(#aes(linetype = treatment),  # linetype for better grayscale
                 stat = "smooth", method = "drm", method.args = list(fct = L.4()),
                 se = FALSE, linewidth = 1, alpha = alpha_val)} %>%
-    plot_global() +
+    plot_global(x_limits) +
     #scale_color_grey(start = grey_start, end = grey_end) +
     scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
     labs(title = t)
@@ -199,15 +217,15 @@ for (t in targets){
 # plot data for all targets at once-----------------------------------------
 plate_summary <- plate_data %>%
   group_by(target, treatment, log_dose) %>% # group into replicates for each condition
-  summarize_activity()
-{ggplot(plate_summary,aes(x = log_dose, y = mean_read, color = treatment)) +
+  summarize_response(response_col = "response_norm")
+p <- {ggplot(plate_summary,aes(x = log_dose, y = mean_read, color = treatment)) +
     geom_point(aes(shape = treatment), size = pt_size) +
     # error bars = mean plus or minus standard error
     geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
     # use drm method from drc package to fit dose response curve
     geom_line(aes(linetype = target), stat = "smooth", method = "drm", method.args = list(fct = L.4()),
               se = FALSE, linewidth = 1, alpha = alpha_val)} %>%
-  plot_global() +
+  plot_global(x_limits = x_limits) +
   scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
   labs(title = "All data")
-save_plot(str_glue("output/all_data_{get_timestamp()}.{plot_type}"), legend_len = longest(append(targets, treatments)))
+save_plot(p, str_glue("output/all_data_{get_timestamp()}.{plot_type}"), legend_len = longest(append(targets, treatments)))
