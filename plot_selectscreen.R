@@ -44,10 +44,10 @@ minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
 # helper function for saving plots----------------------------------------------
 scale_facet <- 4 # plot width per col/height per row
 #todo: allow overriding width and height if provided
-save_plot <- function(plot, nrow = 1, ncol = 1, ...){
-  ggsave(plot, bg = "transparent",
-         width = ncol*scale_facet + 2,
-         height = nrow*scale_facet, ...)}
+# save_plot <- function(plot, nrow = 1, ncol = 1, ...){
+#   ggsave(plot, bg = "transparent",
+#          width = ncol*scale_facet + 2,
+#          height = nrow*scale_facet, ...)}
 # helper function for summarizing replicate data for plotting------------------
 # source("activity_summarize.R")
 plate_summarize <- function(x){
@@ -102,7 +102,8 @@ for (trt in treatments){
                                                 viridis_end = vr_end)))
   plot_treatment(trt_data, trt, viridis_begin = vr_begin, viridis_end = vr_end)
   # save plot with manually optimized aspect ratio
-  save_plot(str_glue("output/{trt}_{get_timestamp()}.{plot_type}"))
+  save_plot(str_glue("output/{trt}_{get_timestamp()}.{plot_type}"),
+            legend_len = longest(targets))
 }  
 # plot data for all treatments in facets----------------------------------
 # treatment_plots = list()
@@ -120,7 +121,9 @@ wrap_plots(treatment_plots, guides = "collect", ncol = cols, nrow = rows) &
   theme(plot.margin = unit(c(plot_mar,plot_mar,plot_mar,plot_mar), "pt"),
         plot.background = element_blank(),
         legend.text= element_text(face = "bold", size = 12))
-save_plot(str_glue("output/treatment_facets_{get_timestamp()}.{plot_type}"), ncol = cols, nrow = rows)
+save_plot(str_glue("output/treatment_facets_{get_timestamp()}.{plot_type}"),
+          ncol = cols, nrow = rows,
+          legend_len = longest(targets))
 # set color parameters for target plots--------------------------------------
 alpha_val <- 1
 color_scale <- "viridis"
@@ -147,7 +150,8 @@ for (tgt in targets){
     scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
     labs(title = tgt,
          y = "kinase activity (%)")
-  save_plot(str_glue("output/{tgt}_{get_timestamp()}.{plot_type}"))
+  save_plot(str_glue("output/{tgt}_{get_timestamp()}.{plot_type}"),
+            legend_len = longest(treatments))
 }
 # plot data for all targets at once-----------------------------------------
 plate_summary <- plate_data %>%
@@ -166,4 +170,5 @@ plate_summary <- plate_data %>%
   scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
   labs(title = "All data",
        y = "kinase activity (%)")
-save_plot(str_glue("output/all_data_{get_timestamp()}.{plot_type}"))
+save_plot(str_glue("output/all_data_{get_timestamp()}.{plot_type}"),
+          legend_len = longest(treatments))
