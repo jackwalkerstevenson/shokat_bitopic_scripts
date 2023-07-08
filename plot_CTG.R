@@ -36,6 +36,7 @@ library(tidyverse) # for tidy data handling
 library(readxl) # for excel file handling
 library(assertthat) # for testing
 library(ggprism)  # for pretty prism-like plots
+library(scales) # for axis transforms
 library(plater)  # for tidy importing of plate data
 library(viridis) # for color schemes
 library(patchwork) # for plot organization
@@ -52,7 +53,7 @@ input_directory <- "input/"
 plot_type <- "pdf"
 no_legend <- FALSE # global variable for removing all legends from plots
 # import data----------------------------------------------------------------
-input_filename <- "input/2023-06-21 Ivan raw data names edited.csv"
+input_filename <- "input/Ivan CTG 2023-07-03 combined 471 472 473.csv"
 plate_data <- readr::read_csv(input_filename) |>
   preprocess_plate_data() |>
 # plate_data <- import_plates(input_directory) |>
@@ -117,8 +118,8 @@ plot_global <- function(plot, x_limits){
          y = "relative cell viability (%)")
 }
 # fit models to output EC values------------------------------------------------
-EC_summary <- summarize_models(plate_data)
-write_csv(EC_summary, str_glue("output/EC_summary_{get_timestamp()}.csv"))
+model_summary <- summarize_models(plate_data)
+write_csv(model_summary, str_glue("output/model_summary_{get_timestamp()}.csv"))
 # set parameters for treatment plots--------------------------------------------
 color_scale <- "viridis"
 if(length(targets) > 7){
@@ -214,18 +215,15 @@ for (t in targets){
     labs(title = t)
   save_plot(p, str_glue("output/{t}_{get_timestamp()}.{plot_type}"), legend_len = longest(treatments))
 }
-# plot data for all targets at once-----------------------------------------
-plate_summary <- plate_data %>%
-  group_by(target, treatment, log_dose) %>% # group into replicates for each condition
-  summarize_response(response_col = "response_norm")
-p <- {ggplot(plate_summary,aes(x = log_dose, y = mean_read, color = treatment)) +
-    geom_point(aes(shape = treatment), size = pt_size) +
-    # error bars = mean plus or minus standard error
-    geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
-    # use drm method from drc package to fit dose response curve
-    geom_line(aes(linetype = target), stat = "smooth", method = "drm", method.args = list(fct = L.4()),
-              se = FALSE, linewidth = 1, alpha = alpha_val)} %>%
-  plot_global(x_limits = x_limits) +
+# plot IC50s for all targets at once-----------------------------------------
+p <- ggplot(model_summary,aes(x = target, y = IC50_nM,
+                              color = treatment, shape = treatment)) +
+  geom_point(size = 4) +
+  scale_y_continuous(trans = c("log10", "reverse")) +
   scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
-  labs(title = "All data")
-save_plot(p, str_glue("output/all_data_{get_timestamp()}.{plot_type}"), legend_len = longest(append(targets, treatments)))
+  theme_prism(base_size = font_base_size) + # make it look fancy like prism
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) +
+  theme(plot.background = element_blank()) + # need for transparent background
+  labs(y = "IC50 (nM)")
+save_plot(p, str_glue("output/all_data_{get_timestamp()}.{plot_type}"),
+          width = 10, height = 8)
