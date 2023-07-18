@@ -29,15 +29,26 @@ color_scale <- "viridis"
 vr <- viridis_range(length(treatments))
 viridis_begin <- vr[1]
 viridis_end <- vr[2]
+x_min <- floor(min(log10(data$fold_vs_wt_IC50)))
+x_max <- ceiling(max(log10(data$fold_vs_wt_IC50)))
+breaks_x <- 10^rep(x_min : x_max)
+minor_x <- rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9))
 p <- data |> 
-  filter(target != "K562 pUltra BCR-ABL1 wt") |> 
+  filter(!target %in% c("K562 pUltra BCR-ABL1 wt", "K562 pUltra control")) |> 
   ggplot(aes(y = target, x = fold_vs_wt_IC50,
              fill = treatment,
-             label = round(fold_vs_wt_IC50, digits = 1))) +
+             label = signif(fold_vs_wt_IC50, digits = 2))) +
   geom_bar(stat = "identity",
            position = position_dodge2(reverse = TRUE, padding = 0)) +
-  geom_text(position = position_dodge2(width = 1, reverse = TRUE), hjust = -0.1) +
-  scale_x_continuous(trans = "log10", expand = expansion(mult = .1),) +
+  geom_text(position = position_dodge2(width = 1, reverse = TRUE),
+            hjust = -0.1,
+            parse = FALSE) +
+  scale_x_continuous(trans = "log10",
+                     expand = expansion(mult = .1),
+                     guide = "prism_offset_minor", # end at last tick
+                     breaks = breaks_x,
+                     labels = label_comma(accuracy = 1, big.mark = ""),
+                     minor_breaks = minor_x,) +
   scale_y_discrete(limits = rev) +
   scale_fill_viridis(option = color_scale,
                       discrete = TRUE,
@@ -46,4 +57,28 @@ p <- data |>
   theme(plot.background = element_blank()) + # need for transparent background
   labs(x = "fold change in IC50 vs wt")
 save_plot(p, str_glue("output/fold_change_bar_{get_timestamp()}.{plot_type}"),
-          width = 14, height = 10)
+          width = 14, height = 8)
+# strip plot of raw IC50s-----------------------------------------------
+x_min <- floor(min(log10(data$IC50_nM)))
+x_max <- ceiling(max(log10(data$IC50_nM)))
+breaks_x <- 10^rep(x_min : x_max)
+minor_x <- rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9))
+p <- data |> 
+  ggplot(aes(y = target, x = IC50_nM,
+             color = treatment)) +
+  geom_point(size = 4, alpha = 0.8) +
+  scale_x_continuous(trans = c("log10", "reverse"),
+                     guide = "prism_offset_minor", # end at last tick
+                     breaks = breaks_x,
+                     labels = label_comma(accuracy = 1, big.mark = ""),
+                     minor_breaks = minor_x,
+                     expand = expansion(mult = .1)) +
+  scale_y_discrete(limits = rev) +
+  scale_color_viridis(option = color_scale,
+                     discrete = TRUE,
+                     begin = viridis_begin, end = viridis_end) +
+  theme_prism() +
+  theme(plot.background = element_blank()) + # need for transparent background
+  labs(x = "IC50 (nM)")
+save_plot(p, str_glue("output/IC50_bar_{get_timestamp()}.{plot_type}"),
+          width = 14, height = 8)
