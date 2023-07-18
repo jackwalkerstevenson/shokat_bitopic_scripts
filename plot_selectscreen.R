@@ -100,9 +100,9 @@ for (trt in treatments){
                             list(plot_treatment(trt_data, trt,
                                                 viridis_begin = vr_begin,
                                                 viridis_end = vr_end)))
-  plot_treatment(trt_data, trt, viridis_begin = vr_begin, viridis_end = vr_end)
+  p <- plot_treatment(trt_data, trt, viridis_begin = vr_begin, viridis_end = vr_end)
   # save plot with manually optimized aspect ratio
-  save_plot(str_glue("output/{trt}_{get_timestamp()}.{plot_type}"),
+  save_plot(p, str_glue("output/{trt}_{get_timestamp()}.{plot_type}"),
             legend_len = longest(targets))
 }  
 # plot data for all treatments in facets----------------------------------
@@ -117,11 +117,11 @@ for (trt in treatments){
 plot_mar <- 15 # margin between wrapped plots, in points
 cols = ceiling(sqrt(length(treatments)))
 rows = ceiling(length(treatments)/cols)
-wrap_plots(treatment_plots, guides = "collect", ncol = cols, nrow = rows) &
+p <- wrap_plots(treatment_plots, guides = "collect", ncol = cols, nrow = rows) &
   theme(plot.margin = unit(c(plot_mar,plot_mar,plot_mar,plot_mar), "pt"),
         plot.background = element_blank(),
         legend.text= element_text(face = "bold", size = 12))
-save_plot(str_glue("output/treatment_facets_{get_timestamp()}.{plot_type}"),
+save_plot(p, str_glue("output/treatment_facets_{get_timestamp()}.{plot_type}"),
           ncol = cols, nrow = rows,
           legend_len = longest(targets))
 # set color parameters for target plots--------------------------------------
@@ -137,7 +137,7 @@ for (tgt in targets){
     group_by(treatment, log_dose) %>% # group into replicates for each condition
     plate_summarize()
   # bracket ggplot so it can be piped to helper function
-  {ggplot(plate_summary, aes(x = log_dose, y = mean_read, color = treatment)) +
+  p <- {ggplot(plate_summary, aes(x = log_dose, y = mean_read, color = treatment)) +
       geom_point(aes(shape = treatment), size = pt_size) +
       # error bars = mean plus or minus standard error
       geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
@@ -150,14 +150,14 @@ for (tgt in targets){
     scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
     labs(title = tgt,
          y = "kinase activity (%)")
-  save_plot(str_glue("output/{tgt}_{get_timestamp()}.{plot_type}"),
+  save_plot(p, str_glue("output/{tgt}_{get_timestamp()}.{plot_type}"),
             legend_len = longest(treatments))
 }
 # plot data for all targets at once-----------------------------------------
 plate_summary <- plate_data %>%
   group_by(target, treatment, log_dose) %>% # group into replicates for each condition
   plate_summarize()
-{ggplot(plate_summary,aes(x = log_dose, y = mean_read, color = treatment)) +
+p <- {ggplot(plate_summary,aes(x = log_dose, y = mean_read, color = treatment)) +
     geom_point(aes(shape = treatment), size = pt_size) +
     # error bars = mean plus or minus standard error
     geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
@@ -170,5 +170,5 @@ plate_summary <- plate_data %>%
   scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
   labs(title = "All data",
        y = "kinase activity (%)")
-save_plot(str_glue("output/all_data_{get_timestamp()}.{plot_type}"),
+save_plot(p, str_glue("output/all_data_{get_timestamp()}.{plot_type}"),
           legend_len = longest(treatments))
