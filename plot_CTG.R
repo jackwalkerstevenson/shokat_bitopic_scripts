@@ -121,10 +121,40 @@ plot_global <- function(plot, x_limits){
 # fit models to output EC values------------------------------------------------
 model_summary <- summarize_models(plot_data)
 write_csv(model_summary, str_glue("output/model_summary_{get_timestamp()}.csv"))
-# plot untreated data by target for QC
-# p <- plate_data |>
-  # filter(conc_nM)
-  # group_by(target)
+# plot untreated data by target for QC------------------------------------------
+# set color parameters for treatments
+color_scale <- "viridis"
+if(length(treatments) > 6){
+  color_scale <- "turbo"
+}
+vr <- viridis_range(length(treatments))
+viridis_begin <- vr[1]
+viridis_end <- vr[2]
+pt_size = 3
+p <- plate_data |>
+  filter(log_dose == -Inf) |> 
+  group_by(target, treatment) |>
+  summarize_response(response_col = "response") |>
+  ggplot(aes(y = target, x = mean_response, color = treatment)) +
+  geom_point(size = pt_size, alpha = 0.8) +
+  scale_y_discrete(limits = rev) +
+  scale_x_continuous(labels = \(x) format(x, scientific = TRUE)) +
+  scale_color_viridis(option = color_scale, discrete = TRUE,
+                      begin = viridis_begin, end = viridis_end) +
+  geom_errorbar(aes(xmax = mean_response+sem, xmin = mean_response-sem,
+                    width = w)) +
+  theme_prism() +
+  theme(plot.background = element_blank()) + # need for transparent background
+  labs(x = "CTG luminescense",
+       title = "Growth of untreated control wells") +
+  geom_point(data = plate_data |>
+           filter(log_dose == -Inf) |>
+           group_by(target) |> 
+           summarize_response(response_col = "response"),
+           size = 6, alpha = 0.3, color = "black") +
+  guides(color = guide_legend(override.aes = list(size = pt_size)))
+save_plot(p, str_glue("output/QC_untreated_{get_timestamp()}.{plot_type}"),
+          width = 14, height = 8)
 # set parameters for treatment plots--------------------------------------------
 color_scale <- "viridis"
 if(length(targets) > 7){
@@ -145,10 +175,10 @@ plot_treatment_old <- function(trt){
     x_limits <- c(x_min, x_max)
   }
   # bracket ggplot so it can be piped to helper function
-  p <- {ggplot(data_summary, aes(x = log_dose, y = mean_read, color = target)) +
+  p <- {ggplot(data_summary, aes(x = log_dose, y = mean_response, color = target)) +
       geom_point(aes(shape = target), size = pt_size) +
       # error bars = mean plus or minus standard error
-      geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
+      geom_errorbar(aes(ymax = mean_response+sem, ymin = mean_response-sem, width = w)) +
       # use drm method from drc package to plot dose response curve
       # todo: replace this with same drda method that fits EC50s
       geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
@@ -204,10 +234,10 @@ for (t in targets){
     x_limits <- c(x_min, x_max)
   }
   # bracket ggplot so it can be piped to helper function
-  p <- {ggplot(data_summary, aes(x = log_dose, y = mean_read, color = treatment)) +
+  p <- {ggplot(data_summary, aes(x = log_dose, y = mean_response, color = treatment)) +
       geom_point(aes(shape = treatment), size = pt_size) +
       # error bars = mean plus or minus standard error
-      geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
+      geom_errorbar(aes(ymax = mean_response+sem, ymin = mean_response-sem, width = w), alpha = alpha_val) +
       # second error bars for 95% CI
       # geom_errorbar(aes(ymin = ymin_activity, ymax = ymax_activity, width = w), alpha = 0.4) +
       # use drm method from drc package to fit dose response curve
