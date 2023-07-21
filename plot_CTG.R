@@ -71,36 +71,36 @@ plate_data <- plate_data |>
 plot_data <- plate_data |> filter(log_dose != -Inf)
 # generate global parameters for all plots------------------------------------------
 if (is.null(targets)){
-  targets <- unique(plot_data$target)}
+  targets <- as.vector(unique(plot_data$target))}
 # find x-axis min/max values for consistent zoom window between all plots
 x_min <- floor(min(plot_data$log_dose))
 x_max <- ceiling(max(plot_data$log_dose))
 x_limits <- c(x_min, x_max)
-global_x_lim <- TRUE
-# x_limits <- c(-11,-5)
+global_x_lim <- TRUE # whether to use these global x limits
+# x_limits <- c(-11,-5) # manual x limit backup
 # create logistic minor breaks for all treatments
 minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
 # set default font size for plots
 font_base_size <- 14 # 14 is theme_prism default
 # set default point size for plots
 pt_size = 3
-# helper function to add ggplot objects common to all plots--------------------
-plot_global <- function(plot, x_limits){
-  plot +
-    scale_x_continuous(guide = "prism_offset_minor", # end at last tick
-                       breaks = scales::breaks_width(1),
-                       minor_breaks = minor_x) + # manual minor ticks
-    scale_y_continuous(guide = "prism_offset",  # end at last tick
-                       breaks = c(0,25,50,75,100)) + # manual y axis ticks
-    coord_cartesian(xlim = x_limits, # set x axis zoom from global values
-                    ylim = c(0,NA)) + # set y axis zoom locally
-    theme_prism(base_size = font_base_size) + # make it look fancy like prism
-    theme(plot.background = element_blank()) + # need for transparent background
-    {if(no_legend)theme(legend.position = "none")} +
-    # can't figure out how to make 10 subscript and still bold
-      labs(x = "log10[compound] (M)",
-         y = "relative cell viability (%)")
-}
+# helper function to add ggplot objects common to all plots (deprecating--------------------
+# plot_global <- function(plot, x_limits){
+#   plot +
+#     scale_x_continuous(guide = "prism_offset_minor", # end at last tick
+#                        breaks = scales::breaks_width(1),
+#                        minor_breaks = minor_x) + # manual minor ticks
+#     scale_y_continuous(guide = "prism_offset",  # end at last tick
+#                        breaks = c(0,25,50,75,100)) + # manual y axis ticks
+#     coord_cartesian(xlim = x_limits, # set x axis zoom from global values
+#                     ylim = c(0,NA)) + # set y axis zoom locally
+#     theme_prism(base_size = font_base_size) + # make it look fancy like prism
+#     theme(plot.background = element_blank()) + # need for transparent background
+#     {if(no_legend)theme(legend.position = "none")} +
+#     # can't figure out how to make 10 subscript and still bold
+#       labs(x = "log10[compound] (M)",
+#          y = "relative cell viability (%)")
+# }
 # fit models to output EC values------------------------------------------------
 model_summary <- summarize_models(plot_data)
 write_csv(model_summary, str_glue("output/plate_model_summary_{get_timestamp()}.csv"))
@@ -139,38 +139,6 @@ p <- plate_data |>
   guides(color = guide_legend(override.aes = list(size = pt_size)))
 save_plot(p, str_glue("output/plate_QC_untreated_{get_timestamp()}.{plot_type}"),
           width = 14, height = 8)
-# set parameters for treatment plots--------------------------------------------
-vr <- viridis_range(length(targets))
-vr_begin <- vr[[1]]
-vr_end <- vr[[2]]
-vr_option <- vr[[3]]
-# helper function to plot one treatment (moving to doseplotr)----------------------------------------
-# plot_treatment_old <- function(trt){
-#   data_summary <- plot_data |>
-#     filter(treatment == trt) |> # get data from one treatment to work with
-#     group_by(target, log_dose) |>  # get set of replicates for each condition
-#     summarize_response(response_col = "response_norm")
-#   if(!global_x_lim){
-#     x_min <- floor(min(data_summary$log_dose))
-#     x_max <- ceiling(max(data_summary$log_dose))
-#     x_limits <- c(x_min, x_max)
-#   }
-#   # bracket ggplot so it can be piped to helper function
-#   p <- {ggplot(data_summary, aes(x = log_dose, y = mean_response, color = target)) +
-#       geom_point(aes(shape = target), size = pt_size) +
-#       # error bars = mean plus or minus standard error
-#       geom_errorbar(aes(ymax = mean_response+sem, ymin = mean_response-sem, width = w)) +
-#       # use drm method from drc package to plot dose response curve
-#       # todo: replace this with same drda method that fits EC50s
-#       geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
-#                 se = FALSE, linewidth = 1)} |>
-#     plot_global(x_limits) +
-#     scale_color_viridis(option = vr_option, discrete = TRUE,
-#                         begin = vr_begin, end = vr_end) +
-#     #scale_color_manual(values = c("black","darkred")) +
-#     labs(title = trt)
-#   return(p)
-# }
 # plot data for each treatment separately----------------------------------------
 for (trt in treatments){
   plot_treatment(plot_data, trt,
@@ -180,45 +148,15 @@ for (trt in treatments){
       str_glue("output/plate_treatment_{trt}_{get_timestamp()}.{plot_type}"),
       legend_len = longest(targets))
 }  
-# set color parameters for target plots--------------------------------------
-alpha_val <- 1
-color_scale <- "viridis"
-if(length(treatments) > 6){
-  color_scale <- "turbo"
-}
-vr <- viridis_range(length(treatments))
-vr_begin <- vr[[1]]
-vr_end <- vr[[2]]
-vr_option <- vr[[3]]
-# grey_start <- 0.7
-# grey_end <- 0
 # plot data for each target separately------------------------------------------
-for (t in targets){
-  data_summary <- plot_data |>
-    filter(target == t) |>
-    group_by(treatment, log_dose) |> # group into replicates for each condition
-    summarize_response(response_col = "response_norm")
-  if(!global_x_lim){
-    x_min <- floor(min(data_summary$log_dose))
-    x_max <- ceiling(max(data_summary$log_dose))
-    x_limits <- c(x_min, x_max)
-  }
-  # bracket ggplot so it can be piped to helper function
-  p <- {ggplot(data_summary, aes(x = log_dose, y = mean_response, color = treatment)) +
-      geom_point(aes(shape = treatment), size = pt_size) +
-      # error bars = mean plus or minus standard error
-      geom_errorbar(aes(ymax = mean_response+sem, ymin = mean_response-sem, width = w), alpha = alpha_val) +
-      # second error bars for 95% CI
-      # geom_errorbar(aes(ymin = ymin_activity, ymax = ymax_activity, width = w), alpha = 0.4) +
-      # use drm method from drc package to fit dose response curve
-      geom_line(#aes(linetype = treatment),  # linetype for better grayscale
-                stat = "smooth", method = "drm", method.args = list(fct = L.4()),
-                se = FALSE, linewidth = 1, alpha = alpha_val)} |>
-    plot_global(x_limits) +
-    #scale_color_grey(start = grey_start, end = grey_end) +
-    scale_color_viridis(option = vr_option, discrete = TRUE,
-                        begin = vr_begin, end = vr_end) +
-    labs(title = t)
-  save_plot(p, str_glue("output/plate_target_{t}_{get_timestamp()}.{plot_type}"),
-            legend_len = longest(treatments))
+for (tgt in targets){
+  tgt_treatments <- as.vector(unique((plot_data |> filter_trt_tgt(tgt = tgt))$treatment))
+  # tgt_treatments_test <- unique(plot_data$treatment)
+  plot_target(plot_data, tgt,
+                 if(global_x_lim){x_limits = x_limits},
+                 response_col = "response_norm") |>
+    save_plot(
+      str_glue("output/plate_target_{tgt}_{get_timestamp()}.{plot_type}"),
+      # legend_len = longest(treatments))
+      legend_len = longest(tgt_treatments))
 }
