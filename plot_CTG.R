@@ -84,26 +84,10 @@ minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
 font_base_size <- 14 # 14 is theme_prism default
 # set default point size for plots
 pt_size = 3
-# helper function to add ggplot objects common to all plots (deprecating--------------------
-# plot_global <- function(plot, x_limits){
-#   plot +
-#     scale_x_continuous(guide = "prism_offset_minor", # end at last tick
-#                        breaks = scales::breaks_width(1),
-#                        minor_breaks = minor_x) + # manual minor ticks
-#     scale_y_continuous(guide = "prism_offset",  # end at last tick
-#                        breaks = c(0,25,50,75,100)) + # manual y axis ticks
-#     coord_cartesian(xlim = x_limits, # set x axis zoom from global values
-#                     ylim = c(0,NA)) + # set y axis zoom locally
-#     theme_prism(base_size = font_base_size) + # make it look fancy like prism
-#     theme(plot.background = element_blank()) + # need for transparent background
-#     {if(no_legend)theme(legend.position = "none")} +
-#     # can't figure out how to make 10 subscript and still bold
-#       labs(x = "log10[compound] (M)",
-#          y = "relative cell viability (%)")
-# }
-# fit models to output EC values------------------------------------------------
-model_summary <- summarize_models(plot_data)
-write_csv(model_summary, str_glue("output/plate_model_summary_{get_timestamp()}.csv"))
+# fit models and output model parameters----------------------------------------
+model_summary <- summarize_models(plot_data, response_col = "response_norm")
+write_csv(model_summary |> select(-model), # remove actual model from report
+          str_glue("output/plate_model_summary_{get_timestamp()}.csv"))
 # plot untreated data by target for QC------------------------------------------
 # set color parameters for treatments
 color_scale <- "viridis"
@@ -116,7 +100,7 @@ vr_end <- vr[[2]]
 vr_option <- vr[[3]]
 pt_size = 3
 p <- plate_data |>
-  filter(log_dose == -Inf) |> 
+  filter(log_dose == -Inf) |>
   group_by(target, treatment) |>
   summarize_response(response_col = "response") |>
   ggplot(aes(y = target, x = mean_response, color = treatment)) +
@@ -133,7 +117,7 @@ p <- plate_data |>
        title = "Growth of untreated control wells") +
   geom_point(data = plate_data |>
            filter(log_dose == -Inf) |>
-           group_by(target) |> 
+           group_by(target) |>
            summarize_response(response_col = "response"),
            size = 6, alpha = 0.3, color = "black") +
   guides(color = guide_legend(override.aes = list(size = pt_size)))
