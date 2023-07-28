@@ -52,6 +52,8 @@ dir.create("output/", showWarnings = FALSE)
 input_directory <- "input/"
 plot_type <- "pdf"
 no_legend <- FALSE # global variable for removing all legends from plots
+global_x_lim <- TRUE # whether to use these global x limits
+rigid <- TRUE # whether to use rigid low-dose asymptote
 # import data----------------------------------------------------------------
 input_filename <- "input/2023-06-21 Ivan raw data names edited.csv"
 plate_data <- readr::read_csv(input_filename) |>
@@ -76,7 +78,6 @@ if (is.null(targets)){
 x_min <- floor(min(plot_data$log_dose))
 x_max <- ceiling(max(plot_data$log_dose))
 x_limits <- c(x_min, x_max)
-global_x_lim <- TRUE # whether to use these global x limits
 # x_limits <- c(-11,-5) # manual x limit backup
 # create logistic minor breaks for all treatments
 minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
@@ -85,7 +86,9 @@ font_base_size <- 14 # 14 is theme_prism default
 # set default point size for plots
 pt_size = 3
 # fit models and output model parameters----------------------------------------
-model_summary <- summarize_models(plot_data, response_col = "response_norm")
+model_summary <- summarize_models(plot_data,
+                                  response_col = "response_norm",
+                                  rigid = rigid)
 write_csv(model_summary |> select(-model), # remove actual model from report
           str_glue("output/plate_model_summary_{get_timestamp()}.csv"))
 # plot untreated data by target for QC------------------------------------------
@@ -125,18 +128,19 @@ save_plot(p, str_glue("output/plate_QC_untreated_{get_timestamp()}.{plot_type}")
           width = 14, height = 8)
 # plot data for each treatment separately----------------------------------------
 for (trt in treatments){
-  plot_treatment(plot_data, trt,
+  trt_targets <- as.vector(unique((plot_data |> filter_trt_tgt(trt = trt))$target))
+  plot_treatment(plot_data, trt, rigid = rigid,
                  if(global_x_lim){x_limits = x_limits},
                  response_col = "response_norm") |>
     save_plot(
       str_glue("output/plate_treatment_{trt}_{get_timestamp()}.{plot_type}"),
-      legend_len = longest(targets))
+      legend_len = longest(trt_targets))
 }  
 # plot data for each target separately------------------------------------------
 for (tgt in targets){
   tgt_treatments <- as.vector(unique((plot_data |> filter_trt_tgt(tgt = tgt))$treatment))
   # tgt_treatments_test <- unique(plot_data$treatment)
-  plot_target(plot_data, tgt,
+  plot_target(plot_data, tgt, rigid = rigid,
                  if(global_x_lim){x_limits = x_limits},
                  response_col = "response_norm") |>
     save_plot(
