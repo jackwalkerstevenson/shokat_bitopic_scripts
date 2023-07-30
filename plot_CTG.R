@@ -44,35 +44,72 @@ library(doseplotr) # you bet
 
 # prepare global variables---------------------------------
 # the order of the treatment list is the order they will be plotted
-source("parameters/treatments.R") # import list of treatments to include in plots
+# source("parameters/treatments.R") # import list of treatments to include in plots
 source("parameters/targets.R") # import list of targets to include in plots
+input_directory <- "input/" # path to directory containing input files
+output_directory <- "output/" # path to directory in which to write output files
+plot_type <- "pdf" # file type of saved plot images
+font_base_size <- 14 # # font size for plots. 14 is theme_prism default
+pt_size = 3 # point size for plots
+no_legend <- FALSE # whether all plots should have no legend
+global_x_lim <- TRUE # whether all plots should use the same x limits
+rigid <- FALSE # whether to use rigid low-dose asymptote
+# filename to use if importing data from a single file instead of a directory
+input_filename <- "input/2023-07-03 Ivan raw data names edited.csv"
+# import and preprocess data----------------------------------------------------
 # create input and output directories, since git doesn't track empty directories
-dir.create("input/", showWarnings = FALSE) # do nothing if directory already exists
-dir.create("output/", showWarnings = FALSE)
-input_directory <- "input/"
-plot_type <- "pdf"
-no_legend <- FALSE # global variable for removing all legends from plots
-global_x_lim <- TRUE # whether to use these global x limits
-rigid <- TRUE # whether to use rigid low-dose asymptote
-# import data----------------------------------------------------------------
-input_filename <- "input/2023-06-21 Ivan raw data names edited.csv"
-plate_data <- readr::read_csv(input_filename) |>
-  preprocess_plate_data() |>
-# plate_data <- import_plates(input_directory) |>
-  filter(treatment %in% treatments) |> # take only specified treatments
-  filter(target %in% targets) # take only specified targets
-# assert that all treatments listed are actually present in imported data
-imported_treatments <- unique(plate_data$treatment)
-for(treatment in treatments){
-  assert_that(treatment %in% imported_treatments,
-  msg = glue::glue("treatment '{treatment}' from the list of treatments to plot was not found in imported data"))
+dir.create(input_directory, showWarnings = FALSE) # do nothing if directory already exists
+dir.create(output_directory, showWarnings = FALSE)
+if(exists("input_filename")){
+  plate_data <- readr::read_csv(input_filename) |>
+    preprocess_plate_data()
+} else {plate_data <- import_plates(input_directory)}
+# filter and validate imported data---------------------------------------------
+filter_validate_reorder <- function(data, colname, values){
+  data <- data |> 
+    dplyr::filter({{colname}} %in% values)
+  data_values <- unique(data[[colname]])
+  for(value in values){
+    assertthat::assert_that(value %in% data_values, msg = glue::glue(
+      "value {value} was not found in the data"))}
+  data |>
+    dplyr::mutate(colname =
+                    forcats::fct_relevel(.data[[colname]], values))
 }
-plate_data <- plate_data |> 
-  mutate(target = fct_relevel(target, targets)) |>
-  mutate(treatment = fct_relevel(treatment, treatments)) # treatments in order of input list
+# temporary script before replacing with function-------------------------------
+if(exists("treatments")){
+  plate_data <- plate_data |> 
+  filter(treatment %in% treatments) # take only specified treatments
+    # assert that all treatments listed are actually present in imported data
+  imported_treatments <- unique(plate_data$treatment)
+  for(treatment in treatments){
+    assert_that(treatment %in% imported_treatments,
+                msg = str_glue("treatment '{treatment}' from the list of ",
+                "treatments to plot was not found in imported data"))
+  }
+  plate_data <- plate_data |> 
+    mutate(treatment = fct_relevel(treatment, # relevel treatments by input list
+                                   treatments))
+}
+if(exists("targets")){
+  plate_data <- plate_data |> 
+    filter(target %in% targets) # take only specified targets
+  # assert that all targets listed are actually present in imported data
+  imported_targets <- unique(plate_data$target)
+  for(target in targets){
+    assert_that(target %in% imported_targets,
+                msg = str_glue("target '{target}' from the list of ",
+                               "targets to plot was not found in imported data"))
+  }
+  plate_data <- plate_data |> 
+    mutate(target = fct_relevel(target, # relevel targets by input list
+                                targets))
+}
 plot_data <- plate_data |> filter(log_dose != -Inf)
-# generate global parameters for all plots------------------------------------------
-if (is.null(targets)){
+# generate data-dependent global plot parameters--------------------------------
+if (!exists("treatments")){ # if treatments not specified, use all treatments
+  treatments <- as.vector(unique(plot_data$treatment))}
+if (!exists("targets")){ # if targets not specified, use all targets
   targets <- as.vector(unique(plot_data$target))}
 # find x-axis min/max values for consistent zoom window between all plots
 x_min <- floor(min(plot_data$log_dose))
@@ -81,27 +118,20 @@ x_limits <- c(x_min, x_max)
 # x_limits <- c(-11,-5) # manual x limit backup
 # create logistic minor breaks for all treatments
 minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
-# set default font size for plots
-font_base_size <- 14 # 14 is theme_prism default
-# set default point size for plots
-pt_size = 3
-# fit models and output model parameters----------------------------------------
+# fit models and report model parameters----------------------------------------
 model_summary <- summarize_models(plot_data,
                                   response_col = "response_norm",
-                                  rigid = rigid)
-write_csv(model_summary |> select(-model), # remove actual model from report
+                                  rigid = rigid) |> # use global rigid parameter
+  select(-model) |>  # remove actual model from report
+  mutate(across(where(is.numeric), \(x){signif(x, digits = 4)}))
+write_csv(model_summary,
           str_glue("output/plate_model_summary_{get_timestamp()}.csv"))
 # plot untreated data by target for QC------------------------------------------
 # set color parameters for treatments
-color_scale <- "viridis"
-if(length(treatments) > 6){
-  color_scale <- "turbo"
-}
 vr <- viridis_range(length(treatments))
 vr_begin <- vr[[1]]
 vr_end <- vr[[2]]
-vr_option <- vr[[3]]
-pt_size = 3
+vr_option <- vr[[3]] # color scale
 p <- plate_data |>
   filter(log_dose == -Inf) |>
   group_by(target, treatment) |>
