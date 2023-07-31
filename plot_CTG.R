@@ -132,10 +132,15 @@ vr <- viridis_range(length(treatments))
 vr_begin <- vr[[1]]
 vr_end <- vr[[2]]
 vr_option <- vr[[3]] # color scale
-p <- plate_data |>
-  filter(log_dose == -Inf) |>
+untreated_data_by_tgt <-  plate_data |>
+  filter(log_dose == -Inf) |> # untreated data only
+  group_by(target) |>
+  summarize_response(response_col = "response")
+untreated_data_by_tgt_and_trt <- plate_data |> 
+  filter(log_dose == -Inf) |> # untreated data only
   group_by(target, treatment) |>
-  summarize_response(response_col = "response") |>
+  summarize_response(response_col = "response")
+p <- untreated_data_by_tgt_and_trt |> 
   ggplot(aes(y = target, x = mean_response, color = treatment)) +
   geom_point(size = pt_size, alpha = 0.8) +
   scale_y_discrete(limits = rev) +
@@ -148,11 +153,14 @@ p <- plate_data |>
   theme(plot.background = element_blank()) + # need for transparent background
   labs(x = "CTG luminescense",
        title = "Growth of untreated control wells") +
-  geom_point(data = plate_data |>
-           filter(log_dose == -Inf) |>
-           group_by(target) |>
-           summarize_response(response_col = "response"),
+  geom_point(data = untreated_data_by_tgt,
            size = 6, alpha = 0.3, color = "black") +
+  geom_text(data = untreated_data_by_tgt, # label average points with value
+            aes(label = mean_response |>
+                  signif(digits = 3) |>
+                  format(scientific = TRUE)),
+            show.legend = FALSE, # no legend for the text labels
+            position = position_nudge(y = .3)) +
   guides(color = guide_legend(override.aes = list(size = pt_size)))
 save_plot(p, str_glue("output/plate_QC_untreated_{get_timestamp()}.{plot_type}"),
           width = 14, height = 8)
