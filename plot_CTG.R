@@ -44,7 +44,7 @@ library(doseplotr) # you bet
 
 # prepare global variables---------------------------------
 # the order of the treatment list is the order they will be plotted
-# source("parameters/treatments.R") # import list of treatments to include in plots
+source("parameters/treatments.R") # import list of treatments to include in plots
 source("parameters/targets.R") # import list of targets to include in plots
 input_directory <- "input/" # path to directory containing input files
 output_directory <- "output/" # path to directory in which to write output files
@@ -53,9 +53,9 @@ font_base_size <- 14 # # font size for plots. 14 is theme_prism default
 pt_size = 3 # point size for plots
 no_legend <- FALSE # whether all plots should have no legend
 global_x_lim <- TRUE # whether all plots should use the same x limits
-rigid <- FALSE # whether to use rigid low-dose asymptote
+rigid <- TRUE # whether to use rigid low-dose asymptote
 # filename to use if importing data from a single file instead of a directory
-input_filename <- "input/2023-07-03 Ivan raw data names edited.csv"
+# input_filename <- "input/2023-07-17 Ivan raw data names edited.csv"
 # import and preprocess data----------------------------------------------------
 # create input and output directories, since git doesn't track empty directories
 dir.create(input_directory, showWarnings = FALSE) # do nothing if directory already exists
@@ -80,7 +80,7 @@ filter_validate_reorder <- function(data, colname, values){
 if(exists("treatments")){
   plate_data <- plate_data |> 
   filter(treatment %in% treatments) # take only specified treatments
-    # assert that all treatments listed are actually present in imported data
+  # assert that all treatments listed are actually present in imported data
   imported_treatments <- unique(plate_data$treatment)
   for(treatment in treatments){
     assert_that(treatment %in% imported_treatments,
@@ -159,6 +159,7 @@ p <- untreated_data_by_tgt_and_trt |>
             aes(label = mean_response |>
                   signif(digits = 3) |>
                   format(scientific = TRUE)),
+            color = "black",
             show.legend = FALSE, # no legend for the text labels
             position = position_nudge(y = .3)) +
   guides(color = guide_legend(override.aes = list(size = pt_size)))
@@ -175,7 +176,7 @@ for (trt in treatments){
       legend_len = longest(trt_targets))
 }  
 # plot data for each target separately------------------------------------------
-for (tgt in targets){
+for (tgt in targets){ 
   tgt_treatments <- as.vector(unique((plot_data |> filter_trt_tgt(tgt = tgt))$treatment))
   # tgt_treatments_test <- unique(plot_data$treatment)
   plot_target(plot_data, tgt, rigid = rigid,
