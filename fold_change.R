@@ -6,7 +6,7 @@ library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
 library(doseplotr) # you bet
 # import precalculated IC50 table-----------------------------------------------
-input_filename <- "input/model_summary_2023-07-07T164437.csv"
+input_filename <- "input/plate_model_summary_2023-08-01T003436.csv" # Ivan 07-03 not rigid
 source("parameters/treatments.R") # import list of treatments to include in plots
 source("parameters/targets.R") # import list of targets to include in plots
 data <- read_csv(input_filename) |> 
@@ -25,10 +25,10 @@ data <- data |>
   mutate(fold_vs_wt_IC50 = IC50_nM/wt_IC50_nM)
 # bar plot of fold changes-----------------------------------------------
 plot_type = "pdf"
-color_scale <- "viridis"
 vr <- viridis_range(length(treatments))
-viridis_begin <- vr[1]
-viridis_end <- vr[2]
+viridis_begin <- vr[[1]]
+viridis_end <- vr[[2]]
+viridis_option <- vr[[3]]
 x_min <- floor(min(log10(data$fold_vs_wt_IC50)))
 x_max <- ceiling(max(log10(data$fold_vs_wt_IC50)))
 breaks_x <- 10^rep(x_min : x_max)
@@ -50,7 +50,7 @@ p <- data |>
                      labels = label_comma(accuracy = 1, big.mark = ""),
                      minor_breaks = minor_x,) +
   scale_y_discrete(limits = rev) +
-  scale_fill_viridis(option = color_scale,
+  scale_fill_viridis(option = viridis_option,
                       discrete = TRUE,
                       begin = viridis_begin, end = viridis_end) +
   theme_prism() +
@@ -68,17 +68,21 @@ p <- data |>
              color = treatment)) +
   geom_point(size = 4, alpha = 0.8) +
   scale_x_continuous(trans = c("log10", "reverse"),
-                     guide = "prism_offset_minor", # end at last tick
+                     guide = "prism_minor", # end at last tick
                      breaks = breaks_x,
                      labels = label_comma(accuracy = 1, big.mark = ""),
                      minor_breaks = minor_x,
                      expand = expansion(mult = .1)) +
   scale_y_discrete(limits = rev) +
-  scale_color_viridis(option = color_scale,
+  scale_color_viridis(option = viridis_option,
                      discrete = TRUE,
                      begin = viridis_begin, end = viridis_end) +
   theme_prism() +
+  theme(panel.grid = element_line(color = "black", linewidth = 0.5),
+        panel.grid.minor = element_line(color = "black",
+                                        linewidth = 0.1,
+                                        linetype = "dotted")) +
   theme(plot.background = element_blank()) + # need for transparent background
   labs(x = "IC50 (nM)")
-save_plot(p, str_glue("output/IC50_bar_{get_timestamp()}.{plot_type}"),
+save_plot(p, str_glue("output/IC50_dot_{get_timestamp()}.{plot_type}"),
           width = 14, height = 8)
