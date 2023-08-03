@@ -41,8 +41,7 @@ library(plater)  # for tidy importing of plate data
 library(viridis) # for color schemes
 library(patchwork) # for plot organization
 library(doseplotr) # you bet
-
-# prepare global variables---------------------------------
+# set global parameters---------------------------------------------------------
 # the order of the treatment list is the order they will be plotted
 source("parameters/treatments.R") # import list of treatments to include in plots
 source("parameters/targets.R") # import list of targets to include in plots
@@ -53,7 +52,8 @@ font_base_size <- 14 # # font size for plots. 14 is theme_prism default
 pt_size = 3 # point size for plots
 no_legend <- FALSE # whether all plots should have no legend
 global_x_lim <- TRUE # whether all plots should use the same x limits
-rigid <- TRUE # whether to use rigid low-dose asymptote
+rigid <- FALSE # whether to use rigid low-dose asymptote
+grid <- FALSE # whether to plot a background grid
 # filename to use if importing data from a single file instead of a directory
 # input_filename <- "input/2023-07-17 Ivan raw data names edited.csv"
 # import and preprocess data----------------------------------------------------
@@ -115,9 +115,7 @@ if (!exists("targets")){ # if targets not specified, use all targets
 x_min <- floor(min(plot_data$log_dose))
 x_max <- ceiling(max(plot_data$log_dose))
 x_limits <- c(x_min, x_max)
-# x_limits <- c(-11,-5) # manual x limit backup
-# create logistic minor breaks for all treatments
-minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
+# x_limits <- c(-12,-4) # manual x limit backup
 # fit models and report model parameters----------------------------------------
 model_summary <- summarize_models(plot_data,
                                   response_col = "response_norm",
@@ -168,7 +166,7 @@ save_plot(p, str_glue("output/plate_QC_untreated_{get_timestamp()}.{plot_type}")
 # plot data for each treatment separately----------------------------------------
 for (trt in treatments){
   trt_targets <- as.vector(unique((plot_data |> filter_trt_tgt(trt = trt))$target))
-  plot_treatment(plot_data, trt, rigid = rigid,
+  plot_treatment(plot_data, trt, rigid = rigid, grid = grid,
                  if(global_x_lim){x_limits = x_limits},
                  response_col = "response_norm") |>
     save_plot(
@@ -179,7 +177,7 @@ for (trt in treatments){
 for (tgt in targets){ 
   tgt_treatments <- as.vector(unique((plot_data |> filter_trt_tgt(tgt = tgt))$treatment))
   # tgt_treatments_test <- unique(plot_data$treatment)
-  plot_target(plot_data, tgt, rigid = rigid,
+  plot_target(plot_data, tgt, rigid = rigid, grid = grid,
                  if(global_x_lim){x_limits = x_limits},
                  response_col = "response_norm") |>
     save_plot(
