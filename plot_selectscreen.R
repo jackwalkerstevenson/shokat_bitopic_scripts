@@ -1,174 +1,98 @@
 #' ---
-#'title: "plateplotr selectscreen"
+#'title: "plot_selectscreen"
 #'author: "Jack Stevenson"
-#'date: "2022-09-09"
 #' ---
-#'edited version of plateplotr for dealing with SelectScreen data
-#'copied from main plot.R 2022-09-09
-
+#'script for analyzing Thermo SelectScreen data
+#'copied updates from plot_CTG.R 2023-08-03
 # load required libraries------------------------------------------------------
-library(drc)  # for dose response curves
 library(tidyverse) # for tidy data handling
 library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
-library(patchwork) # for plot organization
-library(assertthat) # for QC assertions
 library(doseplotr) # you bet
-options(dplyr.summarise.inform = FALSE)
-# set global variables---------------------------------------------------------
+# set global parameters---------------------------------------------------------
+# the order of the treatment list is the order they will be plotted
+source("parameters/treatments.R") # import list of treatments to include in plots
+source("parameters/targets.R") # import list of targets to include in plots
+input_directory <- "input/" # path to directory containing input files
+output_directory <- "output/" # path to directory in which to write output files
+plot_type <- "pdf" # file type of saved plot images
+font_base_size <- 14 # # font size for plots. 14 is theme_prism default
+pt_size = 3 # point size for plots
+no_legend <- FALSE # whether all plots should have no legend
+global_x_lim <- TRUE # whether all plots should use the same x limits
+rigid <- FALSE # whether to use rigid low-dose asymptote
+grid <- TRUE # whether to plot a background grid
 input_filename <- "ZLYTE_compiled_results_complete.csv"
 plot_type <- "pdf" # file type for saved output plots
-dir.create("output/", showWarnings = FALSE) # silently create output directory
-source("parameters/treatments.R")
-source("parameters/targets.R")
-# source("get_EC.R") # replacing with doseplotr
-# source("get_hill_slope.R")
-# import and tidy data---------------------------------
-plate_data <- import_selectscreen(input_filename) |>
+# import and tidy data---------------------------------------------------------
+# create input and output directories, since git doesn't track empty directories
+dir.create(input_directory, showWarnings = FALSE)
+dir.create(output_directory, showWarnings = FALSE)
+plot_data <- import_selectscreen(input_filename) |>
   filter_trt_tgt(treatments, targets)
-plate_data <- plate_data |> 
+plot_data <- plot_data |> 
   mutate(treatment = fct_relevel(treatment, treatments))
-# fit models to output EC values------------------------------------------------
-EC_summary <- summarize_models(plate_data, activity_col = "response")
-write_csv(EC_summary, str_glue("output/EC_summary_selectscreen_{get_timestamp()}.csv"))
-# generate global parameters for all plots------------------------------------------
-pt_size = 3 # size for all geom_point
-# all_treatments <- unique(plate_data$treatment)
-# all_targets <- unique(plate_data$target)
+# temporary script before replacing with function-------------------------------
+if(exists("treatments")){
+  plot_data <- plot_data |> 
+    filter(treatment %in% treatments) # take only specified treatments
+  # assert that all treatments listed are actually present in imported data
+  imported_treatments <- unique(plot_data$treatment)
+  for(treatment in treatments){
+    assert_that(treatment %in% imported_treatments,
+                msg = str_glue("treatment '{treatment}' from the list of ",
+                               "treatments to plot was not found in imported data"))
+  }
+  plot_data <- plot_data |> 
+    mutate(treatment = fct_relevel(treatment, # relevel treatments by input list
+                                   treatments))
+}
+if(exists("targets")){
+  plot_data <- plot_data |> 
+    filter(target %in% targets) # take only specified targets
+  # assert that all targets listed are actually present in imported data
+  imported_targets <- unique(plot_data$target)
+  for(target in targets){
+    assert_that(target %in% imported_targets,
+                msg = str_glue("target '{target}' from the list of ",
+                               "targets to plot was not found in imported data"))
+  }
+  plot_data <- plot_data |> 
+    mutate(target = fct_relevel(target, # relevel targets by input list
+                                targets))
+}
+# generate data-dependent global plot parameters--------------------------------
+if (!exists("treatments")){ # if treatments not specified, use all treatments
+  treatments <- as.vector(unique(plot_data$treatment))}
+if (!exists("targets")){ # if targets not specified, use all targets
+  targets <- as.vector(unique(plot_data$target))}
 # find x-axis min/max values for consistent zoom window between all plots
-x_min <- floor(min(plate_data$log_dose))
-x_max <- ceiling(max(plate_data$log_dose))
+x_min <- floor(min(plot_data$log_dose))
+x_max <- ceiling(max(plot_data$log_dose))
 x_limits <- c(x_min, x_max)
-# create logistic minor breaks for all conc plots
-minor_x <- log10(rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9)))
-# helper function for saving plots----------------------------------------------
-scale_facet <- 4 # plot width per col/height per row
-#todo: allow overriding width and height if provided
-# save_plot <- function(plot, nrow = 1, ncol = 1, ...){
-#   ggsave(plot, bg = "transparent",
-#          width = ncol*scale_facet + 2,
-#          height = nrow*scale_facet, ...)}
-# helper function for summarizing replicate data for plotting------------------
-# source("activity_summarize.R")
-plate_summarize <- function(x){
-  summarize(x,
-            # standard error for error bars = standard deviation / square root of n
-            confidence_intervals = list(mean_cl_normal(response) |>
-                                          rename(mean_activity = y, ymin_activity = ymin, ymax_activity = ymax)),
-            sem = sd(response, na.rm = TRUE)/sqrt(n()),
-            # get mean normalized readout value for plotting
-            mean_read = mean(response),
-            w = 0.12 * n() # necessary for consistent error bar widths across plots
-  ) |>
-    tidyr::unnest(cols = confidence_intervals)
-}
-# helper function to add ggplot objects common to all plots--------------------
-source("dose_response_global.R")
-# helper function to plot one treatment----------------------------------------
-plot_treatment <- function(data, trt, viridis_begin = 1, viridis_end = 0){
-  plate_summary <- data %>%
-    filter(treatment == trt) %>% # get data from one treatment to work with
-    group_by(target, log_dose) %>%  # get set of replicates for each condition
-    plate_summarize()
-  # bracket ggplot so it can be piped to helper function
-  {ggplot(plate_summary, aes(x = log_dose, y = mean_read, color = target)) +
-      geom_point(aes(shape = target), size = pt_size) +
-      # error bars = mean plus or minus standard error
-      geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w)) +
-      # second error bars for 95% CI
-      # geom_errorbar(aes(ymin = ymin_activity, ymax = ymax_activity, width = w), alpha = 0.4) +
-      # use drm method from drc package to fit dose response curve
-      #L.4 method is 4-param logistic curve. The more common LL.4() works on nonlog
-      geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
-                se = FALSE, linewidth = 1)} %>%
-    dose_response_global(x_limits) +
-    theme(aspect.ratio = 1) +
-    scale_color_viridis(discrete = TRUE, begin = viridis_begin, end = viridis_end) +
-    # scale_color_manual(values = c("black","darkred")) +
-    labs(title = trt,
-         y = "kinase activity (%)")
-}
+# x_limits <- c(-12,-4) # manual x limit backup
+# fit models to output EC values------------------------------------------------
+EC_summary <- summarize_models(plot_data, response_col = "response")
+write_csv(EC_summary, str_glue("output/EC_summary_selectscreen_{get_timestamp()}.csv"))
 # plot data for each treatment separately----------------------------------------
-treatment_plots = list()
 for (trt in treatments){
-  trt_data <- filter_trt_tgt(plate_data, trt)
-  num_tgts <- length(unique(trt_data$target))
-  vr <- viridis_range(num_tgts)
-  vr_begin <- vr[1]
-  vr_end <- vr[2]
-  treatment_plots <- append(treatment_plots,
-                            list(plot_treatment(trt_data, trt,
-                                                viridis_begin = vr_begin,
-                                                viridis_end = vr_end)))
-  p <- plot_treatment(trt_data, trt, viridis_begin = vr_begin, viridis_end = vr_end)
-  # save plot with manually optimized aspect ratio
-  save_plot(p, str_glue("output/{trt}_{get_timestamp()}.{plot_type}"),
-            legend_len = longest(targets))
+  trt_targets <- as.vector(unique((plot_data |> filter_trt_tgt(trt = trt))$target))
+  plot_treatment(plot_data, trt, rigid = rigid, grid = grid,
+                 if(global_x_lim){x_limits = x_limits},
+                 response_col = "response") |>
+    save_plot(
+      str_glue("output/plate_treatment_{trt}_{get_timestamp()}.{plot_type}"),
+      legend_len = longest(trt_targets))
 }  
-# plot data for all treatments in facets----------------------------------
-# treatment_plots = list()
-# for (trt in all_treatments){
-#   treatment_plots <- append(treatment_plots,
-#                             list(plot_treatment(trt,
-#                                                 viridis_begin = vr_begin,
-#                                                 viridis_end = vr_end)))
-# }
-
-plot_mar <- 15 # margin between wrapped plots, in points
-cols = ceiling(sqrt(length(treatments)))
-rows = ceiling(length(treatments)/cols)
-p <- wrap_plots(treatment_plots, guides = "collect", ncol = cols, nrow = rows) &
-  theme(plot.margin = unit(c(plot_mar,plot_mar,plot_mar,plot_mar), "pt"),
-        plot.background = element_blank(),
-        legend.text= element_text(face = "bold", size = 12))
-save_plot(p, str_glue("output/treatment_facets_{get_timestamp()}.{plot_type}"),
-          ncol = cols, nrow = rows,
-          legend_len = longest(targets))
-# set color parameters for target plots--------------------------------------
-alpha_val <- 1
-color_scale <- "viridis"
-vr <- viridis_range(length(treatments))
-viridis_begin <- vr[1]
-viridis_end <- vr[2]
 # plot data for each target separately------------------------------------------
-for (tgt in targets){
-  plate_summary <- plate_data %>%
-    filter(target == tgt) %>%
-    group_by(treatment, log_dose) %>% # group into replicates for each condition
-    plate_summarize()
-  # bracket ggplot so it can be piped to helper function
-  p <- {ggplot(plate_summary, aes(x = log_dose, y = mean_read, color = treatment)) +
-      geom_point(aes(shape = treatment), size = pt_size) +
-      # error bars = mean plus or minus standard error
-      geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
-      # second error bars for 95% CI
-      # geom_errorbar(aes(ymin = ymin_activity, ymax = ymax_activity, width = w), alpha = 0.4) +
-      # use drm method from drc package to fit dose response curve
-      geom_line(stat = "smooth", method = "drm", method.args = list(fct = L.4()),
-                se = FALSE, linewidth = 1, alpha = alpha_val)} %>%
-    dose_response_global(x_limits) +
-    scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
-    labs(title = tgt,
-         y = "kinase activity (%)")
-  save_plot(p, str_glue("output/{tgt}_{get_timestamp()}.{plot_type}"),
-            legend_len = longest(treatments))
+for (tgt in targets){ 
+  tgt_treatments <- as.vector(unique((plot_data |> filter_trt_tgt(tgt = tgt))$treatment))
+  # tgt_treatments_test <- unique(plot_data$treatment)
+  plot_target(plot_data, tgt, rigid = rigid, grid = grid,
+              if(global_x_lim){x_limits = x_limits},
+              response_col = "response") |>
+    save_plot(
+      str_glue("output/plate_target_{tgt}_{get_timestamp()}.{plot_type}"),
+      # legend_len = longest(treatments))
+      legend_len = longest(tgt_treatments))
 }
-# plot data for all targets at once-----------------------------------------
-plate_summary <- plate_data %>%
-  group_by(target, treatment, log_dose) %>% # group into replicates for each condition
-  plate_summarize()
-p <- {ggplot(plate_summary,aes(x = log_dose, y = mean_read, color = treatment)) +
-    geom_point(aes(shape = treatment), size = pt_size) +
-    # error bars = mean plus or minus standard error
-    geom_errorbar(aes(ymax = mean_read+sem, ymin = mean_read-sem, width = w), alpha = alpha_val) +
-    # second error bars for 95% CI
-    # geom_errorbar(aes(ymin = ymin_activity, ymax = ymax_activity, width = w), alpha = 0.4) +
-    # use drm method from drc package to fit dose response curve
-    geom_line(aes(linetype = target), stat = "smooth", method = "drm", method.args = list(fct = L.4()),
-              se = FALSE, linewidth = 1, alpha = alpha_val)} %>%
-  dose_response_global(x_limits) +
-  scale_color_viridis(option = color_scale, discrete = TRUE, begin = viridis_begin, end = viridis_end) +
-  labs(title = "All data",
-       y = "kinase activity (%)")
-save_plot(p, str_glue("output/all_data_{get_timestamp()}.{plot_type}"),
-          legend_len = longest(treatments))
