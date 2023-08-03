@@ -58,7 +58,7 @@ grid <- FALSE # whether to plot a background grid
 # input_filename <- "input/2023-07-17 Ivan raw data names edited.csv"
 # import and preprocess data----------------------------------------------------
 # create input and output directories, since git doesn't track empty directories
-dir.create(input_directory, showWarnings = FALSE) # do nothing if directory already exists
+dir.create(input_directory, showWarnings = FALSE)
 dir.create(output_directory, showWarnings = FALSE)
 if(exists("input_filename")){
   plate_data <- readr::read_csv(input_filename) |>
