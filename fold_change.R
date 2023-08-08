@@ -6,25 +6,28 @@ library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
 library(doseplotr) # you bet
 # import precalculated IC50 table-----------------------------------------------
-input_filename <- "input/plate_model_summary_2023-08-01T003436.csv" # Ivan 07-03 not rigid
-source("parameters/treatments.R") # import list of treatments to include in plots
-source("parameters/targets.R") # import list of targets to include in plots
-data <- read_csv(input_filename) |> 
-  filter(treatment %in% treatments) |> # take only specified treatments
-  filter(target %in% targets) |> # take only specified targets
+source("parameters/parameters_fold_change.R")
+data <- read_csv(input_filename)
+  # filter(treatment %in% treatments) |> # take only specified treatments
+  # filter(target %in% targets) |> # take only specified targets
   # factor order treatments and targets for plotting
-  mutate(target = fct_relevel(target, targets)) |> 
-  mutate(treatment = fct_relevel(treatment, treatments))
+  # mutate(target = fct_relevel(target, targets)) |> 
+  # mutate(treatment = fct_relevel(treatment, treatments))
+if(exists("treatments")){
+  data <- filter_validate_reorder(data, "treatment", treatments)
+}
+if(exists("targets")){
+  data <- filter_validate_reorder(data, "target", targets)
+}
 # extract wt IC50 and calculate fold change of other targets
 wt_IC50s <- data |>
-  filter(target == "K562 pUltra BCR-ABL1 wt") |> 
+  filter(target == wt_target_name) |> 
   group_by(treatment) |> 
   summarize(wt_IC50_nM = IC50_nM)
 data <- data |> 
   left_join(wt_IC50s, by = "treatment") |> 
   mutate(fold_vs_wt_IC50 = IC50_nM/wt_IC50_nM)
-# bar plot of fold changes-----------------------------------------------
-plot_type = "pdf"
+# bar plot of fold changes------------------------------------------------------
 vr <- viridis_range(length(treatments))
 viridis_begin <- vr[[1]]
 viridis_end <- vr[[2]]
@@ -34,7 +37,8 @@ x_max <- ceiling(max(log10(data$fold_vs_wt_IC50)))
 breaks_x <- 10^rep(x_min : x_max)
 minor_x <- rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9))
 p <- data |> 
-  filter(!target %in% c("K562 pUltra BCR-ABL1 wt", "K562 pUltra control")) |> 
+  # don't plot wt or control
+  filter(!target %in% c(wt_target_name, control_target_name)) |>
   ggplot(aes(y = target, x = fold_vs_wt_IC50,
              fill = treatment,
              label = signif(fold_vs_wt_IC50, digits = 2))) +
@@ -50,11 +54,17 @@ p <- data |>
                      labels = label_comma(accuracy = 1, big.mark = ""),
                      minor_breaks = minor_x,) +
   scale_y_discrete(limits = rev) +
-  scale_fill_viridis(option = viridis_option,
-                      discrete = TRUE,
-                      begin = viridis_begin, end = viridis_end) +
+  {if(manual_color_treatments){
+    ggplot2::scale_fill_manual(values = color_map_treatments)
+  } else{
+    scale_fill_viridis(option = viridis_option,
+                       discrete = TRUE,
+                       begin = viridis_begin, end = viridis_end)
+  }} +
   theme_prism() +
-  theme(plot.background = element_blank()) + # need for transparent background
+  theme(plot.background = element_blank(),
+        legend.title = element_text(face = "plain"),
+        legend.title.align = 0) + # need for transparent background
   labs(x = "fold change in IC50 vs wt")
 save_plot(p, str_glue("output/fold_change_bar_{get_timestamp()}.{plot_type}"),
           width = 14, height = 8)
@@ -74,9 +84,13 @@ p <- data |>
                      minor_breaks = minor_x,
                      expand = expansion(mult = .1)) +
   scale_y_discrete(limits = rev) +
-  scale_color_viridis(option = viridis_option,
-                     discrete = TRUE,
-                     begin = viridis_begin, end = viridis_end) +
+  {if(manual_color_treatments){
+    ggplot2::scale_color_manual(values = color_map_treatments)
+  } else{
+    scale_fill_viridis(option = viridis_option,
+                       discrete = TRUE,
+                       begin = viridis_begin, end = viridis_end)
+  }} +
   theme_prism() +
   theme(panel.grid = element_line(color = "black", linewidth = 0.5),
         panel.grid.minor = element_line(color = "black",
