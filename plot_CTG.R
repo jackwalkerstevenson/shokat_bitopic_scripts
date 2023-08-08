@@ -170,13 +170,13 @@ for (trt in treatments){
 }  
 # plot data for each target separately------------------------------------------
 for (tgt in targets){ 
-  tgt_treatments <- as.vector(unique((plot_data |> filter_trt_tgt(tgt = tgt))$treatment))
+  tgt_treatments <- as.vector(unique((plot_data |>
+                                        filter_trt_tgt(tgt = tgt))$treatment))
   plot_target(plot_data, tgt, rigid = rigid, grid = grid,
               if(manual_color_treatment){color_map = color_map_treatments},
               if(global_x_lim){x_limits = x_limits},
               response_col = "response_norm") |>
     save_plot(
       str_glue("output/plate_target_{tgt}_{get_timestamp()}.{plot_type}"),
-      # legend_len = longest(treatments))
       legend_len = longest(tgt_treatments))
 }
