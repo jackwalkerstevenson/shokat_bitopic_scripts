@@ -129,7 +129,9 @@ for (trt in treatments){
                  # watch out, argument order seems to matter with if statements
                  if(manual_color_targets){color_map = color_map_targets},
                  if(global_x_lim){x_limits = x_limits},
-                 response_col = "response_norm") |>
+                 response_col = "response_norm",
+                 ylab = "luminescence (% of untreated)",
+                 legend_title = "cell line") |>
     save_plot(
       str_glue("output/plate_treatment_{trt}_{get_timestamp()}.{plot_type}"),
       legend_len = longest(trt_targets))
@@ -141,7 +143,9 @@ for (tgt in targets){
   plot_target(plot_data, tgt, rigid = rigid, grid = grid,
               if(manual_color_treatments){color_map = color_map_treatments},
               if(global_x_lim){x_limits = x_limits},
-              response_col = "response_norm") |>
+              response_col = "response_norm",
+              ylab = "luminescence (% of untreated)",
+              legend_title = "treatment") |>
     save_plot(
       str_glue("output/plate_target_{tgt}_{get_timestamp()}.{plot_type}"),
       legend_len = longest(tgt_treatments))
