@@ -47,52 +47,18 @@ source("parameters/parameters_plot_CTG.R")
 # create input and output directories, since git doesn't track empty directories
 dir.create(input_directory, showWarnings = FALSE)
 dir.create(output_directory, showWarnings = FALSE)
-if(exists("input_filename")){
+if(exists("input_filename")){ # if using single file import, read and preprocess
   plate_data <- readr::read_csv(input_filename) |>
     preprocess_plate_data()
-} else {plate_data <- import_plates(input_directory)}
+} else {plate_data <- import_plates(input_directory)} # else import platemaps
 # filter and validate imported data---------------------------------------------
-filter_validate_reorder <- function(data, colname, values){
-  data <- data |> 
-    dplyr::filter({{colname}} %in% values)
-  data_values <- unique(data[[colname]])
-  for(value in values){
-    assertthat::assert_that(value %in% data_values, msg = glue::glue(
-      "value {value} was not found in the data"))}
-  data |>
-    dplyr::mutate(colname =
-                    forcats::fct_relevel(.data[[colname]], values))
-}
-# temporary script before replacing with function-------------------------------
 if(exists("treatments")){
-  plate_data <- plate_data |> 
-  filter(treatment %in% treatments) # take only specified treatments
-  # assert that all treatments listed are actually present in imported data
-  imported_treatments <- unique(plate_data$treatment)
-  for(treatment in treatments){
-    assert_that(treatment %in% imported_treatments,
-                msg = str_glue("treatment '{treatment}' from the list of ",
-                "treatments to plot was not found in imported data"))
-  }
-  plate_data <- plate_data |> 
-    mutate(treatment = fct_relevel(treatment, # relevel treatments by input list
-                                   treatments))
+  plate_data <- filter_validate_reorder(plate_data, "treatment", treatments)
 }
 if(exists("targets")){
-  plate_data <- plate_data |> 
-    filter(target %in% targets) # take only specified targets
-  # assert that all targets listed are actually present in imported data
-  imported_targets <- unique(plate_data$target)
-  for(target in targets){
-    assert_that(target %in% imported_targets,
-                msg = str_glue("target '{target}' from the list of ",
-                               "targets to plot was not found in imported data"))
-  }
-  plate_data <- plate_data |> 
-    mutate(target = fct_relevel(target, # relevel targets by input list
-                                targets))
+  plate_data <- filter_validate_reorder(plate_data, "target", targets)
 }
-plot_data <- plate_data |> filter(log_dose != -Inf)
+plot_data <- plate_data |> filter(log_dose != -Inf) # data without untreated
 # generate data-dependent global plot parameters--------------------------------
 if (!exists("treatments")){ # if treatments not specified, use all treatments
   treatments <- as.vector(unique(plot_data$treatment))}
@@ -130,7 +96,7 @@ p <- untreated_data_by_tgt_and_trt |>
   geom_point(size = pt_size, alpha = 0.8) +
   scale_y_discrete(limits = rev) +
   scale_x_continuous(labels = \(x) format(x, scientific = TRUE)) +
-  {if(!manual_color_treatment){ # optionally manually specify colors
+  {if(!manual_color_treatments){ # optionally manually specify colors
     viridis::scale_color_viridis(discrete = TRUE, option = vr_option,
                                  begin = vr_begin, end = vr_end)
   } else{
@@ -161,7 +127,7 @@ for (trt in treatments){
                                      filter_trt_tgt(trt = trt))$target))
   plot_treatment(plot_data, trt, rigid = rigid, grid = grid,
                  # watch out, argument order seems to matter with if statements
-                 if(manual_color_target){color_map = color_map_targets},
+                 if(manual_color_targets){color_map = color_map_targets},
                  if(global_x_lim){x_limits = x_limits},
                  response_col = "response_norm") |>
     save_plot(
@@ -173,7 +139,7 @@ for (tgt in targets){
   tgt_treatments <- as.vector(unique((plot_data |>
                                         filter_trt_tgt(tgt = tgt))$treatment))
   plot_target(plot_data, tgt, rigid = rigid, grid = grid,
-              if(manual_color_treatment){color_map = color_map_treatments},
+              if(manual_color_treatments){color_map = color_map_treatments},
               if(global_x_lim){x_limits = x_limits},
               response_col = "response_norm") |>
     save_plot(
