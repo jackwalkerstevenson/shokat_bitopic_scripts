@@ -41,21 +41,8 @@ library(plater)  # for tidy importing of plate data
 library(viridis) # for color schemes
 library(patchwork) # for plot organization
 library(doseplotr) # you bet
-# set global parameters---------------------------------------------------------
-# the order of the treatment list is the order they will be plotted
-source("parameters/treatments.R") # import list of treatments to include in plots
-source("parameters/targets.R") # import list of targets to include in plots
-input_directory <- "input/" # path to directory containing input files
-output_directory <- "output/" # path to directory in which to write output files
-plot_type <- "pdf" # file type of saved plot images
-font_base_size <- 14 # # font size for plots. 14 is theme_prism default
-pt_size = 3 # point size for plots
-no_legend <- FALSE # whether all plots should have no legend
-global_x_lim <- TRUE # whether all plots should use the same x limits
-rigid <- FALSE # whether to use rigid low-dose asymptote
-grid <- FALSE # whether to plot a background grid
-# filename to use if importing data from a single file instead of a directory
-# input_filename <- "input/2023-07-17 Ivan raw data names edited.csv"
+# import global parameters---------------------------------------------------------
+source("parameters/parameters_plot_CTG.R")
 # import and preprocess data----------------------------------------------------
 # create input and output directories, since git doesn't track empty directories
 dir.create(input_directory, showWarnings = FALSE)
@@ -143,8 +130,12 @@ p <- untreated_data_by_tgt_and_trt |>
   geom_point(size = pt_size, alpha = 0.8) +
   scale_y_discrete(limits = rev) +
   scale_x_continuous(labels = \(x) format(x, scientific = TRUE)) +
-  scale_color_viridis(option = vr_option, discrete = TRUE,
-                      begin = vr_begin, end = vr_end) +
+  {if(!manual_color_treatment){ # optionally manually specify colors
+    viridis::scale_color_viridis(discrete = TRUE, option = vr_option,
+                                 begin = vr_begin, end = vr_end)
+  } else{
+    ggplot2::scale_color_manual(values = color_map_treatments)
+  }} +
   geom_errorbar(aes(xmax = mean_response+sem, xmin = mean_response-sem,
                     width = w)) +
   theme_prism() +
@@ -165,8 +156,12 @@ save_plot(p, str_glue("output/plate_QC_untreated_{get_timestamp()}.{plot_type}")
           width = 14, height = 8)
 # plot data for each treatment separately----------------------------------------
 for (trt in treatments){
-  trt_targets <- as.vector(unique((plot_data |> filter_trt_tgt(trt = trt))$target))
+  # get list of targets for this treatment to set legend length
+  trt_targets <- as.vector(unique((plot_data |>
+                                     filter_trt_tgt(trt = trt))$target))
   plot_treatment(plot_data, trt, rigid = rigid, grid = grid,
+                 # watch out, argument order seems to matter with if statements
+                 if(manual_color_target){color_map = color_map_targets},
                  if(global_x_lim){x_limits = x_limits},
                  response_col = "response_norm") |>
     save_plot(
@@ -176,10 +171,10 @@ for (trt in treatments){
 # plot data for each target separately------------------------------------------
 for (tgt in targets){ 
   tgt_treatments <- as.vector(unique((plot_data |> filter_trt_tgt(tgt = tgt))$treatment))
-  # tgt_treatments_test <- unique(plot_data$treatment)
   plot_target(plot_data, tgt, rigid = rigid, grid = grid,
-                 if(global_x_lim){x_limits = x_limits},
-                 response_col = "response_norm") |>
+              if(manual_color_treatment){color_map = color_map_treatments},
+              if(global_x_lim){x_limits = x_limits},
+              response_col = "response_norm") |>
     save_plot(
       str_glue("output/plate_target_{tgt}_{get_timestamp()}.{plot_type}"),
       # legend_len = longest(treatments))
