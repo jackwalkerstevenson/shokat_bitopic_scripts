@@ -131,7 +131,10 @@ for (trt in treatments){
                  if(global_x_lim){x_limits = x_limits},
                  response_col = "response_norm",
                  ylab = "luminescence (% of untreated)",
-                 legend_title = "cell line") |>
+                 legend_title = "cell line",
+                 if(manual_label_targets){
+                   legend_labels = legend_label_targets} else{
+                     legend_labels = ggplot2::waiver()})|>
     save_plot(
       str_glue("output/plate_treatment_{trt}_{get_timestamp()}.{plot_type}"),
       legend_len = longest(trt_targets))
@@ -145,7 +148,10 @@ for (tgt in targets){
               if(global_x_lim){x_limits = x_limits},
               response_col = "response_norm",
               ylab = "luminescence (% of untreated)",
-              legend_title = "treatment") |>
+              legend_title = "treatment",
+              if(manual_label_treatments){
+                legend_labels = legend_label_treatments} else{
+                  legend_labels = ggplot2::waiver()})|>
     save_plot(
       str_glue("output/plate_target_{tgt}_{get_timestamp()}.{plot_type}"),
       legend_len = longest(tgt_treatments))
