@@ -23,7 +23,7 @@ wt_IC50s <- data |>
 data <- data |> 
   left_join(wt_IC50s, by = "treatment") |> 
   mutate(fold_vs_wt_IC50 = IC50_nM/wt_IC50_nM)
-# helper functions for renaming targets
+# helper functions for renaming-----------------------------------------------
 get_target_labels <- function(){
   if(manually_relabel_targets) display_names_targets else{
     # necessary to preserve correct ordering even after changing plotting order
@@ -32,6 +32,9 @@ get_target_labels <- function(){
     return(named_targets)
   }
 }
+legend_labels = get_if(display_names_treatments,
+                       manually_relabel_treatments,
+                       otherwise = ggplot2::waiver())
 # bar plot of fold changes------------------------------------------------------
 vr <- viridis_range(length(treatments))
 viridis_begin <- vr[[1]]
@@ -40,7 +43,7 @@ viridis_option <- vr[[3]]
 x_min <- floor(min(log10(data$fold_vs_wt_IC50)))
 x_max <- ceiling(max(log10(data$fold_vs_wt_IC50)))
 breaks_x <- 10^rep(x_min : x_max)
-minor_x <- rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9))
+minor_x <- minor_breaks(x_min, x_max, log_units = TRUE)
 p <- data |> 
   # don't plot wt or control
   filter(!target %in% c(wt_target_name, control_target_name)) |>
@@ -60,16 +63,18 @@ p <- data |>
                      minor_breaks = minor_x,) +
   scale_y_discrete(limits = rev, labels = get_target_labels()) +
   {if(manually_recolor_treatments){
-    ggplot2::scale_fill_manual(values = color_map_treatments)
+    ggplot2::scale_fill_manual(values = color_map_treatments,
+                               labels = legend_labels)
   } else{
     scale_fill_viridis(option = viridis_option,
                        discrete = TRUE,
-                       begin = viridis_begin, end = viridis_end)
+                       begin = viridis_begin, end = viridis_end,
+                       labels = legend_labels)
   }} +
   theme_prism() +
-  theme(plot.background = element_blank(),
+  theme(plot.background = element_blank(), # need for transparent background
         legend.title = element_text(face = "plain"),
-        legend.title.align = 0) + # need for transparent background
+        legend.title.align = 0) +
   labs(x = "fold change in IC50 vs wt",
        y = "cell line (K562 pUltra BCR-ABL1)")
 save_plot(p, str_glue("output/fold_change_bar_{get_timestamp()}.{plot_type}"),
@@ -91,11 +96,13 @@ p <- data |>
                      expand = expansion(mult = .1)) +
   scale_y_discrete(limits = rev, labels = get_target_labels()) +
   {if(manually_recolor_treatments){
-    ggplot2::scale_color_manual(values = color_map_treatments)
+    ggplot2::scale_color_manual(values = color_map_treatments,
+                                labels = legend_labels)
   } else{
     scale_fill_viridis(option = viridis_option,
                        discrete = TRUE,
-                       begin = viridis_begin, end = viridis_end)
+                       begin = viridis_begin, end = viridis_end,
+                       labels = legend_labels)
   }} +
   theme_prism() +
   theme(panel.grid = element_line(color = "black", linewidth = 0.5),
