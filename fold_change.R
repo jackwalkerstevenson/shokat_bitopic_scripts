@@ -8,11 +8,7 @@ library(doseplotr) # you bet
 # import precalculated IC50 table-----------------------------------------------
 source("parameters/parameters_fold_change.R")
 data <- read_csv(input_filename)
-  # filter(treatment %in% treatments) |> # take only specified treatments
-  # filter(target %in% targets) |> # take only specified targets
-  # factor order treatments and targets for plotting
-  # mutate(target = fct_relevel(target, targets)) |> 
-  # mutate(treatment = fct_relevel(treatment, treatments))
+# preprocess data---------------------------------------------------------------
 if(exists("treatments")){
   data <- filter_validate_reorder(data, "treatment", treatments)
 }
@@ -27,6 +23,15 @@ wt_IC50s <- data |>
 data <- data |> 
   left_join(wt_IC50s, by = "treatment") |> 
   mutate(fold_vs_wt_IC50 = IC50_nM/wt_IC50_nM)
+# helper functions for renaming targets
+get_target_labels <- function(){
+  if(manual_label_targets) relabel_targets else{
+    # necessary to preserve correct ordering even after changing plotting order
+    named_targets <- targets
+    names(named_targets) <- targets
+    return(named_targets)
+  }
+}
 # bar plot of fold changes------------------------------------------------------
 vr <- viridis_range(length(treatments))
 viridis_begin <- vr[[1]]
@@ -53,7 +58,7 @@ p <- data |>
                      breaks = breaks_x,
                      labels = label_comma(accuracy = 1, big.mark = ""),
                      minor_breaks = minor_x,) +
-  scale_y_discrete(limits = rev) +
+  scale_y_discrete(limits = rev, labels = get_target_labels()) +
   {if(manual_color_treatments){
     ggplot2::scale_fill_manual(values = color_map_treatments)
   } else{
@@ -83,7 +88,7 @@ p <- data |>
                      labels = label_comma(accuracy = 1, big.mark = ""),
                      minor_breaks = minor_x,
                      expand = expansion(mult = .1)) +
-  scale_y_discrete(limits = rev) +
+  scale_y_discrete(limits = rev, labels = get_target_labels()) +
   {if(manual_color_treatments){
     ggplot2::scale_color_manual(values = color_map_treatments)
   } else{
