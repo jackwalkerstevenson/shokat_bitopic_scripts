@@ -25,7 +25,7 @@ data <- data |>
   mutate(fold_vs_wt_IC50 = IC50_nM/wt_IC50_nM)
 # helper functions for renaming targets
 get_target_labels <- function(){
-  if(manual_label_targets) relabel_targets else{
+  if(manually_relabel_targets) display_names_targets else{
     # necessary to preserve correct ordering even after changing plotting order
     named_targets <- targets
     names(named_targets) <- targets
@@ -59,7 +59,7 @@ p <- data |>
                      labels = label_comma(accuracy = 1, big.mark = ""),
                      minor_breaks = minor_x,) +
   scale_y_discrete(limits = rev, labels = get_target_labels()) +
-  {if(manual_color_treatments){
+  {if(manually_recolor_treatments){
     ggplot2::scale_fill_manual(values = color_map_treatments)
   } else{
     scale_fill_viridis(option = viridis_option,
@@ -70,9 +70,10 @@ p <- data |>
   theme(plot.background = element_blank(),
         legend.title = element_text(face = "plain"),
         legend.title.align = 0) + # need for transparent background
-  labs(x = "fold change in IC50 vs wt")
+  labs(x = "fold change in IC50 vs wt",
+       y = "cell line (K562 pUltra BCR-ABL1)")
 save_plot(p, str_glue("output/fold_change_bar_{get_timestamp()}.{plot_type}"),
-          width = 14, height = 8)
+          width = 14, height = .7*length(targets) + 0.75)
 # strip plot of raw IC50s-----------------------------------------------
 x_min <- floor(min(log10(data$IC50_nM)))
 x_max <- ceiling(max(log10(data$IC50_nM)))
@@ -89,7 +90,7 @@ p <- data |>
                      minor_breaks = minor_x,
                      expand = expansion(mult = .1)) +
   scale_y_discrete(limits = rev, labels = get_target_labels()) +
-  {if(manual_color_treatments){
+  {if(manually_recolor_treatments){
     ggplot2::scale_color_manual(values = color_map_treatments)
   } else{
     scale_fill_viridis(option = viridis_option,
@@ -102,6 +103,7 @@ p <- data |>
                                         linewidth = 0.1,
                                         linetype = "dotted")) +
   theme(plot.background = element_blank()) + # need for transparent background
-  labs(x = "IC50 (nM)")
+  labs(x = "IC50 (nM)",
+       y = "cell line (K562 pUltra BCR-ABL1)")
 save_plot(p, str_glue("output/IC50_dot_{get_timestamp()}.{plot_type}"),
-          width = 14, height = 8)
+          width = 12, height = .65*length(targets) + 0.75)
