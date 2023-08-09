@@ -120,26 +120,42 @@ p <- untreated_data_by_tgt_and_trt |>
   guides(color = guide_legend(override.aes = list(size = pt_size)))
 save_plot(p, str_glue("output/plate_QC_untreated_{get_timestamp()}.{plot_type}"),
           width = 14, height = 8)
-# plot data for each treatment separately----------------------------------------
+# plot data for each treatment separately---------------------------------------
+get_target_labels <- function(){
+  if(manual_label_targets) relabel_targets else ggplot2::waiver()
+}
+# rename title from key if desired and available
+get_treatment_title <- function(trt){
+  if(manual_label_treatments & trt %in% names(relabel_treatments)){
+    relabel_treatments[trt]} else trt
+}
 for (trt in treatments){
   # get list of targets for this treatment to set legend length
   trt_targets <- as.vector(unique((plot_data |>
                                      filter_trt_tgt(trt = trt))$target))
   plot_treatment(plot_data, trt, rigid = rigid, grid = grid,
-                 # watch out, argument order seems to matter with if statements
-                 if(manual_color_targets){color_map = color_map_targets},
-                 if(global_x_lim){x_limits = x_limits},
+                 if(manual_color_targets){
+                   color_map = color_map_targets} else color_map = NULL,
+                 if(global_x_lim){x_limits = x_limits} else x_limits = NULL,
                  response_col = "response_norm",
                  ylab = "luminescence (% of untreated)",
                  legend_title = "cell line",
-                 if(manual_label_targets){
-                   legend_labels = legend_label_targets} else{
-                     legend_labels = ggplot2::waiver()})|>
+                 legend_labels = get_target_labels(),
+                 plot_title = get_treatment_title(trt)
+                 ) |> 
     save_plot(
       str_glue("output/plate_treatment_{trt}_{get_timestamp()}.{plot_type}"),
       legend_len = longest(trt_targets))
 }  
 # plot data for each target separately------------------------------------------
+get_treatment_labels <- function(){
+  if(manual_label_treatments) relabel_treatments else ggplot2::waiver()
+}
+# rename title from key if desired and available
+get_target_title <- function(tgt){
+  if(manual_label_targets & tgt %in% names(relabel_targets)){
+    relabel_targets[tgt]} else tgt
+}
 for (tgt in targets){ 
   tgt_treatments <- as.vector(unique((plot_data |>
                                         filter_trt_tgt(tgt = tgt))$treatment))
@@ -149,9 +165,9 @@ for (tgt in targets){
               response_col = "response_norm",
               ylab = "luminescence (% of untreated)",
               legend_title = "treatment",
-              if(manual_label_treatments){
-                legend_labels = legend_label_treatments} else{
-                  legend_labels = ggplot2::waiver()})|>
+              legend_labels = get_treatment_labels(),
+              plot_title = get_target_title(tgt)
+              )|>
     save_plot(
       str_glue("output/plate_target_{tgt}_{get_timestamp()}.{plot_type}"),
       legend_len = longest(tgt_treatments))
