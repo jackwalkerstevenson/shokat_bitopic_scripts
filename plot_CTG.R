@@ -96,7 +96,7 @@ p <- untreated_data_by_tgt_and_trt |>
   geom_point(size = pt_size, alpha = 0.8) +
   scale_y_discrete(limits = rev) +
   scale_x_continuous(labels = \(x) format(x, scientific = TRUE)) +
-  {if(!manual_color_treatments){ # optionally manually specify colors
+  {if(!manually_recolor_treatments){ # optionally manually specify colors
     viridis::scale_color_viridis(discrete = TRUE, option = vr_option,
                                  begin = vr_begin, end = vr_end)
   } else{
@@ -121,52 +121,57 @@ p <- untreated_data_by_tgt_and_trt |>
 save_plot(p, str_glue("output/CTG_QC_untreated_{get_timestamp()}.{plot_type}"),
           width = 14, height = 8)
 # plot data for each treatment separately---------------------------------------
-get_target_labels <- function(){
-  if(manual_label_targets) relabel_targets else ggplot2::waiver()
-}
-# rename title from key if desired and available
-get_treatment_title <- function(trt){
-  if(manual_label_treatments & trt %in% names(relabel_treatments)){
-    relabel_treatments[trt]} else trt
-}
 for (trt in treatments){
-  # get list of targets for this treatment to set legend length
+  # get all targets for this treatment to set legend length
   trt_targets <- as.vector(unique((plot_data |>
                                      filter_trt_tgt(trt = trt))$target))
+  trt_targets <- Vectorize(get_display_name, vectorize.args = "name")(
+    trt_targets, display_names_targets, TRUE)
   plot_treatment(plot_data, trt, rigid = rigid, grid = grid,
-                 if(manual_color_targets){
-                   color_map = color_map_targets} else color_map = NULL,
-                 if(global_x_lim){x_limits = x_limits} else x_limits = NULL,
+                 color_map = get_if(color_map_targets,
+                                    manually_recolor_targets),
+                 shape_map = get_if(shape_map_targets,
+                                    manually_reshape_targets),
+                 x_limits = get_if(x_limits, global_x_lim),
                  response_col = "response_norm",
                  ylab = "luminescence (% of untreated)",
                  legend_title = "cell line",
-                 legend_labels = get_target_labels(),
-                 plot_title = get_treatment_title(trt)
+                 legend_labels = get_if(display_names_targets,
+                                        manually_relabel_targets,
+                                        otherwise = ggplot2::waiver()),
+                 plot_title = doseplotr::get_display_name(trt,
+                                               display_names_treatments,
+                                               manually_relabel_treatments)
                  ) |> 
     save_plot(
       str_glue("output/CTG_treatment_{trt}_{get_timestamp()}.{plot_type}"),
       legend_len = longest(trt_targets))
 }  
 # plot data for each target separately------------------------------------------
-get_treatment_labels <- function(){
-  if(manual_label_treatments) relabel_treatments else ggplot2::waiver()
-}
-# rename title from key if desired and available
-get_target_title <- function(tgt){
-  if(manual_label_targets & tgt %in% names(relabel_targets)){
-    relabel_targets[tgt]} else tgt
-}
 for (tgt in targets){ 
+  # get all treatments for this target to set legend length
   tgt_treatments <- as.vector(unique((plot_data |>
                                         filter_trt_tgt(tgt = tgt))$treatment))
-  plot_target(plot_data, tgt, rigid = rigid, grid = grid,
-              if(manual_color_treatments){color_map = color_map_treatments},
-              if(global_x_lim){x_limits = x_limits},
-              response_col = "response_norm",
+  tgt_treatments <- Vectorize(get_display_name, vectorize.args = "name")(
+    tgt_treatments, display_names_treatments, TRUE)
+    #{\(data_name){get_display_name(data_name, display_names_treatments, TRUE)}}()
+  plot_target(plot_data, tgt,
+              rigid = rigid, # global rigid low-dose asymptote parameter
+              grid = grid, # global grid plotting parameter
+              x_limits = get_if(x_limits, global_x_lim),
+              response_col = "response_norm", # CTG uses response_norm
               ylab = "luminescence (% of untreated)",
               legend_title = "treatment",
-              legend_labels = get_treatment_labels(),
-              plot_title = get_target_title(tgt)
+              legend_labels = get_if(display_names_treatments,
+                                     manually_relabel_treatments,
+                                     otherwise = ggplot2::waiver()),
+              plot_title = get_display_name(tgt,
+                                            display_names_targets,
+                                            manually_relabel_targets),
+              color_map = get_if(color_map_treatments,
+                                 manually_recolor_treatments),
+              shape_map = get_if(shape_map_treatments,
+                                 manually_reshape_treatments)
               )|>
     save_plot(
       str_glue("output/CTG_target_{tgt}_{get_timestamp()}.{plot_type}"),
