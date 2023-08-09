@@ -76,7 +76,7 @@ model_summary <- summarize_models(plot_data,
   select(-model) |>  # remove actual model from report
   mutate(across(where(is.numeric), \(x){signif(x, digits = 4)}))
 write_csv(model_summary,
-          str_glue("output/plate_model_summary_{get_timestamp()}.csv"))
+          str_glue("output/CTG_model_summary_{get_timestamp()}.csv"))
 # plot untreated data by target for QC------------------------------------------
 # set color parameters for treatments
 vr <- viridis_range(length(treatments))
@@ -118,7 +118,7 @@ p <- untreated_data_by_tgt_and_trt |>
             show.legend = FALSE, # no legend for the text labels
             position = position_nudge(y = .3)) +
   guides(color = guide_legend(override.aes = list(size = pt_size)))
-save_plot(p, str_glue("output/plate_QC_untreated_{get_timestamp()}.{plot_type}"),
+save_plot(p, str_glue("output/CTG_QC_untreated_{get_timestamp()}.{plot_type}"),
           width = 14, height = 8)
 # plot data for each treatment separately---------------------------------------
 get_target_labels <- function(){
@@ -144,7 +144,7 @@ for (trt in treatments){
                  plot_title = get_treatment_title(trt)
                  ) |> 
     save_plot(
-      str_glue("output/plate_treatment_{trt}_{get_timestamp()}.{plot_type}"),
+      str_glue("output/CTG_treatment_{trt}_{get_timestamp()}.{plot_type}"),
       legend_len = longest(trt_targets))
 }  
 # plot data for each target separately------------------------------------------
@@ -169,6 +169,6 @@ for (tgt in targets){
               plot_title = get_target_title(tgt)
               )|>
     save_plot(
-      str_glue("output/plate_target_{tgt}_{get_timestamp()}.{plot_type}"),
+      str_glue("output/CTG_target_{tgt}_{get_timestamp()}.{plot_type}"),
       legend_len = longest(tgt_treatments))
 }
