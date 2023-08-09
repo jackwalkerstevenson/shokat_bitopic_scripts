@@ -125,8 +125,9 @@ for (trt in treatments){
   # get all targets for this treatment to set legend length
   trt_targets <- as.vector(unique((plot_data |>
                                      filter_trt_tgt(trt = trt))$target))
-  trt_targets <- Vectorize(get_display_name, vectorize.args = "name")(
-    trt_targets, display_names_targets, TRUE)
+  if(manually_relabel_targets){
+    trt_targets <- Vectorize(get_display_name, vectorize.args = "name")(
+      trt_targets, display_names_targets, TRUE)}
   plot_treatment(plot_data, trt, rigid = rigid, grid = grid,
                  color_map = get_if(color_map_targets,
                                     manually_recolor_targets),
@@ -152,9 +153,9 @@ for (tgt in targets){
   # get all treatments for this target to set legend length
   tgt_treatments <- as.vector(unique((plot_data |>
                                         filter_trt_tgt(tgt = tgt))$treatment))
-  tgt_treatments <- Vectorize(get_display_name, vectorize.args = "name")(
-    tgt_treatments, display_names_treatments, TRUE)
-    #{\(data_name){get_display_name(data_name, display_names_treatments, TRUE)}}()
+  if(manually_relabel_treatments){
+    tgt_treatments <- Vectorize(get_display_name, vectorize.args = "name")(
+      tgt_treatments, display_names_treatments, TRUE)}
   plot_target(plot_data, tgt,
               rigid = rigid, # global rigid low-dose asymptote parameter
               grid = grid, # global grid plotting parameter
