@@ -41,7 +41,8 @@ library(plater)  # for tidy importing of plate data
 library(viridis) # for color schemes
 library(patchwork) # for plot organization
 library(doseplotr) # you bet
-# import global parameters---------------------------------------------------------
+# import global parameters and clear environment--------------------------------
+rm(list = ls()) # clear environment
 source("parameters/parameters_plot_CTG.R")
 # import and preprocess data----------------------------------------------------
 # create input and output directories, since git doesn't track empty directories
