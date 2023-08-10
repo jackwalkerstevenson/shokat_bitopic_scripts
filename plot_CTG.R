@@ -129,25 +129,32 @@ for (trt in treatments){
   if(manually_relabel_targets){
     trt_targets <- Vectorize(get_display_name, vectorize.args = "name")(
       trt_targets, display_names_targets, TRUE)}
-  plot_treatment(plot_data, trt, rigid = rigid, grid = grid,
-                 color_map = get_if(color_map_targets,
-                                    manually_recolor_targets),
-                 shape_map = get_if(shape_map_targets,
-                                    manually_reshape_targets),
+  plot_treatment(plot_data, trt,
+                 rigid = rigid, # global param: rigid low-dose asymptote
+                 grid = grid, # global param: background grid on plot
+                 no_legend = no_legend, # global param: whether to omit legend
                  x_limits = get_if(x_limits, global_x_lim),
-                 response_col = "response_norm",
-                 ylab = "luminescence (% of untreated)",
+                 response_col = "response_norm", # CTG uses response_norm
+                 ylab = "luminescence (% of untreated)", # CTG = luminescence assay
                  legend_title = "cell line",
+                 # if relabeling targets, get display names for legend
                  legend_labels = get_if(display_names_targets,
                                         manually_relabel_targets,
                                         otherwise = ggplot2::waiver()),
-                 plot_title = doseplotr::get_display_name(trt,
+                 #if relabeling, get display name for title
+                 plot_title = get_display_name(trt,
                                                display_names_treatments,
-                                               manually_relabel_treatments)
+                                               manually_relabel_treatments),
+                 # if manually setting colors of targets, get color map
+                 color_map = get_if(color_map_targets,
+                                    manually_recolor_targets),
+                 # if manually setting shapes of targets, get shape map
+                 shape_map = get_if(shape_map_targets,
+                                    manually_reshape_targets)
                  ) |> 
     save_plot(
       str_glue("output/CTG_treatment_{trt}_{get_timestamp()}.{plot_type}"),
-      legend_len = longest(trt_targets))
+      legend_len = if(no_legend) 0 else longest(trt_targets))
 }  
 # plot data for each target separately------------------------------------------
 for (tgt in targets){ 
@@ -158,24 +165,30 @@ for (tgt in targets){
     tgt_treatments <- Vectorize(get_display_name, vectorize.args = "name")(
       tgt_treatments, display_names_treatments, TRUE)}
   plot_target(plot_data, tgt,
-              rigid = rigid, # global rigid low-dose asymptote parameter
-              grid = grid, # global grid plotting parameter
+              rigid = rigid, # global param: rigid low-dose asymptote
+              grid = grid, # global param: background grid on plot
+              no_legend = no_legend, # global param: whether to omit legend
               x_limits = get_if(x_limits, global_x_lim),
               response_col = "response_norm", # CTG uses response_norm
-              ylab = "luminescence (% of untreated)",
+              ylab = "luminescence (% of untreated)", # CTG = luminescence assay
               legend_title = "treatment",
+              # if relabeling treatments, get display names for legend
               legend_labels = get_if(display_names_treatments,
                                      manually_relabel_treatments,
                                      otherwise = ggplot2::waiver()),
+              #if relabeling, get display name for title
               plot_title = get_display_name(tgt,
                                             display_names_targets,
                                             manually_relabel_targets),
+              # if manually setting colors of treatments, get color map
               color_map = get_if(color_map_treatments,
                                  manually_recolor_treatments),
+              # if manually setting shapes of treatments, get shape map
               shape_map = get_if(shape_map_treatments,
                                  manually_reshape_treatments)
               )|>
     save_plot(
       str_glue("output/CTG_target_{tgt}_{get_timestamp()}.{plot_type}"),
+      no_legend = no_legend,
       legend_len = longest(tgt_treatments))
 }
