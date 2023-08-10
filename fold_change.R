@@ -6,6 +6,7 @@ library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
 library(doseplotr) # you bet
 # import precalculated IC50 table-----------------------------------------------
+rm(list = ls()) # clear environment
 source("parameters/parameters_fold_change.R")
 data <- read_csv(input_filename)
 # preprocess data---------------------------------------------------------------
@@ -52,9 +53,10 @@ p <- data |>
              label = signif(fold_vs_wt_IC50, digits = 2))) +
   geom_bar(stat = "identity",
            position = position_dodge2(reverse = TRUE, padding = 0)) +
-  geom_text(position = position_dodge2(width = 1, reverse = TRUE),
+  geom_text(position = position_dodge2(width = .9, reverse = TRUE),
             hjust = -0.1,
-            parse = FALSE) +
+            parse = FALSE,
+            size = 5) +
   scale_x_continuous(trans = "log10",
                      expand = expansion(mult = .1),
                      guide = "prism_offset_minor", # end at last tick
