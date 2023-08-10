@@ -50,13 +50,14 @@ for (trt in treatments){
     trt_targets <- Vectorize(get_display_name, vectorize.args = "name")(
       trt_targets, display_names_targets, TRUE)}
   plot_treatment(plot_data, trt, rigid = rigid, grid = grid,
+                 no_legend = no_legend,
                  color_map = get_if(color_map_targets,
                                     manually_recolor_targets),
                  shape_map = get_if(shape_map_targets,
                                     manually_reshape_targets),
                  x_limits = get_if(x_limits, global_x_lim),
                  response_col = "response",
-                 ylab = "luminescence (% of untreated)",
+                 ylab = "kinase activity (% of untreated)",
                  legend_title = "cell line",
                  legend_labels = get_if(display_names_targets,
                                         manually_relabel_targets,
@@ -80,9 +81,10 @@ for (tgt in targets){
   plot_target(plot_data, tgt,
               rigid = rigid, # global rigid low-dose asymptote parameter
               grid = grid, # global grid plotting parameter
+              no_legend = no_legend,
               x_limits = get_if(x_limits, global_x_lim),
               response_col = "response", # selectscreen uses response
-              ylab = "luminescence (% of untreated)",
+              ylab = "kinase activity (% of untreated)",
               legend_title = "treatment",
               legend_labels = get_if(display_names_treatments,
                                      manually_relabel_treatments,
