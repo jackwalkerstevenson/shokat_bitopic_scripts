@@ -9,7 +9,7 @@ library(doseplotr) # you bet
 rm(list = ls()) # clear environment
 source("parameters/parameters_fold_change.R")
 data <- read_csv(input_filename)
-# preprocess data---------------------------------------------------------------
+# process data---------------------------------------------------------------
 if(exists("treatments")){
   data <- filter_validate_reorder(data, "treatment", treatments)
 }
@@ -24,6 +24,19 @@ wt_IC50s <- data |>
 data <- data |> 
   left_join(wt_IC50s, by = "treatment") |> 
   mutate(fold_vs_wt_IC50 = IC50_nM/wt_IC50_nM)
+# write report of fold changes-----------------------------------------------
+report_data <- data |>
+  mutate(fold_vs_wt_IC50 = fold_vs_wt_IC50 |> signif(3),
+         IC50_nM = IC50_nM |> signif(3)) |> 
+  dplyr::select(treatment, target, IC50_nM, fold_vs_wt_IC50)
+# tidy report-----------------------------------------------
+report_data |>
+  write_csv(str_glue("output/fold_change_report_tidy_{get_timestamp()}.csv"))
+# untidy report-----------------------------------------------
+report_data |> 
+  tidyr::pivot_wider(names_from = treatment, values_from = c(IC50_nM, fold_vs_wt_IC50)) |> 
+  write_csv(str_glue("output/fold_change_report_untidy_{get_timestamp()}.csv"))
+
 # helper functions for renaming-----------------------------------------------
 get_target_labels <- function(){
   if(manually_relabel_targets) display_names_targets else{
