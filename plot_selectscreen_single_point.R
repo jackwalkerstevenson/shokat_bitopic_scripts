@@ -145,7 +145,7 @@ all_data |>
                    labels = display_names_treatments,
                    position = "top") +
   labs(y = "target kinase",
-       title = str_glue("Kinase selectivity in vitro"),
+       title = str_glue("Kinase inhibition in vitro"),
        fill = "% inhibition")
 ggsave(str_glue(
   "output/single_pt_raster_EC90_comparison_{get_timestamp()}.pdf"),
