@@ -5,29 +5,31 @@
 #' ---
 #'edited version of plateplotr for dealing with SelectScreen data
 #'started 2023-03-06
-# load required libraries-----------------------------------------------------
+# load required libraries------------------------------------------------------
 library(tidyverse) # for tidy data handling
 library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
 library(assertthat) # for QC assertions
 library(doseplotr)
 options(dplyr.summarise.inform = FALSE)
-# set global variables----------------------------------------------------------
-source("parameters/treatments.R")
-source("parameters/targets.R")
+# import global parameters------------------------------------------------------
+rm(list = ls()) # clear environment
+source("parameters/parameters_plot_selectscreen.R")
 source("scatter_plot.R")
 dir.create("output/", showWarnings = FALSE) # silently create output directory
 plot_type <- "pdf" # file type for saved output plots
 input_filename <- "ZLYTE_single_point.csv"
-all_data <- import_selectscreen(input_filename) |>
-  filter_trt_tgt(trt = treatments, tgt = target_list) |> 
-  # sort treatments, targets in list order
-  mutate(treatment = fct_relevel(treatment, treatments)) |> 
-  mutate(target = fct_relevel(target, target_list))
+all_data <- import_selectscreen(input_filename)
+  # filter and validate imported data---------------------------------------------
+if(exists("treatments")){
+  all_data <- all_data |> filter_validate_reorder("treatment", treatments)
+}
+if(exists("targets")){
+  all_data <- all_data |> filter_validate_reorder("target", targets)
+}
 data_conc_labeled <- all_data |> 
   mutate(target = str_glue("{target} ({Compound.Conc} nM cpd)"))
 # aesthetic parameters for scatter plots----------------------------------------
-font_base_size <- 14
 text_factor <- font_base_size / 130 # assume font base size 14
 # global axis labels
 xlab = "percent inhibition"
@@ -36,6 +38,7 @@ vr <- viridis_range(length(treatments))
 vr_begin <- vr[1]
 vr_end <- vr[2]
 # helper summary function-------------------------------------------------------
+# replace with doseplotr::summarize_response()
 inhibition_summarize <- function(x){
   x |> group_by(treatment, target) |>
     mutate(bar_size = .2 * n()) |>
@@ -48,6 +51,14 @@ inhibition_summarize <- function(x){
       mean_pct_inhibition = mean(pct_inhibition),
     )}
 # helper raster plot functions--------------------------------------------------
+get_treatment_labels <- function(){
+  if(manually_relabel_treamtments) display_names_treatments else{
+    # necessary to preserve correct ordering even after changing plotting order
+    named_treatments <- treatments
+    names(named_treatments) <- treatments
+    return(named_treatments)
+  }
+}
 # empirical formula for pleasant widths of side-by-side raster plots
 raster_plot_width <- function(num_cols){
   5.8 + 1.7*(num_cols - 1)
@@ -60,7 +71,7 @@ raster_helper <- function(plot){
     theme(plot.background = element_blank()) + # need for transparent background
     # remove space from side of table
     scale_x_discrete(expand = expansion(mult = c(0, 0.05)),
-                     position = "top") +
+                     position = "top",) +
     scale_y_discrete(limits = rev, # reverse y axis to put first on top
                      # remove space from bottom of table
                      expand = expansion(mult = c(0, 0))) +
@@ -113,7 +124,7 @@ for(t in treatments){
 }
 # raster plot for multiple treatments together at one conc each----------------
 concs_to_plot <- c("ponatinib + asciminib" = 27,
-                   "PonatiLink-1-24" = 500,
+                   # "PonatiLink-1-24" = 500,
                    "PonatiLink-2-7-10" = 5.4)
 label_treatment <- function(trt){
   trt_conc <- concs_to_plot[trt]
@@ -130,8 +141,9 @@ all_data |>
   # theme(axis.ticks.length.x = unit(1, "mm")) +
   # theme(axis.ticks.x = element_blank()) +
   scale_x_discrete(expand = expansion(mult = c(0, 0.05)),
-                   position = "top",
-                   labels = treatment_labels) +
+                   # labels = treatment_labels,
+                   labels = display_names_treatments,
+                   position = "top") +
   labs(y = "target kinase",
        title = str_glue("Kinase selectivity in vitro"),
        fill = "% inhibition")
