@@ -4,6 +4,7 @@ library(tidyverse) # for tidy data handling
 library(assertthat) # for testing
 library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
+library(scales) # for plot scales
 library(doseplotr) # you bet
 # import precalculated IC50 table-----------------------------------------------
 rm(list = ls()) # clear environment
