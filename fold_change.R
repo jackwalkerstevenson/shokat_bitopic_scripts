@@ -106,7 +106,7 @@ p <- data |>
 save_plot(p, str_glue("output/fold_change_target_bar_{get_timestamp()}.{plot_type}"),
           width = 14, height = .7*length(targets) + 0.75)
 # bar plot by treatment instead of target---------------------------------------
-legend_title = "BCR-ABL1 variant"
+legend_title = "K562 BCR-ABL1 variant"
 p <- data |> 
   # don't plot wt or control
   filter(!target %in% c(wt_target_name, control_target_name)) |>
