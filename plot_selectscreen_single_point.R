@@ -123,9 +123,14 @@ for(t in treatments){
     }
 }
 # raster plot for multiple treatments together at one conc each----------------
-concs_to_plot <- c("ponatinib + asciminib" = 27,
-                   # "PonatiLink-1-24" = 500,
-                   "PonatiLink-2-7-10" = 5.4)
+concs_to_plot <- c(
+  #"ponatinib + asciminib" = 14.8, # wt IC90
+  #"PonatiLink-1-24" = 20, # wt IC90
+  # "PonatiLink-2-7-10" = 3.1, # wt IC90
+  "ponatinib + asciminib" = 22.3, # T315I IC90
+  # "PonatiLink-1-24" = 500, # T315I IC90
+  "PonatiLink-2-7-10" = 5.4 # T315I IC90
+)
 label_treatment <- function(trt){
   trt_conc <- concs_to_plot[trt]
   str_glue("{trt}\n{trt_conc} nM")
@@ -154,8 +159,8 @@ ggsave(str_glue(
 # bar plot for multiple treatments at one conc each-----------------------------
 geom_barwidth <- 0.75
 all_data |> 
-  filter(Compound.Conc %in% c(3.1, 14.8)) |> # manually select EC90 concs
-  # mutate(treatment = str_glue("{treatment}, {Compound.Conc} nM")) |> 
+  filter(Compound.Conc %in% c(22.3, 5.4)) |> # manually select IC90 concs
+  # mutate(treatment = str_glue("{treatment}, {Compound.Conc} nM")) |>
   inhibition_summarize() |> 
   ggplot(aes(y = target,
              x = mean_pct_inhibition,
@@ -164,9 +169,9 @@ all_data |>
   scale_fill_viridis(discrete = TRUE, begin = vr_begin, end = vr_end,
                      # WARNING MANUAL CONCENTRATION LABELS
                      labels = c("ponatinib + asciminib" =
-                                  "ponatinib + asciminib, 14.8 nM",
+                                  "ponatinib + asciminib, 22.3 nM",
                                 "PonatiLink-2-7-10" =
-                                  "PonatiLink-2-7-10, 3.1 nM")) +
+                                  "PonatiLink-2-7-10, 5.4 nM")) +
   theme_prism() +
   theme(plot.background = element_blank()) + # need for transparent background
   scale_y_discrete(limits = rev) +
