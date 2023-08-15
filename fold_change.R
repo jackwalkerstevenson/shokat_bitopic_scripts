@@ -47,9 +47,19 @@ get_target_labels <- function(){
     return(named_targets)
   }
 }
-legend_labels = get_if(display_names_treatments,
+get_treatment_labels <- function(){
+  if(manually_relabel_treatments) display_names_treatments else{
+    named_treatments <- treatments
+    names(named_treatments) <- treatments
+    return(named_treatments)
+  }
+}
+legend_labels_targets = get_if(display_names_treatments,
                        manually_relabel_treatments,
                        otherwise = ggplot2::waiver())
+legend_labels_treatments = get_if(display_names_targets,
+                                  manually_relabel_targets,
+                                  otherwise = ggplot2::waiver())
 # bar plot of fold changes------------------------------------------------------
 vr <- viridis_range(length(treatments))
 viridis_begin <- vr[[1]]
@@ -80,12 +90,12 @@ p <- data |>
   scale_y_discrete(limits = rev, labels = get_target_labels()) +
   {if(manually_recolor_treatments){
     ggplot2::scale_fill_manual(values = color_map_treatments,
-                               labels = legend_labels)
+                               labels = legend_labels_targets)
   } else{
     scale_fill_viridis(option = viridis_option,
                        discrete = TRUE,
                        begin = viridis_begin, end = viridis_end,
-                       labels = legend_labels)
+                       labels = legend_labels_targets)
   }} +
   theme_prism() +
   theme(plot.background = element_blank(), # need for transparent background
@@ -93,8 +103,48 @@ p <- data |>
         legend.title.align = 0) +
   labs(x = "fold change in IC50 vs wt",
        y = "cell line (K562 pUltra BCR-ABL1)")
-save_plot(p, str_glue("output/fold_change_bar_{get_timestamp()}.{plot_type}"),
+save_plot(p, str_glue("output/fold_change_target_bar_{get_timestamp()}.{plot_type}"),
           width = 14, height = .7*length(targets) + 0.75)
+# bar plot by treatment instead of target---------------------------------------
+legend_title = "BCR-ABL1 variant"
+p <- data |> 
+  # don't plot wt or control
+  filter(!target %in% c(wt_target_name, control_target_name)) |>
+  ggplot(aes(y = treatment, x = fold_vs_wt_IC50,
+             fill = target,
+             label = signif(fold_vs_wt_IC50, digits = 2))) +
+  geom_bar(stat = "identity",
+           position = position_dodge2(reverse = TRUE, padding = 0)) +
+  geom_text(position = position_dodge2(width = .9, reverse = TRUE),
+            hjust = -0.1,
+            parse = FALSE,
+            size = 5) +
+  scale_x_continuous(trans = "log10",
+                     expand = expansion(mult = .1),
+                     guide = "prism_offset_minor", # end at last tick
+                     breaks = breaks_x,
+                     labels = label_comma(accuracy = 1, big.mark = ""),
+                     minor_breaks = minor_x,) +
+  scale_y_discrete(limits = rev, labels = get_treatment_labels()) +
+  {if(manually_recolor_targets){
+    ggplot2::scale_fill_manual(values = color_map_targets,
+                               labels = legend_labels_treatments,
+                               name = legend_title)
+  } else{
+    scale_fill_viridis(option = viridis_option,
+                       discrete = TRUE,
+                       begin = viridis_begin, end = viridis_end,
+                       labels = legend_labels_treatments,
+                       name = legend_title)
+  }} +
+  theme_prism() +
+  theme(plot.background = element_blank(), # need for transparent background
+        legend.title = element_text(face = "plain"),
+        legend.title.align = 0) +
+  labs(x = "fold change in IC50 vs wt",
+       y = "treatment")
+save_plot(p, str_glue("output/fold_change_treatment_bar_{get_timestamp()}.{plot_type}"),
+          width = 14, height = 1.5*length(treatments) + 0.75) # 2 wants optimizing
 # strip plot of raw IC50s-----------------------------------------------
 x_min <- floor(min(log10(data$IC50_nM)))
 x_max <- ceiling(max(log10(data$IC50_nM)))
@@ -113,12 +163,12 @@ p <- data |>
   scale_y_discrete(limits = rev, labels = get_target_labels()) +
   {if(manually_recolor_treatments){
     ggplot2::scale_color_manual(values = color_map_treatments,
-                                labels = legend_labels)
+                                labels = legend_labels_treatments)
   } else{
     scale_fill_viridis(option = viridis_option,
                        discrete = TRUE,
                        begin = viridis_begin, end = viridis_end,
-                       labels = legend_labels)
+                       labels = legend_labels_treatments)
   }} +
   theme_prism() +
   theme(panel.grid = element_line(color = "black", linewidth = 0.5),
