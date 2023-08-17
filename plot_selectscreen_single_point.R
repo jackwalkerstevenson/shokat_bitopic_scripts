@@ -14,7 +14,7 @@ library(doseplotr)
 options(dplyr.summarise.inform = FALSE)
 # import global parameters------------------------------------------------------
 rm(list = ls()) # clear environment
-source("parameters/parameters_plot_selectscreen.R")
+source("parameters/parameters_plot_selectscreen_single_point.R")
 source("scatter_plot.R")
 dir.create("output/", showWarnings = FALSE) # silently create output directory
 plot_type <- "pdf" # file type for saved output plots
@@ -122,7 +122,7 @@ for(t in treatments){
            bg = "transparent", width = raster_plot_width(1), height = 10)
     }
 }
-# raster plot for multiple treatments together at one conc each----------------
+# raster plot for pona/asc and PL-2 together at one conc each----------------
 concs_to_plot <- c(
   #"ponatinib + asciminib" = 14.8, # wt IC90
   #"PonatiLink-1-24" = 20, # wt IC90
@@ -156,6 +156,74 @@ ggsave(str_glue(
   "output/single_pt_raster_EC90_comparison_{get_timestamp()}.pdf"),
   bg = "transparent",
   width = raster_plot_width(length(concs_to_plot)), height = 10)
+# raster plot for pona/asc and PL-1 and PL-2 together at T315I IC90----------------
+concs_to_plot <- c(
+  #"ponatinib + asciminib" = 14.8, # wt IC90
+  #"PonatiLink-1-24" = 20, # wt IC90
+  # "PonatiLink-2-7-10" = 3.1, # wt IC90
+  "ponatinib + asciminib" = 22.3, # T315I IC90
+  "PonatiLink-1-24" = 500, # T315I IC90
+  "PonatiLink-2-7-10" = 5.4 # T315I IC90
+)
+label_treatment <- function(trt){
+  trt_conc <- concs_to_plot[trt]
+  str_glue("{trt}\n{trt_conc} nM")
+}
+treatment_labels <- sapply(treatments, label_treatment)
+all_data |> 
+  filter(Compound.Conc == concs_to_plot[treatment]) |> 
+  inhibition_summarize() |> 
+  ggplot(aes(x = treatment, y = target, label = mean_pct_inhibition)) |> 
+  raster_helper() +
+  theme(axis.title.x = element_blank()) +
+  # theme(axis.text.x = element_text(margin = margin(b = 100, unit = "mm"))) +
+  # theme(axis.ticks.length.x = unit(1, "mm")) +
+  # theme(axis.ticks.x = element_blank()) +
+  scale_x_discrete(expand = expansion(mult = c(0, 0.05)),
+                   # labels = treatment_labels,
+                   labels = display_names_treatments,
+                   position = "top") +
+  labs(y = "target kinase",
+       title = str_glue("Kinase inhibition in vitro"),
+       fill = "% inhibition")
+ggsave(str_glue(
+  "output/single_pt_raster_EC90_three_comparison_{get_timestamp()}.pdf"),
+  bg = "transparent",
+  width = raster_plot_width(length(concs_to_plot)) + .5, height = 10)
+# raster plot for pona/asc and PL-1 and PL-2 together at wt IC90----------------
+concs_to_plot <- c(
+  "ponatinib + asciminib" = 14.8, # wt IC90
+  "PonatiLink-1-24" = 13.6, # wt IC90
+  "PonatiLink-2-7-10" = 3.1 # wt IC90
+  # "ponatinib + asciminib" = 22.3, # T315I IC90
+  # "PonatiLink-1-24" = 500, # T315I IC90
+  # "PonatiLink-2-7-10" = 5.4 # T315I IC90
+)
+label_treatment <- function(trt){
+  trt_conc <- concs_to_plot[trt]
+  str_glue("{trt}\n{trt_conc} nM")
+}
+treatment_labels <- sapply(treatments, label_treatment)
+all_data |> 
+  filter(Compound.Conc == concs_to_plot[treatment]) |> 
+  inhibition_summarize() |> 
+  ggplot(aes(x = treatment, y = target, label = mean_pct_inhibition)) |> 
+  raster_helper() +
+  theme(axis.title.x = element_blank()) +
+  # theme(axis.text.x = element_text(margin = margin(b = 100, unit = "mm"))) +
+  # theme(axis.ticks.length.x = unit(1, "mm")) +
+  # theme(axis.ticks.x = element_blank()) +
+  scale_x_discrete(expand = expansion(mult = c(0, 0.05)),
+                   # labels = treatment_labels,
+                   labels = display_names_treatments,
+                   position = "top") +
+  labs(y = "target kinase",
+       title = str_glue("Kinase inhibition in vitro"),
+       fill = "% inhibition")
+ggsave(str_glue(
+  "output/single_pt_raster_EC90_three_comparison_{get_timestamp()}.pdf"),
+  bg = "transparent",
+  width = raster_plot_width(length(concs_to_plot)) + .5, height = 10)
 # bar plot for multiple treatments at one conc each-----------------------------
 geom_barwidth <- 0.75
 all_data |> 
