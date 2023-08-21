@@ -29,10 +29,13 @@ if (!exists("treatments")){ # if treatments not specified, use all treatments
 if (!exists("targets")){ # if targets not specified, use all targets
   targets <- as.vector(unique(plot_data$target))}
 # find x-axis min/max values for consistent zoom window between all plots
-x_min <- floor(min(plot_data$log_dose))
-x_max <- ceiling(max(plot_data$log_dose))
-x_limits <- c(x_min, x_max)
-# x_limits <- c(-12,-4) # manual x limit backup
+if(override_x_lim){
+  x_limits <- manual_x_lim
+} else{
+  x_min <- floor(min(plot_data$log_dose))
+  x_max <- ceiling(max(plot_data$log_dose))
+  x_limits <- c(x_min, x_max)
+}
 # fit models to output EC values------------------------------------------------
 model_summary <- summarize_models(plot_data,
                                   response_col = "response",
