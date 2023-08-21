@@ -83,48 +83,50 @@ model_summary <- summarize_models(plot_data,
 write_csv(model_summary,
           str_glue("output/CTG_model_summary_{get_timestamp()}.csv"))
 # plot untreated data by target for QC------------------------------------------
-# set color parameters for treatments
-vr <- viridis_range(length(treatments))
-vr_begin <- vr[[1]]
-vr_end <- vr[[2]]
-vr_option <- vr[[3]] # color scale
-untreated_data_by_tgt <-  plate_data |>
-  filter(log_dose == -Inf) |> # untreated data only
-  group_by(target) |>
-  summarize_response(response_col = "response")
-untreated_data_by_tgt_and_trt <- plate_data |> 
-  filter(log_dose == -Inf) |> # untreated data only
-  group_by(target, treatment) |>
-  summarize_response(response_col = "response")
-p <- untreated_data_by_tgt_and_trt |> 
-  ggplot(aes(y = target, x = mean_response, color = treatment)) +
-  geom_point(size = pt_size, alpha = 0.8) +
-  scale_y_discrete(limits = rev) +
-  scale_x_continuous(labels = \(x) format(x, scientific = TRUE)) +
-  {if(!manually_recolor_treatments){ # optionally manually specify colors
-    viridis::scale_color_viridis(discrete = TRUE, option = vr_option,
-                                 begin = vr_begin, end = vr_end)
-  } else{
-    ggplot2::scale_color_manual(values = color_map_treatments)
-  }} +
-  geom_errorbar(aes(xmax = mean_response+sem, xmin = mean_response-sem,
-                    width = w)) +
-  theme_prism() +
-  theme(plot.background = element_blank()) + # need for transparent background
-  labs(x = "CTG luminescense",
-       title = "Growth of untreated control wells") +
-  geom_point(data = untreated_data_by_tgt,
-           size = 6, alpha = 0.3, color = "black") +
-  geom_text(data = untreated_data_by_tgt, # label average points with value
-            aes(label = mean_response |>
-                  signif(digits = 3) |>
-                  format(scientific = TRUE)),
-            color = "black",
-            show.legend = FALSE, # no legend for the text labels
-            position = position_nudge(y = .3)) +
-  guides(color = guide_legend(override.aes = list(size = pt_size)))
-save_plot(p, str_glue("output/CTG_QC_untreated_{get_timestamp()}.{plot_type}"),
-          width = 14, height = 8)
+if(plate_data |> filter(log_dose == -Inf) |> nrow() > 0){ # only if there are untreated wells
+  # set color parameters for treatments
+  vr <- viridis_range(length(treatments))
+  vr_begin <- vr[[1]]
+  vr_end <- vr[[2]]
+  vr_option <- vr[[3]] # color scale
+  untreated_data_by_tgt <-  plate_data |>
+    filter(log_dose == -Inf) |> # untreated data only
+    group_by(target) |>
+    summarize_response(response_col = "response")
+  untreated_data_by_tgt_and_trt <- plate_data |>
+    filter(log_dose == -Inf) |> # untreated data only
+    group_by(target, treatment) |>
+    summarize_response(response_col = "response")
+  p <- untreated_data_by_tgt_and_trt |>
+    ggplot(aes(y = target, x = mean_response, color = treatment)) +
+    geom_point(size = pt_size, alpha = 0.8) +
+    scale_y_discrete(limits = rev) +
+    scale_x_continuous(labels = \(x) format(x, scientific = TRUE)) +
+    {if(!manually_recolor_treatments){ # optionally manually specify colors
+      viridis::scale_color_viridis(discrete = TRUE, option = vr_option,
+                                   begin = vr_begin, end = vr_end)
+    } else{
+      ggplot2::scale_color_manual(values = color_map_treatments)
+    }} +
+    geom_errorbar(aes(xmax = mean_response+sem, xmin = mean_response-sem,
+                      width = w)) +
+    theme_prism() +
+    theme(plot.background = element_blank()) + # need for transparent background
+    labs(x = "CTG luminescense",
+         title = "Growth of untreated control wells") +
+    geom_point(data = untreated_data_by_tgt,
+             size = 6, alpha = 0.3, color = "black") +
+    geom_text(data = untreated_data_by_tgt, # label average points with value
+              aes(label = mean_response |>
+                    signif(digits = 3) |>
+                    format(scientific = TRUE)),
+              color = "black",
+              show.legend = FALSE, # no legend for the text labels
+              position = position_nudge(y = .3)) +
+    guides(color = guide_legend(override.aes = list(size = pt_size)))
+  save_plot(p, str_glue("output/CTG_QC_untreated_{get_timestamp()}.{plot_type}"),
+            width = 14, height = 8)
+}
 # plot data for each treatment separately---------------------------------------
 for (trt in treatments){
   # get all targets for this treatment to set legend length
