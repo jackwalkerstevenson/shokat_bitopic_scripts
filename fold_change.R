@@ -104,12 +104,12 @@ p <- data |>
         legend.title = element_text(face = "plain"),
         legend.title.align = 0) +
   labs(x = "fold change in IC50 vs wt",
-       y = "K562 pUltra BCR-ABL1 variant")
+       y = "K562 BCR-ABL1 variant")
 save_plot(p, str_glue("output/fold_change_target_bar_{get_timestamp()}.{plot_type}"),
           width = 14,
           height = .2*length(targets)*length(treatments) + .1 * length(targets) + 0.75)
 # bar plot by treatment instead of target---------------------------------------
-legend_title = "K562 pUltra BCR-ABL1 variant"
+legend_title = "K562 BCR-ABL1 variant"
 p <- data |> 
   # don't plot wt or control
   filter(!target %in% c(wt_target_name, control_target_name)) |>
@@ -182,6 +182,6 @@ p <- data |>
                                         linetype = "dotted")) +
   theme(plot.background = element_blank()) + # need for transparent background
   labs(x = "IC50 (nM)",
-       y = "K562 pUltra BCR-ABL1 variant")
+       y = "K562 BCR-ABL1 variant")
 save_plot(p, str_glue("output/IC50_dot_{get_timestamp()}.{plot_type}"),
           width = 12, height = .65*length(targets) + 0.75)
