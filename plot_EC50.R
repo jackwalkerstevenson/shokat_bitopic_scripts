@@ -3,7 +3,7 @@
 #'author: "Jack Stevenson"
 #'date: "2023-02"
 #' ---
-#'This is a baby spinoff from plateplotr for plotting EC50s
+#'This is a baby spinoff from plateplotr for plotting IC50s
 #'
 # load required libraries------------------------------------------------------
 library(tidyverse) # for tidy data handling
@@ -13,18 +13,15 @@ library(viridis) # for color schemes
 library(lemon) # for fancy facet wrapping
 library(doseplotr)
 # import parameter files and data---------------------------------
+# import global parameters and clear environment--------------------------------
+rm(list = ls()) # clear environment
+source("parameters/parameters_plot_IC50.R")
 # note the order treatments are imported is the order they will be plotted
-input_filename <- "input/EC50s.csv"
 dir.create("output/", showWarnings = FALSE)
 plot_type <- "pdf"
-# import and order treatments and targets to plot
-source("parameters/treatments.R")
-source("parameters/targets.R")
-source("parameters/variants.R")
-source("parameters/keys.R")
-EC_data <- read_csv(input_filename) |>
+EC_data <- readxl::read_excel(input_filename) |>
   mutate(linker_length = as.numeric(linker_length)) |>
-  mutate(EC50_nM = as.numeric(EC50_nM)) |>
+  mutate(IC50_nM = as.numeric(IC50_nM)) |>
   # filter for desired treatments, targets and target variants
   filter(treatment %in% treatments) |>
   filter(target %in% targets) |>
@@ -32,23 +29,24 @@ EC_data <- read_csv(input_filename) |>
   mutate(treatment = fct_relevel(treatment, treatments)) |> # order treatments by list
   mutate(target = fct_relevel(target, targets)) |> # order targets by list
   mutate(variant = fct_relevel(variant, variants)) |> # order variants by list
-  mutate(neglog10EC50_nM = -log10(EC50_nM))
+  mutate(neglog10IC50_nM = -log10(IC50_nM))
 # plot ECs in points--------- ------------------------------------------------------
 EC_data |>
-  ggplot(aes(x = treatment, y = EC50_nM)) +
+  ggplot(aes(x = treatment, y = IC50_nM)) +
   geom_point(aes(shape = assay, color = variant), size = 4, alpha = 1) +
   scale_shape(labels = assay_labels,
               guide = guide_legend(order = 1)) + # force to top of legend
   scale_x_discrete(guide = guide_axis(angle = -90)) +
   # reverse and log10 transform to show most potent on top
   scale_y_continuous(trans = c("log10","reverse")) +
-  scale_color_manual(values = variant_colors) +
+  scale_color_manual(values = color_map_variants) +
   theme_prism() + # make it look fancy like prism
+  theme(legend.text.align = 0) +
   labs(x = "treatment",
-       y = "EC50 (nM)",
-       title = (glue::glue("{group_name} cell-based vs. biochemical potency"))) +
+       y = "IC50 (nM)",
+       title = (glue::glue("{group_name} series potency"))) +
   theme(plot.background = element_blank()) # need for transparent background
-ggsave(str_glue("output/EC50_points_{get_timestamp()}.{plot_type}"),
+ggsave(str_glue("output/IC50_points_{get_timestamp()}.{plot_type}"),
           bg = "transparent",
           width = 8,
           height = 6)
@@ -63,7 +61,7 @@ linker_seq <- seq(linker_min, linker_max, 2)
 # plot ECs by linker length-----------------------------------------------------
 EC_data |>
   filter(linker_length > 0) |> # only plot treatments with linkers
-  ggplot(aes(x = linker_length, y = EC50_nM,
+  ggplot(aes(x = linker_length, y = IC50_nM,
              shape = assay, color = variant)) +
   scale_shape(labels = assay_labels,
               guide = guide_legend(order = 1)) + # force to top of legend
@@ -73,24 +71,25 @@ EC_data |>
                      breaks = linker_seq) + # manual x ticks
   scale_y_continuous(trans = c("log10", "reverse"),
                      guide = "prism_offset_minor") +
-  scale_color_manual(values = variant_colors) +
+  scale_color_manual(values = color_map_variants) +
   # remove placeholder shape from color legend with 32, the nonshape
   guides(color=guide_legend(override.aes=list(shape=32))) +
   geom_point(size = 4) +
   geom_line() +
-  theme(plot.background = element_blank()) + # need for transparent background
+  theme(plot.background = element_blank()) + # need for transparent background +
+  theme(legend.text.align = 0) +
   labs(x = "linker length (PEG units)",
-       y = "EC50 (nM)",
-       title = glue::glue("{group_name} cell-based vs. biochemical potency"))
-ggsave(str_glue("output/EC50_linker_{get_timestamp()}.{plot_type}"),
+       y = "IC50 (nM)",
+       title = glue::glue("{group_name} series potency"))
+ggsave(str_glue("output/IC50_linker_{get_timestamp()}.{plot_type}"),
         bg = "transparent",
        width = 8,
        height = 4)
 # plot ECs across assays--------------------------------------------------------
 EC_data |>
-  # pivot so EC50s from both assays associate with each linker/variant combo
+  # pivot so IC50s from both assays associate with each linker/variant combo
   pivot_wider(names_from = assay,
-              values_from = EC50_nM,
+              values_from = IC50_nM,
               id_cols = c(linker_length, variant)) |>
   filter(linker_length > 0) |> # only plot treatments with linkers
   ggplot(aes(y = CTG, x = SelectScreen)) +
@@ -138,10 +137,10 @@ EC_data |>
         legend.title = element_text(size = 10), # reinstate legend title bc theme_prism removes
         # legend.position = "bottom",
         strip.text.x = element_text(size = 14)) + # size facet labels
-  labs(y = "CellTiter-Glo EC50 (nM)",
-       x = "SelectScreen EC50 (nM)",
-       title = str_wrap(glue::glue("{group_name} cell-based vs. biochemical potency"), width = 70))
-ggsave(str_glue("output/EC50_assays_{get_timestamp()}.{plot_type}"),
+  labs(y = "CellTiter-Glo IC50 (nM)",
+       x = "SelectScreen IC50 (nM)",
+       title = str_wrap(glue::glue("{group_name} series potency"), width = 70))
+ggsave(str_glue("output/IC50_assays_{get_timestamp()}.{plot_type}"),
        bg = "transparent",
        width = 10,
        height = 5)
