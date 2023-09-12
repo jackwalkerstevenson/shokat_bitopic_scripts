@@ -60,7 +60,7 @@ legend_labels_targets = get_if(display_names_treatments,
 legend_labels_treatments = get_if(display_names_targets,
                                   manually_relabel_targets,
                                   otherwise = ggplot2::waiver())
-# bar plot of fold changes------------------------------------------------------
+# bar plot of fold changes by target------------------------------------------------------
 vr <- viridis_range(length(treatments))
 viridis_begin <- vr[[1]]
 viridis_end <- vr[[2]]
@@ -69,15 +69,17 @@ x_min <- floor(min(log10(data$fold_vs_wt_IC50)))
 x_max <- ceiling(max(log10(data$fold_vs_wt_IC50)))
 breaks_x <- 10^rep(x_min : x_max)
 minor_x <- minor_breaks(x_min, x_max, log_units = TRUE)
+bar_width <- 0.8
 p <- data |> 
   # don't plot wt or control
   filter(!target %in% c(wt_target_name, control_target_name)) |>
   ggplot(aes(y = target, x = fold_vs_wt_IC50,
              fill = treatment,
-             label = signif(fold_vs_wt_IC50, digits = 2))) +
+             label = glue::glue("{signif(fold_vs_wt_IC50, digits = 2)}x"))) +
   geom_bar(stat = "identity",
+           width = bar_width,
            position = position_dodge2(reverse = TRUE, padding = 0)) +
-  geom_text(position = position_dodge2(width = .9, reverse = TRUE),
+  geom_text(position = position_dodge2(width = bar_width, reverse = TRUE),
             hjust = -0.1,
             parse = FALSE,
             size = 5) +
@@ -102,20 +104,21 @@ p <- data |>
         legend.title = element_text(face = "plain"),
         legend.title.align = 0) +
   labs(x = "fold change in IC50 vs wt",
-       y = "cell line (K562 pUltra BCR-ABL1)")
+       y = "K562 pUltra BCR-ABL1 variant")
 save_plot(p, str_glue("output/fold_change_target_bar_{get_timestamp()}.{plot_type}"),
-          width = 14, height = .7*length(targets) + 0.75)
+          width = 14, height = .2*length(targets)*length(treatments) + 0.75)
 # bar plot by treatment instead of target---------------------------------------
-legend_title = "K562 BCR-ABL1 variant"
+legend_title = "K562 pUltra BCR-ABL1 variant"
 p <- data |> 
   # don't plot wt or control
   filter(!target %in% c(wt_target_name, control_target_name)) |>
   ggplot(aes(y = treatment, x = fold_vs_wt_IC50,
              fill = target,
-             label = signif(fold_vs_wt_IC50, digits = 2))) +
+             label = glue::glue("{signif(fold_vs_wt_IC50, digits = 2)}x"))) +
   geom_bar(stat = "identity",
+           width = bar_width,
            position = position_dodge2(reverse = TRUE, padding = 0)) +
-  geom_text(position = position_dodge2(width = .9, reverse = TRUE),
+  geom_text(position = position_dodge2(width = bar_width, reverse = TRUE),
             hjust = -0.1,
             parse = FALSE,
             size = 5) +
@@ -144,7 +147,7 @@ p <- data |>
   labs(x = "fold change in IC50 vs wt",
        y = "treatment")
 save_plot(p, str_glue("output/fold_change_treatment_bar_{get_timestamp()}.{plot_type}"),
-          width = 14, height = 1.5*length(treatments) + 0.75) # 2 wants optimizing
+          width = 14, height = .2*length(targets)*length(treatments) + 0.75)
 # strip plot of raw IC50s-----------------------------------------------
 x_min <- floor(min(log10(data$IC50_nM)))
 x_max <- ceiling(max(log10(data$IC50_nM)))
@@ -171,12 +174,13 @@ p <- data |>
                        labels = legend_labels_treatments)
   }} +
   theme_prism() +
-  theme(panel.grid = element_line(color = "black", linewidth = 0.5),
+  theme(legend.title = element_text(),
+        panel.grid = element_line(color = "black", linewidth = 0.5),
         panel.grid.minor = element_line(color = "black",
                                         linewidth = 0.1,
                                         linetype = "dotted")) +
   theme(plot.background = element_blank()) + # need for transparent background
   labs(x = "IC50 (nM)",
-       y = "cell line (K562 pUltra BCR-ABL1)")
+       y = "K562 pUltra BCR-ABL1 variant")
 save_plot(p, str_glue("output/IC50_dot_{get_timestamp()}.{plot_type}"),
           width = 12, height = .65*length(targets) + 0.75)
