@@ -128,6 +128,8 @@ if(plate_data |> filter(log_dose == -Inf) |> nrow() > 0){ # only if there are un
             width = 14, height = 8)
 }
 # plot data for each treatment separately---------------------------------------
+target_legend_title <- if(override_target_title){
+  target_title} else "cell line"
 for (trt in treatments){
   # get all targets for this treatment to set legend length
   trt_targets <- as.vector(unique((plot_data |>
@@ -142,7 +144,7 @@ for (trt in treatments){
                  x_limits = get_if(x_limits, global_x_lim),
                  response_col = "response_norm", # CTG uses response_norm
                  ylab = "luminescence (% of untreated)", # CTG = luminescence assay
-                 legend_title = "cell line",
+                 legend_title = target_legend_title,
                  # if relabeling targets, get display names for legend
                  legend_labels = get_if(display_names_targets,
                                         manually_relabel_targets,
@@ -160,9 +162,12 @@ for (trt in treatments){
                  ) |> 
     save_plot(
       str_glue("output/CTG_treatment_{trt}_{get_timestamp()}.{plot_type}"),
-      legend_len = if(no_legend) 0 else longest(trt_targets))
+      legend_len = if(no_legend) 0 else{
+        longest(c(trt_targets, target_legend_title))})
 }  
 # plot data for each target separately------------------------------------------
+treatment_legend_title <- if(override_treatment_title){
+  treatment_title} else "treatment"
 for (tgt in targets){ 
   # get all treatments for this target to set legend length
   tgt_treatments <- as.vector(unique((plot_data |>
@@ -177,7 +182,7 @@ for (tgt in targets){
               x_limits = get_if(x_limits, global_x_lim),
               response_col = "response_norm", # CTG uses response_norm
               ylab = "luminescence (% of untreated)", # CTG = luminescence assay
-              legend_title = "treatment",
+              legend_title = treatment_legend_title,
               # if relabeling treatments, get display names for legend
               legend_labels = get_if(display_names_treatments,
                                      manually_relabel_treatments,
@@ -196,5 +201,5 @@ for (tgt in targets){
     save_plot(
       str_glue("output/CTG_target_{tgt}_{get_timestamp()}.{plot_type}"),
       no_legend = no_legend,
-      legend_len = longest(tgt_treatments))
+      legend_len = longest(c(tgt_treatments, treatment_legend_title)))
 }
