@@ -106,7 +106,8 @@ p <- data |>
   labs(x = "fold change in IC50 vs wt",
        y = "K562 pUltra BCR-ABL1 variant")
 save_plot(p, str_glue("output/fold_change_target_bar_{get_timestamp()}.{plot_type}"),
-          width = 14, height = .2*length(targets)*length(treatments) + 0.75)
+          width = 14,
+          height = .2*length(targets)*length(treatments) + .1 * length(targets) + 0.75)
 # bar plot by treatment instead of target---------------------------------------
 legend_title = "K562 pUltra BCR-ABL1 variant"
 p <- data |> 
@@ -147,7 +148,7 @@ p <- data |>
   labs(x = "fold change in IC50 vs wt",
        y = "treatment")
 save_plot(p, str_glue("output/fold_change_treatment_bar_{get_timestamp()}.{plot_type}"),
-          width = 14, height = .2*length(targets)*length(treatments) + 0.75)
+          width = 14, height = .2*length(treatments)*length(targets) + .1 * length(treatments) + 0.75)
 # strip plot of raw IC50s-----------------------------------------------
 x_min <- floor(min(log10(data$IC50_nM)))
 x_max <- ceiling(max(log10(data$IC50_nM)))
