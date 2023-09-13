@@ -78,7 +78,7 @@ if(override_x_lim){
 model_summary <- summarize_models(plot_data,
                                   response_col = "response_norm",
                                   rigid = rigid) |> # use global rigid parameter
-  select(-model) |>  # remove actual model from report
+  dplyr::select(-model) |>  # remove actual model from report
   mutate(across(where(is.numeric), \(x){signif(x, digits = 4)}))
 write_csv(model_summary,
           str_glue("output/CTG_model_summary_{get_timestamp()}.csv"))
