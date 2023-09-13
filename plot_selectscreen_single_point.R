@@ -123,9 +123,15 @@ for(t in treatments){
     }
 }
 # helper function for labeling treatments with concs--------------------
+# vector of treatments
 label_treatment <- function(trt){
   trt_conc <- concs_to_plot[trt]
-  str_glue("{trt}\n{trt_conc} nM")
+  trt_display_name <-  Vectorize(get_display_name, vectorize.args = "name")(
+      trt, display_names_treatments, TRUE)
+  # trt_display_name <- get_display_name(trt,
+                                       # display_names_treatments,
+                                       # manually_relabel_treatments)
+  str_glue("{trt_display_name}\n{trt_conc} nM")
 }
 # raster plot for pona/asc and PL-2 together at T315I IC90----------------
 concs_to_plot <- c(
