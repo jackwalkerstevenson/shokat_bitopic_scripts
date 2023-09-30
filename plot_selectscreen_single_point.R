@@ -84,7 +84,7 @@ raster_helper <- function(plot){
     #                  begin = 1, end = 0.35,
     #                  limits = c(-5,103)) +
     geom_tile(aes(fill = mean_pct_inhibition)) +
-    geom_text()
+    geom_text(size = 5)
 }
 # raster plots for individual treatments----------------------------------------
 # raster plot for each treatment, all concs
