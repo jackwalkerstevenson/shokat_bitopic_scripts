@@ -130,3 +130,50 @@ for (tgt in targets){
       no_legend = no_legend,
       legend_len = longest(c(tgt_treatments, treatment_legend_title)))
 }
+
+# plot data with individual points-----------------------------------------------
+plot_raw <- function(compound_name){
+  filtered_data <- plot_data |>
+    filter(Compound.Name == compound_name)
+  data_summary <- filtered_data |>
+    dplyr::group_by(.data$Compound.Name, .data$log_dose) |>
+    summarize_response(response_col = "response")
+  # fit models to data to plot model prediction curves
+  ggplot(filtered_data, aes(x = log_dose, y = response)) +
+    geom_point(shape = "circle open", size = 2) +
+    theme_prism() +
+    labs(x = "log10(dose)",
+         y = "response",
+         title = compound_name)
+}
+
+# compound_name <- "20230804-9"
+# filtered_data <- plot_data |>
+#   filter(Compound.Name == compound_name)
+# data_summary <- filtered_data |>
+#   dplyr::group_by(.data$Compound.Name, .data$log_dose) |>
+#   summarize_response(response_col = "response")
+# # fit models to data to plot model prediction curves
+# ggplot(data_summary) +
+#   geom_errorbar(aes(x = log_dose, y = mean_response,
+#                     ymax = mean_response + sem,
+#                     ymin = mean_response - sem,
+#                     width = .2)) +
+#   # geom_point() +
+#   # theme_prism() +
+#   geom_point(data = filtered_data, aes(x = log_dose, y = response),
+#              shape = "circle open", size = 2) +
+#   labs(x = "log10(dose)",
+#        y = "response",
+#        title = compound_name)
+# 
+# 
+
+
+compound_names <- as.vector(unique(plot_data$Compound.Name))
+for (compound_name in compound_names){
+  plot_raw(compound_name) |>
+  save_plot(
+    str_glue("output/kinomescan_raw_{compound_name}_{get_timestamp()}.{plot_type}"),
+    legend_len = 0)
+}
