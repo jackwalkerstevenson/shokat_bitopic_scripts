@@ -83,12 +83,14 @@ p <- data |>
             hjust = -0.1,
             parse = FALSE,
             size = 5) +
+  geom_vline(xintercept = 1, linetype = "dashed", linewidth = 1) +
   scale_x_continuous(trans = "log10",
-                     expand = expansion(mult = .1),
+                     expand = expansion(mult = c (0.02, .1)),
                      guide = "prism_offset_minor", # end at last tick
-                     breaks = breaks_x,
+                     #breaks = breaks_x,
                      labels = label_comma(accuracy = 1, big.mark = ""),
-                     minor_breaks = minor_x,) +
+                     #minor_breaks = minor_x,
+                     ) +
   scale_y_discrete(limits = rev, labels = get_target_labels()) +
   {if(manually_recolor_treatments){
     ggplot2::scale_fill_manual(values = color_map_treatments,
@@ -99,10 +101,12 @@ p <- data |>
                        begin = viridis_begin, end = viridis_end,
                        labels = legend_labels_targets)
   }} +
-  theme_prism() +
+  theme_prism(base_size = 16) +
   theme(plot.background = element_blank(), # need for transparent background
         legend.title = element_text(face = "plain"),
-        legend.title.align = 0) +
+        legend.title.align = 0,
+        legend.text = element_text(size = 14)
+        ) +
   labs(x = fold_change_axis_title,
        y = target_axis_title)
 save_plot(p, str_glue("output/fold_change_target_bar_{get_timestamp()}.{plot_type}"),
@@ -123,8 +127,9 @@ p <- data |>
             hjust = -0.1,
             parse = FALSE,
             size = 5) +
+  geom_vline(xintercept = 1, linetype = "dashed", linewidth = 1) +
   scale_x_continuous(trans = "log10",
-                     expand = expansion(mult = .1),
+                     expand = expansion(mult = c (0.02, .1)),
                      guide = "prism_offset_minor", # end at last tick
                      breaks = breaks_x,
                      labels = label_comma(accuracy = 1, big.mark = ""),
@@ -141,10 +146,12 @@ p <- data |>
                        labels = legend_labels_treatments,
                        name = legend_title)
   }} +
-  theme_prism() +
+  theme_prism(base_size = 16) +
   theme(plot.background = element_blank(), # need for transparent background
         legend.title = element_text(face = "plain"),
-        legend.title.align = 0) +
+        legend.title.align = 0,
+        legend.text = element_text(size = 14)
+  ) +
   labs(x = fold_change_axis_title,
        y = "treatment")
 save_plot(p, str_glue("output/fold_change_treatment_bar_{get_timestamp()}.{plot_type}"),
@@ -167,14 +174,15 @@ p <- data |>
   scale_y_discrete(limits = rev, labels = get_target_labels()) +
   {if(manually_recolor_treatments){
     ggplot2::scale_color_manual(values = color_map_treatments,
-                                labels = legend_labels_treatments)
+                                labels = legend_labels_targets)
+                                # labels = c("ponatinib + asciminib" = "test"))
   } else{
-    scale_fill_viridis(option = viridis_option,
+    scale_color_viridis(option = viridis_option,
                        discrete = TRUE,
                        begin = viridis_begin, end = viridis_end,
                        labels = legend_labels_treatments)
   }} +
-  theme_prism() +
+  theme_prism(base_size = 16) +
   theme(legend.title = element_text(),
         panel.grid = element_line(color = "black", linewidth = 0.5),
         panel.grid.minor = element_line(color = "black",
@@ -185,3 +193,41 @@ p <- data |>
        y = target_axis_title)
 save_plot(p, str_glue("output/IC50_dot_{get_timestamp()}.{plot_type}"),
           width = 12, height = .65*length(targets) + 0.75)
+
+# strip plot of raw IC50s by treatment-----------------------------------------------
+x_min <- floor(min(log10(data$IC50_nM)))
+x_max <- ceiling(max(log10(data$IC50_nM)))
+breaks_x <- 10^rep(x_min : x_max)
+minor_x <- rep(1:9, x_max - x_min)*(10^rep(x_min:(x_max - 1), each = 9))
+p <- data |> 
+  ggplot(aes(y = treatment, x = IC50_nM,
+             color = target)) +
+  geom_point(size = 4, alpha = 0.8) +
+  scale_x_continuous(trans = c("log10", "reverse"),
+                     guide = "prism_minor", # end at last tick
+                     breaks = breaks_x,
+                     labels = label_comma(accuracy = 1, big.mark = ""),
+                     minor_breaks = minor_x,
+                     expand = expansion(mult = .1)) +
+  scale_y_discrete(limits = rev, labels = get_treatment_labels()) +
+  {if(manually_recolor_targets){
+    ggplot2::scale_color_manual(values = color_map_targets,
+                                labels = legend_labels_treatments)
+    # labels = c("ponatinib + asciminib" = "test"))
+  } else{
+    scale_color_viridis(option = viridis_option,
+                        discrete = TRUE,
+                        begin = viridis_begin, end = viridis_end,
+                        labels = legend_labels_targets)
+  }} +
+  theme_prism(base_size = 16) +
+  theme(legend.title = element_text(),
+        panel.grid = element_line(color = "black", linewidth = 0.5),
+        panel.grid.minor = element_line(color = "black",
+                                        linewidth = 0.1,
+                                        linetype = "dotted")) +
+  theme(plot.background = element_blank()) + # need for transparent background
+  labs(x = "IC50 (nM)",
+       y = "treatment") #treatment_axis_title
+save_plot(p, str_glue("output/IC50_dot_treatment_{get_timestamp()}.{plot_type}"),
+          width = 12, height = .65*length(treatments) + 0.75)
