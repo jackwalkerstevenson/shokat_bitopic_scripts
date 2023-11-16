@@ -22,9 +22,9 @@ manual_highlight_residues <- tibble(
 # ggplot chunk for aesthetics of sequence plots---------------------------------
 seq_plot <- function(){
   list(
-    scale_x_continuous(breaks = scales::breaks_width(50),
-                     minor_breaks = scales::breaks_width(10),
-                     expand = expansion(mult = .025)),
+    scale_x_continuous(breaks = scales::breaks_width(25),
+                     minor_breaks = scales::breaks_width(5),
+                     expand = expansion(mult = 0)),
     theme_prism(),
     theme(panel.grid = element_line(color = "black", linewidth = 0.5),
           panel.grid.minor = element_line(color = "black",
@@ -32,14 +32,16 @@ seq_plot <- function(){
                                           linetype = "dotted"))
   )
 }
-# plot residue coverage by position---------------------------------------------
+# plot number of rows per position---------------------------------------------
 all_data |>
   group_by(protein_start) |> 
   summarize(n = n()) |> 
   ggplot(aes(x = protein_start, y = n)) +
   geom_bar(stat = "identity") +
-  labs(title = "number of residues per position",
+  labs(title = "number of rows per position",
        x = "sequence position") +
+  scale_y_continuous(breaks = scales::breaks_width(5),
+                     minor_breaks = scales::breaks_width(1)) +
   seq_plot()
 # function to plot all data by sequence position--------------------------------
 plot_entire_sequence2 <- function(data, condition, viridis_option = "turbo"){
