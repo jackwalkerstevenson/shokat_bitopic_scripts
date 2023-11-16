@@ -22,9 +22,10 @@ manual_highlight_residues <- tibble(
 # ggplot chunk for aesthetics of sequence plots---------------------------------
 seq_plot <- function(){
   list(
+    labs(x = "sequence position"),
     scale_x_continuous(breaks = scales::breaks_width(25),
-                     minor_breaks = scales::breaks_width(5),
-                     expand = expansion(mult = 0)),
+                       minor_breaks = scales::breaks_width(5),
+                       expand = expansion(mult = 0)),
     theme_prism(),
     theme(panel.grid = element_line(color = "black", linewidth = 0.5),
           panel.grid.minor = element_line(color = "black",
@@ -33,16 +34,28 @@ seq_plot <- function(){
   )
 }
 # plot number of rows per position---------------------------------------------
-all_data |>
+(all_data |>
   group_by(protein_start) |> 
   summarize(n = n()) |> 
   ggplot(aes(x = protein_start, y = n)) +
   geom_bar(stat = "identity") +
-  labs(title = "number of rows per position",
-       x = "sequence position") +
+  labs(title = "number of rows per position") +
   scale_y_continuous(breaks = scales::breaks_width(5),
                      minor_breaks = scales::breaks_width(1)) +
-  seq_plot()
+  seq_plot()) |>
+save_plot(str_glue("output/num_rows_{get_timestamp()}.{plot_type}"),
+          width = 12, height = 6)
+# plot number of duplicate mutations per position-------------------------------
+(all_data |> 
+  group_by(protein_start, alt) |> # group by desired mutation
+  summarize(.groups = "keep",
+            n = n()) |> 
+  ggplot(aes(x = protein_start, y= n)) +
+  geom_bar(stat = "identity") +
+  labs(title = "number of duplicate mutations per position") +
+  seq_plot()) |> 
+  save_plot(str_glue("output/num_duplicates_{get_timestamp()}.{plot_type}"),
+            width = 12, height = 6)
 # function to plot all data by sequence position--------------------------------
 plot_entire_sequence2 <- function(data, condition, viridis_option = "turbo"){
   ggplot(data, aes(x = protein_start, y = get(condition))) +
@@ -60,3 +73,4 @@ plot_entire_sequence2 <- function(data, condition, viridis_option = "turbo"){
     seq_plot()
 }
 # todo: plot all residues but each one is mean±SEM for multiple conditions
+# todo: function to plot all data by sequence, duplicates averaged--------------------
