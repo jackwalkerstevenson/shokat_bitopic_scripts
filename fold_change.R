@@ -60,6 +60,63 @@ legend_labels_targets = get_if(display_names_treatments,
 legend_labels_treatments = get_if(display_names_targets,
                                   manually_relabel_targets,
                                   otherwise = ggplot2::waiver())
+# aesthetic chunk for both bar and strip plots
+# aesthetic chunk for bar plots
+bar_plot_fold_change <- function(){
+  list(
+    geom_bar(stat = "identity",
+             width = bar_width,
+             position = position_dodge2(reverse = TRUE, padding = 0)),
+      geom_text(position = position_dodge2(width = bar_width, reverse = TRUE),
+                hjust = -0.1,
+                parse = FALSE,
+                size = 5),
+      geom_vline(xintercept = 1, linetype = "dashed", linewidth = 1),
+      scale_x_continuous(trans = "log10",
+                         expand = expansion(mult = c (0.02, .1)),
+                         guide = "prism_offset_minor", # end at last tick
+                         # breaks = breaks_x,
+                         labels = label_comma(accuracy = 1, big.mark = ""),
+                         minor_breaks = minor_x,),
+    theme_prism(base_size = 16),
+    theme(plot.background = element_blank(), # need for transparent background
+          legend.title = element_text(face = "plain"),
+          legend.title.align = 0,
+          legend.text = element_text(size = 14))
+  )
+}
+# upgrading bar plot of fold changes by target------------------------------------------------------
+vr <- viridis_range(length(treatments))
+viridis_begin <- vr[[1]]
+viridis_end <- vr[[2]]
+viridis_option <- vr[[3]]
+x_min <- floor(min(log10(data$fold_vs_wt_IC50)))
+x_max <- ceiling(max(log10(data$fold_vs_wt_IC50)))
+breaks_x <- 10^rep(x_min : x_max)
+minor_x <- minor_breaks(x_min, x_max, log_units = TRUE)
+bar_width <- 0.8
+p <- data |> 
+  # don't plot wt or control
+  filter(!target %in% c(wt_target_name, control_target_name)) |>
+  ggplot(aes(y = target, x = fold_vs_wt_IC50,
+             fill = treatment,
+             label = glue::glue("{signif(fold_vs_wt_IC50, digits = 2)}x"))) +
+  bar_plot_fold_change() +
+  scale_y_discrete(limits = rev, labels = get_target_labels()) +
+  {if(manually_recolor_treatments){
+    ggplot2::scale_fill_manual(values = color_map_treatments,
+                               labels = legend_labels_targets)
+  } else{
+    scale_fill_viridis(option = viridis_option,
+                       discrete = TRUE,
+                       begin = viridis_begin, end = viridis_end,
+                       labels = legend_labels_targets)
+  }} +
+  labs(x = fold_change_axis_title,
+       y = target_axis_title)
+save_plot(p, str_glue("output/fold_change_target_bar_upgraded_{get_timestamp()}.{plot_type}"),
+          width = 14,
+          height = .2*length(targets)*length(treatments) + .1 * length(targets) + 0.25)
 # bar plot of fold changes by target------------------------------------------------------
 vr <- viridis_range(length(treatments))
 viridis_begin <- vr[[1]]
@@ -87,7 +144,7 @@ p <- data |>
   scale_x_continuous(trans = "log10",
                      expand = expansion(mult = c (0.02, .1)),
                      guide = "prism_offset_minor", # end at last tick
-                     #breaks = breaks_x,
+                     breaks = scales::breaks_log(n = 5),
                      labels = label_comma(accuracy = 1, big.mark = ""),
                      #minor_breaks = minor_x,
                      ) +
@@ -131,7 +188,7 @@ p <- data |>
   scale_x_continuous(trans = "log10",
                      expand = expansion(mult = c (0.02, .1)),
                      guide = "prism_offset_minor", # end at last tick
-                     breaks = breaks_x,
+                     # breaks = breaks_x,
                      labels = label_comma(accuracy = 1, big.mark = ""),
                      minor_breaks = minor_x,) +
   scale_y_discrete(limits = rev, labels = get_treatment_labels()) +
