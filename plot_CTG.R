@@ -38,7 +38,10 @@ library(patchwork) # for plot organization
 library(doseplotr) # you bet
 # import global parameters and clear environment--------------------------------
 rm(list = ls()) # clear environment
-source("parameters/parameters_plot_CTG.R")
+params_path <- "parameters/parameters_plot_CTG.R"
+scales_path <- "parameters/manual_scales.R"
+source(params_path)
+source(scales_path)
 # import and preprocess data----------------------------------------------------
 # create input and output directories, since git doesn't track empty directories
 dir.create(input_directory, showWarnings = FALSE)
@@ -55,6 +58,11 @@ if(exists("targets")){
   plate_data <- filter_validate_reorder(plate_data, "target", targets)
 }
 plot_data <- plate_data |> filter(log_dose != -Inf) # data without untreated
+# report raw data and parameters-----------------------------------------------
+write_csv(plate_data, fs::path(output_directory,
+                               str_glue("CTG_raw_data_{get_timestamp()}.csv")))
+doseplotr::file_copy_to_dir(params_path, output_directory)
+doseplotr::file_copy_to_dir(scales_path, output_directory)
 # generate data-dependent global plot parameters--------------------------------
 if (!exists("treatments")){ # if treatments not specified, use all treatments
   treatments <- as.vector(unique(plot_data$treatment))}
@@ -137,8 +145,8 @@ for (trt in treatments){
                  grid = grid, # global param: background grid on plot
                  no_legend = no_legend, # global param: whether to omit legend
                  x_limits = get_if(x_limits, global_x_lim),
-                 response_col = "response_norm", # CTG uses response_norm
-                 ylab = "luminescence (% of untreated)", # CTG = luminescence assay
+                 response_col = "response_norm",
+                 ylab = "cell viability (% of untreated)",
                  legend_title = target_legend_title,
                  # if relabeling targets, get display names for legend
                  legend_labels = get_if(display_names_targets,
