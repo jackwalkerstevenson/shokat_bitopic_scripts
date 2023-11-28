@@ -1,9 +1,4 @@
-#' ---
-#'title: "plateplotr"
-#'author: "Jack Stevenson"
-#'date: "2023"
-#' ---
-#'plateplotr generates dose-response plots from plate reader data.
+#'plot_CTG generates dose-response plots from plate reader data, e.g. CTG.
 #' 
 #'Input: platemap spreadsheets, Excel or CSV, formatted as per the plater package
 #'
@@ -11,23 +6,23 @@
 #' 
 #'Variables expected in input platemaps:
 #' 
-#'- 'treatment': name of treatment used
+#'- 'treatment' or 'compound': name of treatment used
 #'
 #'note: if a dilution series includes a vehicle (zero-concentration) well, it should be labeled as the same treatment
 #'  
-#'- 'conc_nM' or 'conc_uM': concentration of treatment used in µM or nM
+#'- 'conc_nM' or 'conc_uM' or 'dose_nM' or 'dose_uM': concentration of treatment used in µM or nM
 #'- 'target': target of treatment, e.g. cell line or purified protein
-#'- 'read_norm': normalized plate reader data (calculated in the platemap)
+#'- 'response' or 'readout': raw plate reader data
 #'- 'replicate': replicate of condition (included for possible future QC)
 #'
-#'How to use plateplotr:
+#'How to use plot_CTG:
 #'
-#'1. Fill in "treatments.R" with the list of treatments you want to plot
+#'1. Edit template "parameters_plot_CTG" with desired parameters
 #'2. Make a copy of the import platemap for each plate of data you want to import
 #'3. Fill out each platemap with treatment(s), target(s) (e.g. cell line) and concentrations used
 #'4. Copy the corresponding raw plate reader data into each platemap
 #'5. Copy input platemaps into a directory called "input" in the same directory as this script
-#'6. Run plot.R
+#'6. Run plot_CTG.R
 #'7. Output plots will be created in an "output" folder in the working directory
 
 # load required libraries------------------------------------------------------
