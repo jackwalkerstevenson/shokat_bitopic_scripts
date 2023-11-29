@@ -23,6 +23,12 @@ if(exists("treatments")){
 if(exists("targets")){
   plot_data <- plot_data |> filter_validate_reorder("target", targets)
 }
+# report raw data and parameters-----------------------------------------------
+write_csv(plot_data,
+          fs::path(output_directory,
+                   str_glue("selectscreen_raw_data_{get_timestamp()}.csv")))
+doseplotr::file_copy_to_dir(params_path, output_directory)
+doseplotr::file_copy_to_dir(scales_path, output_directory)
 # generate data-dependent global plot parameters--------------------------------
 if (!exists("treatments")){ # if treatments not specified, use all treatments
   treatments <- as.vector(unique(plot_data$treatment))}
