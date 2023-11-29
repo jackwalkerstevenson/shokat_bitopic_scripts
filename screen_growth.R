@@ -17,8 +17,8 @@ dir.create(output_directory, showWarnings = FALSE)
 original_data <- readr::read_csv(input_filename, skip_empty_rows = TRUE)
 all_data <- original_data |> 
   filter(!is.na(log_count)) |> # filter for actual counts
-  rename(treatment = drug, dose_nM = dose)
-  # filter_validate_reorder("treatment", names(concs_to_plot)) |> 
+  rename(treatment = drug, dose_nM = dose) |> 
+  filter_validate_reorder("treatment", names(concs_IC90))
   # filter_validate_reorder("id", manual_id)
 # check what conditions exist
 test_count <- original_data |> 
