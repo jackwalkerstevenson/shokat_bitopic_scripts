@@ -8,7 +8,10 @@ library(scales) # for plot scales
 library(doseplotr) # you bet
 # import precalculated IC50 table-----------------------------------------------
 rm(list = ls()) # clear environment
-source("parameters/parameters_fold_change.R")
+params_path <- "parameters/parameters_fold_change.R"
+scales_path <- "parameters/manual_scales.R"
+source(params_path)
+source(scales_path)
 data <- read_csv(input_filename)
 # process data---------------------------------------------------------------
 if(exists("treatments")){
@@ -25,7 +28,9 @@ wt_IC50s <- data |>
 data <- data |> 
   left_join(wt_IC50s, by = "treatment") |> 
   mutate(fold_vs_wt_IC50 = IC50_nM/wt_IC50_nM)
-# write report of fold changes-----------------------------------------------
+# write parameters and report of fold changes-----------------------------------
+doseplotr::file_copy_to_dir(params_path, output_directory)
+doseplotr::file_copy_to_dir(scales_path, output_directory)
 report_data <- data |>
   mutate(fold_vs_wt_IC50 = fold_vs_wt_IC50 |> signif(3),
          IC50_nM = IC50_nM |> signif(3)) |> 
