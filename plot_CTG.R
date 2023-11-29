@@ -184,7 +184,7 @@ for (tgt in targets){
               no_legend = no_legend, # global param: whether to omit legend
               x_limits = get_if(x_limits, global_x_lim),
               response_col = "response_norm", # CTG uses response_norm
-              ylab = "luminescence (% of untreated)", # CTG = luminescence assay
+              ylab = "cell viability (% of untreated)",
               legend_title = treatment_legend_title,
               # if relabeling treatments, get display names for legend
               legend_labels = get_if(display_names_treatments,
