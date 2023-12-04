@@ -65,8 +65,9 @@ legend_labels_targets = get_if(display_names_treatments,
 legend_labels_treatments = get_if(display_names_targets,
                                   manually_relabel_targets,
                                   otherwise = ggplot2::waiver())
-# aesthetic chunk for both bar and strip plots
-# aesthetic chunk for bar plots
+# aesthetic chunk for both bar and strip plots-----------------------------------------------
+bar_plot_save_width <- 14
+# aesthetic chunk for bar plots-----------------------------------------------
 bar_plot_fold_change <- function(){
   list(
     geom_bar(stat = "identity",
@@ -120,7 +121,7 @@ p <- data |>
   labs(x = fold_change_axis_title,
        y = target_axis_title)
 save_plot(p, str_glue("output/fold_change_target_bar_upgraded_{get_timestamp()}.{plot_type}"),
-          width = 14,
+          width = bar_plot_save_width,
           height = .2*length(targets)*length(treatments) + .1 * length(targets) + 0.25)
 # bar plot of fold changes by target------------------------------------------------------
 vr <- viridis_range(length(treatments))
@@ -172,7 +173,7 @@ p <- data |>
   labs(x = fold_change_axis_title,
        y = target_axis_title)
 save_plot(p, str_glue("output/fold_change_target_bar_{get_timestamp()}.{plot_type}"),
-          width = 14,
+          width = bar_plot_save_width,
           height = .2*length(targets)*length(treatments) + .1 * length(targets) + 0.25)
 # bar plot by treatment instead of target---------------------------------------
 legend_title = target_axis_title
@@ -217,7 +218,7 @@ p <- data |>
   labs(x = fold_change_axis_title,
        y = "treatment")
 save_plot(p, str_glue("output/fold_change_treatment_bar_{get_timestamp()}.{plot_type}"),
-          width = 14, height = .2*length(treatments)*length(targets) + .1 * length(treatments) + 0.25)
+          width = bar_plot_save_width, height = .2*length(treatments)*length(targets) + .1 * length(treatments) + 0.25)
 # strip plot of raw IC50s-----------------------------------------------
 x_min <- floor(min(log10(data$IC50_nM)))
 x_max <- ceiling(max(log10(data$IC50_nM)))
