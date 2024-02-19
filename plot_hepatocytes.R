@@ -1,14 +1,14 @@
 #' ---
-#'title: "plateplotr stability"
+#'title: "plateplotr hepatocytes"
 #'author: "Jack Stevenson"
 #' ---
-#'started 2023-03-18
+#'copied from microsomes script 2024-02-19
 #'expects the following columns:
 #'- 'compound'
 #'- 'species'
 #'- 'half_life' (mean value, minutes)
 #'- 'half_life_SE' (standard error)
-#'- 'CLint' (mean value, intrinsic clearance, µg/mL/mg protein)
+#'- 'CLint' (mean value, intrinsic clearance, µg/mL/million cells)
 #'- 'CLint_SE' (standard error)
 
 # load required libraries------------------------------------------------------
@@ -18,7 +18,7 @@ library(ggprism)  # for pretty prism-like plots
 library(assertthat) # for QC assertions
 library(doseplotr) # you bet
 # set global variables---------------------------------------------------------
-input_filename <- "input/microsomes.xlsx"
+input_filename <- "input/hepatocytes.xlsx"
 plot_type <- "pdf" # file type for saved output plots
 dir.create("output/", showWarnings = FALSE) # silently create output directory
 all_data <- readxl::read_excel(input_filename, .name_repair = "universal") %>%
@@ -50,13 +50,13 @@ all_data %>%
   # label appropriate subset of data with 'less than' symbol
   geom_text(data = CLint_less, aes(x = CLint * 2, label = "<")) +
   labs(
-    title = str_glue("Clearance rate in {species} liver microsomes"),
-    x = "Intrinsic clearance (µL/min/mg protein)",
+    title = str_glue("Clearance rate in {species} hepatocytes"),
+    x = "Intrinsic clearance (µL/min/million cells)",
     y = ylab) +
   theme_prism() +
   theme(plot.background = element_blank()) # need for transparent background
 
-ggsave(str_glue("output/CLint_{get_timestamp()}.{plot_type}"),
+ggsave(str_glue("output/CLint{get_timestamp()}.{plot_type}"),
        bg = "transparent", width = 7, height = 4)
 # plot half life---------------------------------------------------------------
 half_life_greater <- all_data %>% filter(half_life_greater_than) # select data to note greater than
@@ -73,7 +73,7 @@ all_data %>%
   # label appropriate subset of data with 'less than' symbol
   geom_text(data = half_life_greater, aes(x = half_life * 1.1, label = ">")) +
   labs(
-    title = str_glue("Half-life in {species} liver microsomes"),
+    title = str_glue("Half-life in {species} hepatocytes"),
     x = "Half life (minutes)",
     y = ylab) +
   theme_prism() +
