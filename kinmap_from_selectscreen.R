@@ -3,28 +3,61 @@
 # load required libraries------------------------------------------------------
 library(tidyverse)
 library(doseplotr)
+# set up input and output directories------------------------------------------
+input_dir <- "input"
+output_dir <- "output"
+dir.create(input_dir, showWarnings = FALSE)
+dir.create(output_dir, showWarnings = FALSE)
 # set aesthetic parameters for KinMap output-----------------------------------
 kinmap_global_shape <- 0
+kinmap_global_stroke_color <- "black"
+kinmap_global_stroke_width <- 1.5
 kinmap_ontarget_fill_color <- "green"
 kinmap_offtarget_fill_color <- "red"
 kinmap_uninhibited_fill_color <- "gray"
-kinmap_global_stroke_color <- "black"
-kinmap_global_stroke_width <- 1.5
+# set parameters specific to this dataset--------------------------------------
 on_targets <- c("ABL1")
-# import selectscreen results--------------------------------------------------
-SS_single_pt_filename <-
-  "input/selectscreen combined results 67309 2024-05-14.csv"
-single_pt_data <- import_selectscreen(SS_single_pt_filename)
-# add KinMap directives that are constant--------------------------------------
-single_pt_data <- single_pt_data |> 
-  # color on vs off target
-  mutate(kinmap_fill_color = case_when(
-    pct_inhibition < 10 ~ kinmap_uninhibited_fill_color,
-    target %in% on_targets ~ kinmap_ontarget_fill_color,
-    .default = kinmap_offtarget_fill_color),
-    # set global aesthetic parameters
-    kinmap_stroke_color = kinmap_global_stroke_color,
-    kinmap_stroke_width = kinmap_global_stroke_width,
+input_SS_single_pt_filename <-
+  str_glue("{input_dir}/selectscreen combined results 67309 ZLYTE duplicates removed 2024-05-15.csv")
+# import and process selectscreen results--------------------------------------
+raw_single_pt_data <- import_selectscreen(input_SS_single_pt_filename)
+# average replicates for Kinmap plotting
+avg_single_pt_data <- raw_single_pt_data |> 
+  group_by(treatment, target) |> 
+  summarize(pct_inhibition = mean(pct_inhibition))
+# pivot to one row per kinase for plotting
+kinase_data <- raw_single_pt_data |> 
+  select(treatment, target, pct_inhibition) |> 
+  tidyr::pivot_wider(names_from = treatment,
+                     names_prefix = "pct_inhibition_",
+                     values_from = pct_inhibition)
+                     #values_fn = mean)
+# add KinMap directive parameters----------------------------------------------
+avg_single_pt_data <- avg_single_pt_data |> 
+  dplyr::mutate(
+    # add kinmap parameters
+    # global aesthetic parameter
+    shape = kinmap_global_shape,
     # scale size by pct_inhibition with floor
-    kinmap_size = ifelse(pct_inhibition < 10, 10, pct_inhibition)
-         )
+    size = ifelse(pct_inhibition < 10, 10, pct_inhibition),
+    # color on vs off vs uninhibited target
+    fill = case_when(
+      pct_inhibition < 10 ~ kinmap_uninhibited_fill_color,
+      target %in% on_targets ~ kinmap_ontarget_fill_color,
+      .default = kinmap_offtarget_fill_color),
+    # more global aesthetic parameters
+    stroke = kinmap_global_stroke_color,
+    strokeWidth = kinmap_global_stroke_width)
+# write KinMap directive output table------------------------------------------
+write_output_treatment <- function(data, treatment){
+  data |>
+    dplyr::filter(treatment == treatment) |> 
+    write_csv(file = str_glue("{output_dir}/kinmap_output_{treatment}_{get_timestamp()}.csv"))
+}
+treatments <- unique(avg_single_pt_data$treatment)
+for(treatment in treatments){
+  write_output_treatment(avg_single_pt_data, treatment)
+}
+# plot 2 treatments against each other-----------------------------------------
+ggplot(kinase_data, aes(x = `67309-1`, y = `67309-2`)) +
+  geom_point()
