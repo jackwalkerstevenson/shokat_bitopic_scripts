@@ -2,6 +2,7 @@
 # Jack Stevenson started 2024-05
 # load required libraries------------------------------------------------------
 library(tidyverse)
+library(purrr)
 library(doseplotr)
 # set up input and output directories------------------------------------------
 input_dir <- "input"
@@ -30,8 +31,13 @@ kinase_data <- raw_single_pt_data |>
   select(treatment, target, pct_inhibition) |> 
   tidyr::pivot_wider(names_from = treatment,
                      names_prefix = "pct_inhibition_",
-                     values_from = pct_inhibition)
-                     #values_fn = mean)
+                     values_from = pct_inhibition,
+                     values_fn = list) |> 
+  # for all pct_inhibition columns, make mean and sem columns from them
+  dplyr::mutate(dplyr::across(matches("pct_inhibition")))
+  #dplyr::mutate(mean_pct_inhibition_ponatinib =
+  #                purrr::map_dbl(pct_inhibition_ponatinib, mean))
+  #dplyr::mutate(dplyr::across(matches("pct_inhibition"), ~ mean(.x)))
 # add KinMap directive parameters----------------------------------------------
 avg_single_pt_data <- avg_single_pt_data |> 
   dplyr::mutate(
@@ -59,5 +65,6 @@ for(treatment in treatments){
   write_output_treatment(avg_single_pt_data, treatment)
 }
 # plot 2 treatments against each other-----------------------------------------
-ggplot(kinase_data, aes(x = `67309-1`, y = `67309-2`)) +
+ggplot(kinase_data, aes(x = pct_inhibition_ponatinib,
+                        y = `pct_inhibition_PonatiLink-2-7-10`)) +
   geom_point()
