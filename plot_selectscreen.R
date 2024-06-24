@@ -10,7 +10,8 @@ library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
 library(doseplotr) # you bet
 # import global parameters---------------------------------------------------------
-source("parameters/parameters_plot_selectscreen.R")
+params_path <- "parameters/parameters_plot_selectscreen.R"
+source(params_path)
 # import and tidy data---------------------------------------------------------
 # create input and output directories, since git doesn't track empty directories
 dir.create(input_directory, showWarnings = FALSE)
