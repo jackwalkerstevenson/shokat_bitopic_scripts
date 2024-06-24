@@ -22,7 +22,24 @@ kinmap_uninhibited_fill_color <- "gray"
 on_targets <- c("ABL1")
 input_SS_single_pt_filename <-
   str_glue("{input_dir}/selectscreen combined results 67309 ZLYTE duplicates removed 2024-05-15.csv")
-top_hit_threshold <- 75
+color_threshold <- 90
+label_threshold <- 93
+# Druker/Deininger off-targets of interest
+kinases_of_interest <- c(
+  "FGFR1",
+  "FGFR2",
+  "FGFR3",
+  "FGFR4",
+  "FLT1 (VEGFR1)",
+  "FLT3",
+  "FLT4 (VEGFR3)",
+  "KDR (VEGFR2)",
+  "KIT",
+  "PDGFRA (PDGFR alpha)",
+  "PDGFRB (PDGFR beta)",
+  "SRC",
+  "TEK (Tie2)"
+)
 # import and process selectscreen results--------------------------------------
 raw_single_pt_data <- import_selectscreen(input_SS_single_pt_filename)
 # average replicates for Kinmap plotting
@@ -40,7 +57,10 @@ kinase_plot_data <- raw_single_pt_data |>
   values_from = pct_inhibition) |> 
   tidyr::drop_na() |> 
   mutate(top_hit = if_all(starts_with("pct_inhibition"),
-                          \(x) x > top_hit_threshold))
+                          \(x) x > top_hit_threshold)) |> 
+  mutate(label = (if_any(starts_with("pct_inhibition"),
+                         \(x) x > label_threshold))
+         | target %in% kinases_of_interest)
 # add KinMap directive parameters----------------------------------------------
 avg_single_pt_data <- avg_single_pt_data |> 
   dplyr::mutate(
@@ -76,14 +96,15 @@ kinase_plot_data |>
   geom_point(aes(color = top_hit), size = 2, alpha = 0.6) +
   geom_label_repel(
     data = kinase_plot_data |>
-      filter(if_any(starts_with("pct_inhibition"), \(x) x >93)),
+      # label only if above arbitrary threshold
+      filter(label == TRUE),
     aes(label = target),
-    # box.padding = 0.1,
-    label.padding = 0.15,
-    segment.size = .3,
-    force = 5,
-    min.segment.length = 0,
-    max.overlaps = 10) +
+    seed = 42,
+    label.padding = 0.15, # smaller boxes than default 0.25
+    segment.size = .3, # lighter lines than default 0.5
+    force = 10, # more repulsion than default 1
+    min.segment.length = 0, # always show line segments
+    max.overlaps = 10) + # default overlaps
   labs(title = "SelectScreen wild-type kinase inhibition",
        caption = "at IC90 for ABL1 T315I",
        x = "% inhibition by PonatiLink-2",
@@ -91,10 +112,16 @@ kinase_plot_data |>
   scale_x_continuous(breaks = breaks_width(25)) +
   scale_y_continuous(
     breaks = breaks_width(25),
+    # extra y space for labels at the top
     expand = expansion(mult = c(0.02, 0.10))) +
+  # color by previously established top hit threshold
   scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black")) +
+  scale_label_manual
   theme_prism() +
-  theme(panel.grid.major = element_line(linewidth = 0.2, linetype = "dashed"),
-        legend.position = "none")
+  theme(panel.grid.major = element_line(linewidth = 0.2,
+                                        linetype = "dashed"),
+        legend.position = "none", # remove color legend
+        # extra margin to stop x axis tick getting cut off without a legend
+        plot.margin = margin(10, 20, 10, 10))
 ggsave(str_glue("{output_dir}/scatter_plot_{get_timestamp()}.pdf"),
        width = 7, height = 7)
