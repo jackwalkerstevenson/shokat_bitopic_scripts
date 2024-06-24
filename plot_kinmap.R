@@ -1,4 +1,4 @@
-# generate a list of KinMap style directives from SelectScreen single-point data
+# plot large-scale SelectScreen single-point data using KinMap and ggplot2
 # Jack Stevenson started 2024-05
 # load required libraries------------------------------------------------------
 library(tidyverse)
@@ -55,9 +55,9 @@ avg_single_pt_data <- avg_single_pt_data |>
     stroke = kinmap_global_stroke_color,
     strokeWidth = kinmap_global_stroke_width)
 # write KinMap directive output table------------------------------------------
-write_output_treatment <- function(data, treatment){
+write_output_treatment <- function(data, trt){
   data |>
-    dplyr::filter(treatment == treatment) |> 
+    dplyr::filter(treatment == trt) |> 
     write_csv(file = str_glue("{output_dir}/kinmap_output_{treatment}_{get_timestamp()}.csv"))
 }
 treatments <- unique(avg_single_pt_data$treatment)
