@@ -1,5 +1,5 @@
 #' ---
-#'title: "plateplotr stability"
+#'title: "plot microsomes"
 #'author: "Jack Stevenson"
 #' ---
 #'started 2023-03-18
