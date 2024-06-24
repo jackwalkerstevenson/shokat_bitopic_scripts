@@ -2,8 +2,10 @@
 # Jack Stevenson started 2024-05
 # load required libraries------------------------------------------------------
 library(tidyverse)
-library(purrr)
-library(doseplotr)
+library(doseplotr) # you bet
+library(scales) # for nice breaks
+library(ggprism) # for prism theme
+library(ggrepel) # for labeling points
 # set up input and output directories------------------------------------------
 input_dir <- "input"
 output_dir <- "output"
@@ -20,24 +22,25 @@ kinmap_uninhibited_fill_color <- "gray"
 on_targets <- c("ABL1")
 input_SS_single_pt_filename <-
   str_glue("{input_dir}/selectscreen combined results 67309 ZLYTE duplicates removed 2024-05-15.csv")
+top_hit_threshold <- 75
 # import and process selectscreen results--------------------------------------
 raw_single_pt_data <- import_selectscreen(input_SS_single_pt_filename)
 # average replicates for Kinmap plotting
 avg_single_pt_data <- raw_single_pt_data |> 
   group_by(treatment, target) |> 
   summarize(pct_inhibition = mean(pct_inhibition))
-# pivot to one row per kinase for plotting
-kinase_data <- raw_single_pt_data |> 
+
+kinase_plot_data <- raw_single_pt_data |> 
   select(treatment, target, pct_inhibition) |> 
+  summarize(pct_inhibition = mean(pct_inhibition), .by = c(treatment, target)) |> 
+  filter(pct_inhibition > -25) |> # remove large negative outliers
+  # pivot to one row per kinase for ggplot plotting
   tidyr::pivot_wider(names_from = treatment,
-                     names_prefix = "pct_inhibition_",
-                     values_from = pct_inhibition,
-                     values_fn = list) |> 
-  # for all pct_inhibition columns, make mean and sem columns from them
-  dplyr::mutate(dplyr::across(matches("pct_inhibition")))
-  #dplyr::mutate(mean_pct_inhibition_ponatinib =
-  #                purrr::map_dbl(pct_inhibition_ponatinib, mean))
-  #dplyr::mutate(dplyr::across(matches("pct_inhibition"), ~ mean(.x)))
+  names_prefix = "pct_inhibition_",
+  values_from = pct_inhibition) |> 
+  tidyr::drop_na() |> 
+  mutate(top_hit = if_all(starts_with("pct_inhibition"),
+                          \(x) x > top_hit_threshold))
 # add KinMap directive parameters----------------------------------------------
 avg_single_pt_data <- avg_single_pt_data |> 
   dplyr::mutate(
@@ -65,6 +68,33 @@ for(treatment in treatments){
   write_output_treatment(avg_single_pt_data, treatment)
 }
 # plot 2 treatments against each other-----------------------------------------
-ggplot(kinase_data, aes(x = pct_inhibition_ponatinib,
-                        y = `pct_inhibition_PonatiLink-2-7-10`)) +
-  geom_point()
+kinase_plot_data |>
+  ggplot(aes(
+    y = `pct_inhibition_ponatinib + asciminib`,
+    x = `pct_inhibition_PonatiLink-2-7-10`
+  )) +
+  geom_point(aes(color = top_hit), size = 2, alpha = 0.6) +
+  geom_label_repel(
+    data = kinase_plot_data |>
+      filter(if_any(starts_with("pct_inhibition"), \(x) x >93)),
+    aes(label = target),
+    # box.padding = 0.1,
+    label.padding = 0.15,
+    segment.size = .3,
+    force = 5,
+    min.segment.length = 0,
+    max.overlaps = 10) +
+  labs(title = "SelectScreen wild-type kinase inhibition",
+       caption = "at IC90 for ABL1 T315I",
+       x = "% inhibition by PonatiLink-2",
+       y = "% inhibition by ponatinib + asciminib") +
+  scale_x_continuous(breaks = breaks_width(25)) +
+  scale_y_continuous(
+    breaks = breaks_width(25),
+    expand = expansion(mult = c(0.02, 0.10))) +
+  scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black")) +
+  theme_prism() +
+  theme(panel.grid.major = element_line(linewidth = 0.2, linetype = "dashed"),
+        legend.position = "none")
+ggsave(str_glue("{output_dir}/scatter_plot_{get_timestamp()}.pdf"),
+       width = 7, height = 7)
