@@ -116,10 +116,9 @@ kinase_plot_data |>
     expand = expansion(mult = c(0.02, 0.10))) +
   # color by previously established top hit threshold
   scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black")) +
-  scale_label_manual
   theme_prism() +
-  theme(panel.grid.major = element_line(linewidth = 0.2,
-                                        linetype = "dashed"),
+  theme(panel.grid.major = element_line(linewidth = 0.1,
+                                        linetype = "dotted"),
         legend.position = "none", # remove color legend
         # extra margin to stop x axis tick getting cut off without a legend
         plot.margin = margin(10, 20, 10, 10))
