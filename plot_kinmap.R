@@ -6,6 +6,8 @@ library(doseplotr) # you bet
 library(scales) # for nice breaks
 library(ggprism) # for prism theme
 library(ggrepel) # for labeling points
+# clear environment-----------------------------------------------
+rm(list = ls())
 # set up input and output directories------------------------------------------
 input_dir <- "input"
 output_dir <- "output"
