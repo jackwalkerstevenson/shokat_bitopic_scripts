@@ -18,8 +18,7 @@ source("parameters/parameters_plot_selectscreen_single_point.R")
 source("scatter_plot.R")
 dir.create("output/", showWarnings = FALSE) # silently create output directory
 plot_type <- "pdf" # file type for saved output plots
-input_filename <- "ZLYTE_single_point.csv"
-all_data <- import_selectscreen(input_filename)
+all_data <- import_selectscreen(str_glue("{input_directory}/{input_filename}"))
 # filter and validate imported data---------------------------------------------
 if(exists("treatments")){
   all_data <- all_data |> filter_validate_reorder("treatment", treatments)
@@ -52,7 +51,7 @@ inhibition_summarize <- function(x){
     )}
 # helper raster plot functions--------------------------------------------------
 get_treatment_labels <- function(){
-  if(manually_relabel_treamtments) display_names_treatments else{
+  if(manually_relabel_treatments) display_names_treatments else{
     # necessary to preserve correct ordering even after changing plotting order
     named_treatments <- treatments
     names(named_treatments) <- treatments
@@ -79,7 +78,7 @@ raster_helper <- function(plot){
     #                    begin = 1, end = .35,
     #                    limits = c(-5,103)) +
     # scale_fill_gradient(low = "white", high = "red") +
-    scale_fill_distiller(palette = "Reds", direction = 1) +
+    scale_fill_distiller(palette = "Reds", direction = 1, limits = c(-10,120), breaks = c(0,25,50,75,100)) +
     # scale_fill_scico(palette = "bamako",  
     #                  begin = 1, end = 0.35,
     #                  limits = c(-5,103)) +
@@ -133,6 +132,44 @@ label_treatment <- function(trt){
                                        # manually_relabel_treatments)
   str_glue("{trt_display_name}\n{trt_conc} nM")
 }
+# raster plot for PL-2 variants together at T315I IC90----------------
+trts_to_plot <- c("ponatinib + asciminib",
+                  "PonatiLink-2-7",
+                  "PonatiLink-2-7-4",
+                  "PonatiLink-2-7-10",
+                  "PonatiLink-2-7-16")
+concs_to_plot <- c(
+  "ponatinib + asciminib" = 16, # T315I IC90,
+  "PonatiLink-2-7" = 4, # PL-2-7-10 T315I IC90
+  "PonatiLink-2-7-4" = 8, # T315I IC90
+  "PonatiLink-2-7-10" = 4, # T315I IC90
+  "PonatiLink-2-7-16" = 3 # T315I IC90
+)
+get_trt_conc <- function(trt){
+  concs_to_plot[trt]
+}
+all_data |> 
+  filter(treatment %in% trts_to_plot) |> 
+  filter(Compound.Conc %in% concs_to_plot) |>
+  # filter(Compound.Conc == get_trt_conc(treatment)) |>
+  inhibition_summarize() |> 
+  ggplot(aes(x = treatment, y = target, label = mean_pct_inhibition)) |> 
+  raster_helper() +
+  theme(axis.title.x = element_blank()) +
+  # theme(axis.text.x = element_text(margin = margin(b = 100, unit = "mm"))) +
+  # theme(axis.ticks.length.x = unit(1, "mm")) +
+  # theme(axis.ticks.x = element_blank()) +
+  scale_x_discrete(expand = expansion(mult = c(0, 0.05)),
+                   # labels = display_names_treatments,
+                   labels = label_treatment(trts_to_plot),
+                   position = "top") +
+  labs(y = "target kinase",
+       title = str_glue("Kinase inhibition in vitro"),
+       fill = "% inhibition")
+ggsave(str_glue(
+  "output/single_pt_raster_EC90_three_wt_comparison_{get_timestamp()}.pdf"),
+  bg = "transparent",
+  width = raster_plot_width(length(concs_to_plot)) + .5, height = 10)
 # raster plot for pona/asc and PL-2 together at T315I IC90----------------
 concs_to_plot <- c(
   # "ponatinib + asciminib" = 14.8, # wt IC90
@@ -285,7 +322,7 @@ data_conc_labeled |>
                xlab = xlab, ylab = ylab,
                viridis_begin = vr_begin, viridis_end = vr_end,
                width = 10, height = 9, pt_size = 4)
-# # individual scatter plots by target---------------------------------
+# individual scatter plots by target---------------------------------
 # targets <- unique(all_data$target)
 # for(t in all_targets){
 #   for(conc in concs){
