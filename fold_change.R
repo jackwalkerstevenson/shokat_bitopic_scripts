@@ -173,8 +173,11 @@ p <- data |>
         ) +
   labs(x = fold_change_axis_title,
        y = target_axis_title)
-save_plot(p, str_glue("output/fold_change_target_bar_{get_timestamp()}.{plot_type}"),
-          width = bar_plot_save_width,
+save_plot(p, str_glue("output/fold_change_target_bar_narrow_{get_timestamp()}.{plot_type}"),
+          width = bar_plot_width_narrow,
+          height = .2*length(targets)*length(treatments) + .1 * length(targets) + 0.25)
+save_plot(p, str_glue("output/fold_change_target_bar_wide_{get_timestamp()}.{plot_type}"),
+          width = bar_plot_width_wide,
           height = .2*length(targets)*length(treatments) + .1 * length(targets) + 0.25)
 # bar plot by treatment instead of target---------------------------------------
 legend_title = target_axis_title
@@ -218,8 +221,10 @@ p <- data |>
   ) +
   labs(x = fold_change_axis_title,
        y = "treatment")
-save_plot(p, str_glue("output/fold_change_treatment_bar_{get_timestamp()}.{plot_type}"),
-          width = bar_plot_save_width, height = .2*length(treatments)*length(targets) + .1 * length(treatments) + 0.25)
+save_plot(p, str_glue("output/fold_change_treatment_bar_narrow_{get_timestamp()}.{plot_type}"),
+          width = bar_plot_width_narrow, height = .2*length(treatments)*length(targets) + .1 * length(treatments) + 0.25)
+save_plot(p, str_glue("output/fold_change_treatment_bar_wide_{get_timestamp()}.{plot_type}"),
+          width = bar_plot_width_wide, height = .2*length(treatments)*length(targets) + .1 * length(treatments) + 0.25)
 # strip plot of raw IC50s-----------------------------------------------
 x_min <- floor(min(log10(data$IC50_nM)))
 x_max <- ceiling(max(log10(data$IC50_nM)))
@@ -229,7 +234,7 @@ p <- data |>
   ggplot(aes(y = target, x = IC50_nM,
              color = treatment)) +
   geom_point(size = 4, alpha = 0.8) +
-  scale_x_continuous(trans = c("log10", "reverse"),
+  scale_x_continuous(trans = c("log10"), #"reverse"),
                      guide = "prism_minor", # end at last tick
                      breaks = breaks_x,
                      labels = label_comma(accuracy = 1, big.mark = ""),
