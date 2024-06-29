@@ -12,7 +12,7 @@ params_path <- "parameters/parameters_fold_change.R"
 scales_path <- "parameters/manual_scales.R"
 source(params_path)
 source(scales_path)
-data <- read_csv(input_filename)
+data <- read_csv(input_path)
 # process data---------------------------------------------------------------
 if(exists("treatments")){
   data <- filter_validate_reorder(data, "treatment", treatments)
@@ -28,7 +28,8 @@ wt_IC50s <- data |>
 data <- data |> 
   left_join(wt_IC50s, by = "treatment") |> 
   mutate(fold_vs_wt_IC50 = IC50_nM/wt_IC50_nM)
-# write parameters and report of fold changes-----------------------------------
+# write input data, parameters and report of fold changes-----------------------------------
+doseplotr::file_copy_to_dir(input_path, output_directory)
 doseplotr::file_copy_to_dir(params_path, output_directory)
 doseplotr::file_copy_to_dir(scales_path, output_directory)
 report_data <- data |>
