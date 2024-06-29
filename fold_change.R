@@ -128,7 +128,11 @@ save_plot(p, str_glue("output/fold_change_target_bar_narrow_{get_timestamp()}.{p
 save_plot(p, str_glue("output/fold_change_target_bar_wide_{get_timestamp()}.{plot_type}"),
           width = bar_plot_width_wide,
           height = .2*length(targets)*length(treatments) + .1 * length(targets) + 0.25)
-# bar plot by treatment instead of target---------------------------------------
+# bar plot of fold changes by treatment---------------------------------------
+vr <- viridis_range(length(targets))
+viridis_begin <- vr[[1]]
+viridis_end <- vr[[2]]
+viridis_option <- vr[[3]]
 legend_title = target_axis_title
 p <- data |> 
   # don't plot wt or control
@@ -136,20 +140,7 @@ p <- data |>
   ggplot(aes(y = treatment, x = fold_vs_wt_IC50,
              fill = target,
              label = glue::glue("{signif(fold_vs_wt_IC50, digits = 2)}x"))) +
-  geom_bar(stat = "identity",
-           width = bar_width,
-           position = position_dodge2(reverse = TRUE, padding = 0)) +
-  geom_text(position = position_dodge2(width = bar_width, reverse = TRUE),
-            hjust = -0.1,
-            parse = FALSE,
-            size = 5) +
-  geom_vline(xintercept = 1, linetype = "dashed", linewidth = 1) +
-  scale_x_continuous(trans = "log10",
-                     expand = expansion(mult = c (0.02, .1)),
-                     guide = "prism_offset_minor", # end at last tick
-                     # breaks = breaks_x,
-                     labels = label_comma(accuracy = 1, big.mark = ""),
-                     minor_breaks = minor_x,) +
+  bar_plot_fold_change() +
   scale_y_discrete(limits = rev, labels = get_treatment_labels()) +
   {if(manually_recolor_targets){
     ggplot2::scale_fill_manual(values = color_map_targets,
@@ -162,12 +153,6 @@ p <- data |>
                        labels = legend_labels_treatments,
                        name = legend_title)
   }} +
-  theme_prism(base_size = 16) +
-  theme(plot.background = element_blank(), # need for transparent background
-        legend.title = element_text(face = "plain"),
-        legend.title.align = 0,
-        legend.text = element_text(size = 14)
-  ) +
   labs(x = fold_change_axis_title,
        y = "treatment")
 save_plot(p, str_glue("output/fold_change_treatment_bar_narrow_{get_timestamp()}.{plot_type}"),
