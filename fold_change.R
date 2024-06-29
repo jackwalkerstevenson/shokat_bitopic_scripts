@@ -66,7 +66,8 @@ legend_labels_treatments = get_if(display_names_targets,
                                   manually_relabel_targets,
                                   otherwise = ggplot2::waiver())
 # aesthetic chunk for both bar and strip plots-----------------------------------------------
-bar_plot_save_width <- 14
+bar_plot_width_narrow <- 10.5
+bar_plot_width_wide <- 14
 # aesthetic chunk for bar plots-----------------------------------------------
 bar_plot_fold_change <- function(){
   list(
