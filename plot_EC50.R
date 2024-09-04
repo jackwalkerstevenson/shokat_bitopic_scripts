@@ -1,9 +1,9 @@
 #' ---
-#'title: "plateplotr"
+#'title: "plot_IC50"
 #'author: "Jack Stevenson"
 #'date: "2023-02"
 #' ---
-#'This is a baby spinoff from plateplotr for plotting IC50s
+#'This script plots IC50s against linker lengths of linked compounds
 #'
 # load required libraries------------------------------------------------------
 library(tidyverse) # for tidy data handling
@@ -19,7 +19,7 @@ source("parameters/parameters_plot_IC50.R")
 # note the order treatments are imported is the order they will be plotted
 dir.create("output/", showWarnings = FALSE)
 plot_type <- "pdf"
-EC_data <- readxl::read_excel(input_filename) |>
+IC_data <- readxl::read_excel(input_filename) |>
   mutate(linker_length = as.numeric(linker_length)) |>
   mutate(IC50_nM = as.numeric(IC50_nM)) |>
   # filter for desired treatments, targets and target variants
@@ -30,8 +30,8 @@ EC_data <- readxl::read_excel(input_filename) |>
   mutate(target = fct_relevel(target, targets)) |> # order targets by list
   mutate(variant = fct_relevel(variant, variants)) |> # order variants by list
   mutate(neglog10IC50_nM = -log10(IC50_nM))
-# plot ECs in points--------- ------------------------------------------------------
-EC_data |>
+# plot ICs in points--------- ------------------------------------------------------
+IC_data |>
   ggplot(aes(x = treatment, y = IC50_nM)) +
   geom_point(aes(shape = assay, color = variant), size = 4, alpha = 1) +
   scale_shape(labels = assay_labels,
@@ -51,7 +51,7 @@ ggsave(str_glue("output/IC50_points_{get_timestamp()}.{plot_type}"),
           width = 8,
           height = 6)
 # calculate linker length scale parameters--------------------------------------
-linkers <- EC_data |>
+linkers <- IC_data |>
   filter(linker_length > 0) |>
   distinct(linker_length) |>
   pull(linker_length)
@@ -59,7 +59,7 @@ linker_min <- min(linkers)
 linker_max <- max(linkers)
 linker_seq <- seq(linker_min, linker_max, 2)
 # plot ECs by linker length-----------------------------------------------------
-EC_data |>
+IC_data |>
   filter(linker_length > 0) |> # only plot treatments with linkers
   ggplot(aes(x = linker_length, y = IC50_nM,
              shape = assay, color = variant)) +
@@ -86,7 +86,7 @@ ggsave(str_glue("output/IC50_linker_{get_timestamp()}.{plot_type}"),
        width = 8,
        height = 4)
 # plot ECs across assays--------------------------------------------------------
-EC_data |>
+IC_data |>
   # pivot so IC50s from both assays associate with each linker/variant combo
   pivot_wider(names_from = assay,
               values_from = IC50_nM,
