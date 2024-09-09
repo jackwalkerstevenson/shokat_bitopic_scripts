@@ -25,7 +25,12 @@ fusion_data <- readr::read_csv(fusions_filename,
   dplyr::select(all_of(c("Cell.Line", "Left.Gene", "Right.Gene"))) |> 
   # boolean for fusions that include BCR
   # note BCR sometimes left, sometimes right. seems inconsistent, so taking all
-  dplyr::mutate(BCR = Left.Gene == "BCR" | Right.Gene == "BCR")
+  dplyr::mutate(BCR = Left.Gene == "BCR" | Right.Gene == "BCR") |> 
+  # deduplicate cell lines: remove all but one fusion, keeping BCR if present
+  dplyr::group_by(Cell.Line) |> 
+  dplyr::arrange(Cell.Line, desc(BCR)) |>
+  dplyr::slice(1) |>
+  dplyr::ungroup()
 
 # import DRC data: data for each treatment/target curve fit
 DRC_data <- readr::read_csv(input_filename) |> 
