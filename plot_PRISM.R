@@ -25,10 +25,10 @@ fusion_data <- readr::read_csv(fusions_filename,
   dplyr::select(all_of(c("Cell.Line", "Left.Gene", "Right.Gene"))) |> 
   # boolean for fusions that include BCR
   # note BCR sometimes left, sometimes right. seems inconsistent, so taking all
-  dplyr::mutate(BCR = Left.Gene == "BCR" | Right.Gene == "BCR") |> 
+  dplyr::mutate(BCR_fusion = Left.Gene == "BCR" | Right.Gene == "BCR") |> 
   # deduplicate cell lines: remove all but one fusion, keeping BCR if present
   dplyr::group_by(Cell.Line) |> 
-  dplyr::arrange(Cell.Line, desc(BCR)) |>
+  dplyr::arrange(Cell.Line, desc(BCR_fusion)) |>
   dplyr::slice(1) |>
   dplyr::ungroup()
 
@@ -43,18 +43,33 @@ DRC_data <- readr::read_csv(input_filename) |>
     fusion_data,
     by = c("cell_line" = "Cell.Line"),
     relationship = "many-to-many") |>
-  # fill out BCR column and make it a factor
-  dplyr::mutate(BCR = tidyr::replace_na(BCR, FALSE) |>
-                  factor(levels = c("TRUE", "FALSE"))) |> 
   # annotate all ABL1 fusions
   dplyr::mutate(ABL1_fusion = Left.Gene == "ABL1" | Right.Gene == "ABL1") |>
-  # annotate fusion types
+  dplyr::mutate(NUP214_fusion = Left.Gene == "NUP214" | Right.Gene == "NUP214") |>
+  # annotate BCR::ABL1 or NUP214::ABL1
   dplyr::mutate(fusion_type = case_when(
-    ABL1_fusion == TRUE & BCR == TRUE ~ "BCR::ABL1",
-    ABL1_fusion == TRUE & BCR == FALSE ~ "other ABL1 fusion",
-    .default = "no ABL1 fusion") |> 
-      factor(levels = c("BCR::ABL1", "other ABL1 fusion", "no ABL1 fusion"))
-  )
+    ABL1_fusion == TRUE & BCR_fusion == TRUE ~ "BCR::ABL1",
+    ABL1_fusion == TRUE &  NUP214_fusion == TRUE ~ "NUP214::ABL1",
+    .default = "other") |> 
+      factor(levels = c("BCR::ABL1", "NUP214::ABL1", "other"))) |> 
+  # old annotations follow
+  dplyr::mutate(BCR_or_NUP214 = dplyr::if_any(c(Left.Gene, Right.Gene),
+                                              ~ . %in% c("BCR", "NUP214")) |> 
+                  factor(levels = c("TRUE", "FALSE"))) |> 
+  # fill out BCR column and make it a factor
+  dplyr::mutate(BCR_fusion = tidyr::replace_na(BCR_fusion, FALSE) |>
+                  factor(levels = c("TRUE", "FALSE")))
+  # # annotate fusion types
+  # dplyr::mutate(fusion_type = case_when(
+  #   ABL1_fusion == TRUE & BCR_fusion == TRUE ~ "BCR::ABL1",
+  #   ABL1_fusion == TRUE & BCR_fusion == FALSE ~ "other ABL1 fusion",
+  #   .default = "no ABL1 fusion") |> 
+  #     factor(levels = c("BCR::ABL1", "other ABL1 fusion", "no ABL1 fusion"))
+# find fusion cell lines that are in PRISM-----------------------------------------------
+PRISM_fusions <- fusion_data |> 
+  dplyr::left_join(DRC_data, by = c("Cell.Line" = "cell_line")) |> 
+  dplyr::filter(!is.na(max_dose)) |> 
+  dplyr::slice(1, .by = Cell.Line)
 
 # compare dose-response AUC to Riemann AUC for each treatment-------------------
 for (trt in treatments){
@@ -84,9 +99,10 @@ for (trt in treatments){
 jitter_height = 0.3
 alpha_emphasis = 1
 alpha_background = 0.6
-# jitter plot of cell line sensitivity by BCR or other fusion------------------
+# jitter plot of cell line sensitivity by BCR/NUP214::ABL1----------------------
 set.seed(random_seed)
 DRC_data |> 
+  dplyr::arrange(desc(fusion_type)) |>
   ggplot(aes(x = auc,
              y = treatment,
              color = fusion_type,
@@ -94,30 +110,37 @@ DRC_data |>
              alpha = fusion_type)) +
   geom_jitter(width = 0, height = jitter_height) + # only vertical jitter
   theme_prism() +
-  scale_x_continuous(limits = c(0,1)) +
+  scale_x_continuous(limits = c(1,0), transform = "reverse") +
+  scale_y_discrete(labels = display_names_treatments) +
   scale_color_manual(values = c("BCR::ABL1" = "red",
-                                "other ABL1 fusion" = "pink",
-                                "no ABL1 fusion" = "black")) +
+                                "NUP214::ABL1" = "pink",
+                                "other" = "black")) +
   scale_shape_manual(values = c("BCR::ABL1" = "triangle",
-                                "other ABL1 fusion" = "triangle open",
-                                "no ABL1 fusion" = "circle")) +
+                                "NUP214::ABL1" = "triangle open",
+                                "other" = "circle")) +
   scale_alpha_manual(values = c("BCR::ABL1" = alpha_emphasis,
-                                "other ABL1 fusion" = alpha_emphasis,
-                                "no ABL1 fusion" = alpha_background)) +
+                                "NUP214::ABL1" = alpha_emphasis,
+                                "other" = alpha_background)) +
   labs(
     x = "AUC",
     y = "treatment",
     title = "Sensitivity of PRISM cell lines to treatments")
-ggsave(str_glue("{output_dir}/jitter_fusion_seed_{random_seed}_{doseplotr::get_timestamp()}.{plot_type}"),
+ggsave(str_glue("{output_dir}/jitter_BCR_NUP214_seed_{random_seed}_{doseplotr::get_timestamp()}.{plot_type}"),
        width = 10, height = 3)
 
-# jitter plot of cell line sensitivity by BCR fusion only------------------
+# jitter plot of cell line sensitivity by BCR fusion only-----------------------
 set.seed(random_seed)
 DRC_data |> 
-  ggplot(aes(x = auc, y = treatment, color = BCR, shape = BCR, alpha = BCR)) +
+  dplyr::arrange(desc(BCR_fusion)) |>
+  ggplot(aes(x = auc,
+             y = treatment,
+             color = BCR_fusion,
+             shape = BCR_fusion,
+             alpha = BCR_fusion)) +
   geom_jitter(width = 0, height = jitter_height) + # only vertical jitter
   theme_prism() +
-  scale_x_continuous(limits = c(0,1)) +
+  scale_x_continuous(limits = c(1,0), transform = "reverse") +
+  scale_y_discrete(labels = display_names_treatments) +
   scale_alpha_manual(values = c("TRUE" = alpha_emphasis,
                                 "FALSE" = alpha_background),
                      labels = c("TRUE" = "BCR::ABL1",
@@ -137,6 +160,40 @@ DRC_data |>
 ggsave(str_glue("{output_dir}/jitter_BCR_seed_{random_seed}_{doseplotr::get_timestamp()}.{plot_type}"),
        width = 10, height = 3)
 
+# jitter plot of cell line sensitivity by BCR::ABL1 or NUP214::ABL1-------------
+set.seed(random_seed)
+DRC_data |> 
+  dplyr::arrange(desc(BCR_or_NUP214)) |>
+  ggplot(aes(x = auc,
+             y = treatment,
+             color = BCR_or_NUP214,
+             shape = BCR_or_NUP214,
+             alpha = BCR_or_NUP214)) +
+  geom_point(position = position_jitter(width = 0, # only vertical jitter
+                                        height = jitter_height,
+                                        seed = random_seed)) + 
+  theme_prism() +
+  scale_x_continuous(limits = c(1,0), transform = "reverse") +
+  scale_y_discrete(labels = display_names_treatments) +
+  scale_alpha_manual(values = c("TRUE" = alpha_emphasis,
+                                "FALSE" = alpha_background),
+                     labels = c("TRUE" = "BCR::ABL1 or NUP214::ABL1",
+                                "FALSE" = "other")) +
+  scale_color_manual(values = c("TRUE" = "red",
+                                "FALSE" = "black"),
+                     labels = c("TRUE" = "BCR::ABL1 or NUP214::ABL1",
+                                "FALSE" = "other")) +
+  scale_shape_manual(values = c("TRUE" = "triangle",
+                                "FALSE" = "circle"),
+                     labels = c("TRUE" = "BCR::ABL1 or NUP214::ABL1",
+                                "FALSE" = "other")) +
+  labs(
+    x = "AUC",
+    y = "treatment",
+    title = "Sensitivity of PRISM cell lines to treatments")
+ggsave(str_glue("{output_dir}/jitter_BCR_or_NUP214_seed_{random_seed}_{doseplotr::get_timestamp()}.{plot_type}"),
+       width = 11, height = 3)
+
 # waterfall plot of cell line sensitivity by curve fit AUC--------------------
 DRC_data |> 
   # only cell lines present for all treatments
@@ -152,7 +209,7 @@ DRC_data |>
   scale_color_manual(values = color_map_treatments,
                      labels = display_names_treatments) +
   theme(legend.title = element_text()) +
-  labs(x = "rank order",
+  labs(x = "rank order of sensitivity",
        y = "AUC",
        title = "Sensitivity of PRISM cell lines to treatments")
 ggsave(str_glue(
@@ -170,7 +227,7 @@ DRC_data |>
   scale_color_manual(values = color_map_treatments,
                      labels = display_names_treatments) +
   theme(legend.title = element_text()) +
-  labs(x = "rank order",
+  labs(x = "rank order of sensitivity",
        y = "Riemann AUC",
        title = "Sensitivity of PRISM cell lines to treatments")
 ggsave(str_glue("{output_dir}/waterfall_auc_riemann_{doseplotr::get_timestamp()}.{plot_type}"),
