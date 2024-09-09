@@ -42,11 +42,11 @@ DRC_data <- readr::read_csv(input_filename) |>
   dplyr::mutate(BCR = tidyr::replace_na(BCR, FALSE) |>
                   factor(levels = c("TRUE", "FALSE"))) |> 
   # annotate all ABL1 fusions
-  dplyr::mutate(fusion = Left.Gene == "ABL1" | Right.Gene == "ABL1") |>
+  dplyr::mutate(ABL1_fusion = Left.Gene == "ABL1" | Right.Gene == "ABL1") |>
   # annotate fusion types
   dplyr::mutate(fusion_type = case_when(
-    fusion == TRUE & BCR == TRUE ~ "BCR::ABL1",
-    fusion == TRUE & BCR == FALSE ~ "other ABL1 fusion",
+    ABL1_fusion == TRUE & BCR == TRUE ~ "BCR::ABL1",
+    ABL1_fusion == TRUE & BCR == FALSE ~ "other ABL1 fusion",
     .default = "no ABL1 fusion") |> 
       factor(levels = c("BCR::ABL1", "other ABL1 fusion", "no ABL1 fusion"))
   )
@@ -115,16 +115,16 @@ DRC_data |>
   scale_x_continuous(limits = c(0,1)) +
   scale_alpha_manual(values = c("TRUE" = alpha_emphasis,
                                 "FALSE" = alpha_background),
-                     labels = c("TRUE" = "BCR fusion",
-                                "FALSE" = "no BCR fusion")) +
+                     labels = c("TRUE" = "BCR::ABL1",
+                                "FALSE" = "not BCR::ABL1")) +
   scale_color_manual(values = c("TRUE" = "red",
                                 "FALSE" = "black"),
-                     labels = c("TRUE" = "BCR fusion",
-                                "FALSE" = "no BCR fusion")) +
+                     labels = c("TRUE" = "BCR::ABL1",
+                                "FALSE" = "not BCR::ABL1")) +
   scale_shape_manual(values = c("TRUE" = "triangle",
                                 "FALSE" = "circle"),
-                     labels = c("TRUE" = "BCR fusion",
-                                "FALSE" = "no BCR fusion")) +
+                     labels = c("TRUE" = "BCR::ABL1",
+                                "FALSE" = "not BCR::ABL1")) +
   labs(
     x = "AUC",
     y = "treatment",
