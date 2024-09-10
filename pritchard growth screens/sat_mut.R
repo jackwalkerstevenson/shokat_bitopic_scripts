@@ -1,4 +1,4 @@
-# visualizing growth rates from saturation mutagenesis
+# visualizing resistance data from saturation mutagenesis
 # Jack Stevenson, started 2023-11-15
 # load required libraries------------------------------------------------------
 library(tidyverse) # for tidy data handling
