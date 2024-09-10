@@ -8,9 +8,7 @@
 #'
 # load required libraries------------------------------------------------------
 library(tidyverse) # for tidy data handling
-library(scales) # for fancy plotting scales
 library(ggprism)  # for pretty prism-like plots
-library(viridis) # for color schemes
 library(doseplotr) # you bet
 # set up-----------------------------------------------
 rm(list = ls()) # clear environment
