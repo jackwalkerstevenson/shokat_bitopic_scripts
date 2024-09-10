@@ -65,13 +65,20 @@ DRC_data <- readr::read_csv(input_filename) |>
   #   ABL1_fusion == TRUE & BCR_fusion == FALSE ~ "other ABL1 fusion",
   #   .default = "no ABL1 fusion") |> 
   #     factor(levels = c("BCR::ABL1", "other ABL1 fusion", "no ABL1 fusion"))
+# report input, raw data and parameters-----------------------------------------
+write_csv(DRC_data, fs::path(output_dir,
+                               str_glue("PRISM_raw_data_{get_timestamp()}.csv")))
+doseplotr::file_copy_to_dir(params_path, output_dir)
+doseplotr::file_copy_to_dir(scales_path, output_dir)
+doseplotr::file_copy_to_dir(input_filename, output_dir)
+doseplotr::file_copy_to_dir(fusions_filename, output_dir)
 # find fusion cell lines that are in PRISM-----------------------------------------------
 PRISM_fusions <- fusion_data |> 
   dplyr::left_join(DRC_data, by = c("Cell.Line" = "cell_line")) |> 
   dplyr::filter(!is.na(max_dose)) |> 
   dplyr::slice(1, .by = Cell.Line)
 
-# compare dose-response AUC to Riemann AUC for each treatment-------------------
+# plot dose-response AUC vs Riemann AUC for each treatment-------------------
 for (trt in treatments){
   DRC_data |> 
     dplyr::filter(treatment == trt) |> 
@@ -95,7 +102,7 @@ for (trt in treatments){
   ggsave(str_glue("{output_dir}/AUC_comparison_{trt}_{doseplotr::get_timestamp()}.{plot_type}"),
          width = 8, height = 6)
 }
-# parameters for all jitter plots-----------------------------------------------
+# set parameters for jitter plots-----------------------------------------------
 jitter_height = 0.3
 alpha_emphasis = 1
 alpha_background = 0.6
