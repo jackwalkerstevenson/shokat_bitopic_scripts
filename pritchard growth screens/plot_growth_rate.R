@@ -78,6 +78,7 @@ filtered_data |>
   scale_shape_manual(values = shape_map_treatments) +
   scale_linetype_manual(values = linetype_map_display_names) +
   theme_prism() +
+  theme(plot.background = element_blank()) +
   labs(y = "total theoretical live cell count",
        title = "Growth of mutant library")
 
