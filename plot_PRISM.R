@@ -233,7 +233,7 @@ DRC_data |>
                      labels = display_names_treatments) +
   theme(legend.title = element_text()) +
   labs(x = "rank order of sensitivity",
-       y = "Riemann AUC",
+       y = "AUC (Riemann)",
        title = "Sensitivity of PRISM cell lines to treatments")
 ggsave(str_glue("{output_dir}/waterfall_auc_riemann_{doseplotr::get_timestamp()}.{plot_type}"),
        width = 8, height = 4)
