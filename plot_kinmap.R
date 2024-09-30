@@ -24,7 +24,7 @@ kinmap_uninhibited_fill_color <- "gray"
 on_targets <- c("ABL1")
 input_SS_single_pt_filename <-
   str_glue("{input_dir}/selectscreen combined results 67309 ZLYTE duplicates removed 2024-05-15.csv")
-color_threshold <- 90
+top_hit_threshold <- 75
 label_threshold <- 93
 # Druker/Deininger off-targets of interest
 kinases_of_interest <- c(
@@ -63,6 +63,11 @@ kinase_plot_data <- raw_single_pt_data |>
   mutate(label = (if_any(starts_with("pct_inhibition"),
                          \(x) x > label_threshold))
          | target %in% kinases_of_interest)
+# report input, raw data and parameters-----------------------------------------
+write_csv(raw_single_pt_data,
+          fs::path(output_dir,
+                   str_glue("raw_single_pt_data{get_timestamp()}.csv")))
+doseplotr::file_copy_to_dir("plot_kinmap.R", output_dir)
 # add KinMap directive parameters----------------------------------------------
 avg_single_pt_data <- avg_single_pt_data |> 
   dplyr::mutate(
