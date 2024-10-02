@@ -79,24 +79,26 @@ PRISM_fusions <- fusion_data |>
 # plot dose-response AUC vs Riemann AUC for each treatment-------------------
 for (trt in treatments){
   DRC_data |> 
-    dplyr::filter(treatment == trt) |> 
+    dplyr::filter(treatment == trt) |> # pick out specific treatment
     dplyr::mutate(missing_AUC = is.na(auc)) |> # annotate missing AUC
-    dplyr::arrange(missing_AUC) |> 
+    dplyr::arrange(missing_AUC) |> # put missing AUC first
     dplyr::mutate(auc = tidyr::replace_na(auc, 1)) |>  # replace missing AUC with 1
     ggplot(aes(x = auc, y = auc_riemann, color = missing_AUC)) +
     geom_point() +
-    theme_prism() +
-    theme(legend.title = element_text()) +
-    coord_fixed() +
-    scale_x_continuous(limits = c(0,1)) +
+    theme_prism() + # make it look like prism
+    theme(legend.title = element_text()) + # reinstate legend title
+    coord_fixed() + # same x and y axis scale
+    scale_x_continuous(limits = c(0,1)) + # set bounds of axes
     scale_y_continuous(limits = c(0,1)) +
+    # set colors for color variable (missing_AUC)
     scale_color_manual(values = c("TRUE" = "red", "FALSE" = "black")) +
-    labs(
+    labs( # label plot
       x = "AUC from curve fit",
       y = "Riemann AUC",
       title = "comparing AUC metrics",
       caption = trt,
       color = "missing curve-fit AUC")
+  # save plot to a file
   ggsave(str_glue("{output_dir}/AUC_comparison_{trt}_{doseplotr::get_timestamp()}.{plot_type}"),
          width = 8, height = 6)
 }
@@ -105,9 +107,9 @@ jitter_height = 0.3
 alpha_emphasis = 1
 alpha_background = 0.6
 # jitter plot of cell line sensitivity by BCR/NUP214::ABL1----------------------
-set.seed(random_seed)
+set.seed(random_seed) # set a manual random seed so output always the same
 DRC_data |> 
-  dplyr::arrange(desc(fusion_type)) |>
+  dplyr::arrange(desc(fusion_type)) |> # fusion type determines order
   ggplot(aes(x = auc,
              y = treatment,
              color = fusion_type,
@@ -115,8 +117,9 @@ DRC_data |>
              alpha = fusion_type)) +
   geom_jitter(width = 0, height = jitter_height) + # only vertical jitter
   theme_prism() +
-  scale_x_continuous(limits = c(1,0), transform = "reverse") +
+  scale_x_continuous(limits = c(1,0), transform = "reverse") + # flip axis
   scale_y_discrete(labels = display_names_treatments) +
+  # have to set all the scales so the legend will combine into one
   scale_color_manual(values = c("BCR::ABL1" = "red",
                                 "NUP214::ABL1" = "pink",
                                 "other" = "black")) +
