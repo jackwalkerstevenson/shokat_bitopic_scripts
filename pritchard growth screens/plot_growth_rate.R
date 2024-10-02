@@ -12,6 +12,7 @@
 library(tidyverse) # for tidy data handling
 library(ggprism)  # for pretty prism-like plots
 library(doseplotr) # you bet
+library(ggbreak) # for broken plot axis
 # set up-----------------------------------------------
 rm(list = ls()) # clear environment
 params_path <- "parameters/parameters_plot_growth_rate.R"
@@ -78,9 +79,44 @@ filtered_data |>
   scale_shape_manual(values = shape_map_treatments) +
   scale_linetype_manual(values = linetype_map_display_names) +
   theme_prism() +
+  guides(color = guide_legend(order = 1),
+         shape = guide_legend(order = 1),
+         linetype = guide_legend(order = 2)) +
   theme(plot.background = element_blank()) +
   labs(y = "total theoretical live cell count",
        title = "Growth of mutant library")
 
 ggsave(str_glue("{output_dir}/sat_mut_growth_rate_{doseplotr::get_timestamp()}.{plot_type}"),
        width = 12, height = 7)
+# # line plot of growth with broken y axis----------------------------------------------------------
+# filtered_data |>
+#   dplyr::group_by(display_name, day) |> 
+#   ggplot(aes(x = day,
+#              y = theoretical_count,
+#              color = treatment,
+#              shape = treatment,
+#              linetype = display_name)) +
+#   stat_summary(fun.data = "mean_se",
+#                geom = "errorbar") +
+#   stat_summary(fun = "mean",
+#                geom = "line") +
+#   stat_summary(fun = "mean",
+#                geom = "point",
+#                size = 3,
+#                alpha = 0.7) +
+#   scale_y_break(breaks = c(1000, 20000),
+#                 scales = .5
+#                 ) +
+#   scale_color_manual(values = color_map_treatments) +
+#   scale_shape_manual(values = shape_map_treatments) +
+#   scale_linetype_manual(values = linetype_map_display_names) +
+#   theme_prism() +
+#   guides(color = guide_legend(order = 1),
+#          shape = guide_legend(order = 1),
+#          linetype = guide_legend(order = 2)) +
+#   theme(plot.background = element_blank()) +
+#   labs(y = "total theoretical live cell count",
+#        title = "Growth of mutant library")
+# 
+# ggsave(str_glue("{output_dir}/sat_mut_growth_rate_{doseplotr::get_timestamp()}.{plot_type}"),
+#        width = 12, height = 7)
