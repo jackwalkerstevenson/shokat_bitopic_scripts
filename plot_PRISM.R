@@ -66,6 +66,7 @@ DRC_data <- readr::read_csv(input_filename) |>
 # report input, raw data and parameters-----------------------------------------
 write_csv(DRC_data, fs::path(output_dir,
                                str_glue("PRISM_raw_data_{get_timestamp()}.csv")))
+doseplotr::file_copy_to_dir("plot_PRISM.R", output_dir)
 doseplotr::file_copy_to_dir(params_path, output_dir)
 doseplotr::file_copy_to_dir(scales_path, output_dir)
 doseplotr::file_copy_to_dir(input_filename, output_dir)
@@ -216,7 +217,7 @@ DRC_data |>
   theme_prism() +
   scale_color_manual(values = color_map_treatments,
                      labels = display_names_treatments) +
-  theme(legend.title = element_text()) +
+  theme(legend.title = element_text()) + # reinstate legend label
   labs(x = "rank order of sensitivity",
        y = "AUC",
        title = "Sensitivity of PRISM cell lines to treatments")
@@ -234,7 +235,7 @@ DRC_data |>
   theme_prism() +
   scale_color_manual(values = color_map_treatments,
                      labels = display_names_treatments) +
-  theme(legend.title = element_text()) +
+  theme(legend.title = element_text()) + # reinstate legend label
   labs(x = "rank order of sensitivity",
        y = "AUC (Riemann)",
        title = "Sensitivity of PRISM cell lines to treatments")
