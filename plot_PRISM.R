@@ -101,6 +101,7 @@ for (trt in treatments){
       color = "missing curve-fit AUC")
   # save plot to a file
   ggsave(str_glue("{output_dir}/AUC_comparison_{trt}_{doseplotr::get_timestamp()}.{plot_type}"),
+         bg = "transparent",
          width = 8, height = 6)
 }
 # set parameters for jitter plots-----------------------------------------------
@@ -117,7 +118,6 @@ DRC_data |>
              shape = fusion_type,
              alpha = fusion_type)) +
   geom_jitter(width = 0, height = jitter_height) + # only vertical jitter
-  theme_prism() +
   scale_x_continuous(limits = c(1,0), transform = "reverse") + # flip axis
   scale_y_discrete(labels = display_names_treatments) +
   # have to set all the scales so the legend will combine into one
@@ -130,11 +130,14 @@ DRC_data |>
   scale_alpha_manual(values = c("BCR::ABL1" = alpha_emphasis,
                                 "NUP214::ABL1" = alpha_emphasis,
                                 "other" = alpha_background)) +
+  theme_prism() +
+  theme(plot.background = element_blank()) + # for transparent background
   labs(
     x = "AUC",
     y = "treatment",
     title = "Sensitivity of PRISM cell lines to treatments")
 ggsave(str_glue("{output_dir}/jitter_BCR_NUP214_seed_{random_seed}_{doseplotr::get_timestamp()}.{plot_type}"),
+       bg = "transparent",
        width = 10, height = 3)
 
 # jitter plot of cell line sensitivity by BCR fusion only-----------------------
@@ -147,7 +150,6 @@ DRC_data |>
              shape = BCR_fusion,
              alpha = BCR_fusion)) +
   geom_jitter(width = 0, height = jitter_height) + # only vertical jitter
-  theme_prism() +
   scale_x_continuous(limits = c(1,0), transform = "reverse") +
   scale_y_discrete(labels = display_names_treatments) +
   scale_alpha_manual(values = c("TRUE" = alpha_emphasis,
@@ -162,11 +164,14 @@ DRC_data |>
                                 "FALSE" = "circle"),
                      labels = c("TRUE" = "BCR::ABL1",
                                 "FALSE" = "not BCR::ABL1")) +
+  theme_prism() +
+  theme(plot.background = element_blank()) + # for transparent background
   labs(
     x = "AUC",
     y = "treatment",
     title = "Sensitivity of PRISM cell lines to treatments")
 ggsave(str_glue("{output_dir}/jitter_BCR_seed_{random_seed}_{doseplotr::get_timestamp()}.{plot_type}"),
+       bg = "transparent",
        width = 10, height = 3)
 
 # jitter plot of cell line sensitivity by BCR::ABL1 or NUP214::ABL1-------------
@@ -180,8 +185,7 @@ DRC_data |>
              alpha = BCR_or_NUP214)) +
   geom_point(position = position_jitter(width = 0, # only vertical jitter
                                         height = jitter_height,
-                                        seed = random_seed)) + 
-  theme_prism() +
+                                        seed = random_seed)) +
   scale_x_continuous(limits = c(1,0), transform = "reverse") +
   scale_y_discrete(labels = display_names_treatments) +
   scale_alpha_manual(values = c("TRUE" = alpha_emphasis,
@@ -196,11 +200,14 @@ DRC_data |>
                                 "FALSE" = "circle"),
                      labels = c("TRUE" = "BCR::ABL1 or NUP214::ABL1",
                                 "FALSE" = "other")) +
+  theme_prism() +
+  theme(plot.background = element_blank()) + # for transparent background
   labs(
     x = "AUC",
     y = "treatment",
     title = "Sensitivity of PRISM cell lines to treatments")
 ggsave(str_glue("{output_dir}/jitter_BCR_or_NUP214_seed_{random_seed}_{doseplotr::get_timestamp()}.{plot_type}"),
+       bg = "transparent",
        width = 11, height = 3)
 
 # waterfall plot of cell line sensitivity by curve fit AUC--------------------
@@ -214,16 +221,18 @@ DRC_data |>
   dplyr::mutate(plot_rank = dplyr::row_number(-1 * auc)) |>
   ggplot(aes(x = plot_rank, y = auc, color = treatment)) +
   geom_point() +
-  theme_prism() +
   scale_color_manual(values = color_map_treatments,
                      labels = display_names_treatments) +
-  theme(legend.title = element_text()) + # reinstate legend label
+  theme_prism() +
+  theme(legend.title = element_text(), # reinstate legend label
+        plot.background = element_blank()) + # for transparent background
   labs(x = "rank order of sensitivity",
        y = "AUC",
        title = "Sensitivity of PRISM cell lines to treatments")
 ggsave(str_glue(
     "{output_dir}/waterfall_auc_{doseplotr::get_timestamp()}.{plot_type}"),
-       width = 8, height = 4)
+    bg = "transparent",
+    width = 8, height = 4)
 
 # waterfall plot of cell line sensitivity by Riemann AUC----------------------
 DRC_data |> 
@@ -232,12 +241,14 @@ DRC_data |>
   dplyr::mutate(plot_rank = dplyr::row_number(-1 * auc_riemann)) |>
   ggplot(aes(x = plot_rank, y = auc_riemann, color = treatment)) +
   geom_point() +
-  theme_prism() +
   scale_color_manual(values = color_map_treatments,
                      labels = display_names_treatments) +
-  theme(legend.title = element_text()) + # reinstate legend label
+  theme_prism() +
+  theme(legend.title = element_text(), # reinstate legend label
+        plot.background = element_blank()) + # for transparent background
   labs(x = "rank order of sensitivity",
        y = "AUC (Riemann)",
        title = "Sensitivity of PRISM cell lines to treatments")
 ggsave(str_glue("{output_dir}/waterfall_auc_riemann_{doseplotr::get_timestamp()}.{plot_type}"),
+       bg = "transparent",
        width = 8, height = 4)
