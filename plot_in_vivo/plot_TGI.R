@@ -105,7 +105,7 @@ plot_measurement <- function(measurement_data,
               alpha = 0.2) +
     theme_prism() +
     theme(legend.title = element_text(), # reinstate legend label
-          panel.background = element_blank()) + # transparent background
+          plot.background = element_blank()) + # transparent background
     labs(x = "days since start of dosing",
          y = y_label,
          title = plot_title,
@@ -129,6 +129,37 @@ plot_measurement(measurement_data = plot_TGI_data,
                  y_label = "body weight (%)",
                  plot_title = "Body weight")
 
+# plot survival by group-----------------------------------------------
+plot_survival_data <- raw_TGI_data |> 
+  dplyr::group_by(treatment, day) |> 
+  dplyr::summarize(n_living = sum(!is.na(volume))) # count living animals
+plot_survival_data |> 
+  ggplot(aes(x = day, y = n_living, color = treatment)) +
+  # horizontal step first means line goes down on day when mouse is missing
+  geom_step(direction = "hv",
+            linewidth = 1) +
+  # dosing intervals
+  geom_rect(data = dosing_data,
+            inherit.aes = FALSE,
+            aes(xmin = dosing_start,
+                xmax = dosing_end, #todo: pmin(dosing_end, x_max),
+                ymin = -Inf,
+                ymax = Inf),
+            fill = "black",
+            alpha = 0.2) +
+  scale_y_continuous(limits = c(0, NA)) +
+  scale_color_manual(values = color_map_treatments) +
+  theme_prism() +
+  theme(legend.title = element_text(), # reinstate legend label
+        plot.background = element_blank()) + # for transparent background
+  labs(x = "days since start of dosing",
+       y = "surviving mice")
+ggsave(
+  str_glue(
+    "{output_directory}/plot_TGI_survival_{get_timestamp()}.{plot_type}"
+  ),
+  width = 8, height = 4,
+  bg = "transparent")
 # plot PK data-----------------------------------------------------------------
 PK_data |> 
   group_by(treatment, measurement) |> 
@@ -159,7 +190,8 @@ PK_data |>
        caption = "after 14 d QD weekday dosing")
 ggsave(
   str_glue(
-    "{output_directory}/plot_TGI_PK_{get_timestamp()}.{plot_type}"
+    "{output_directory}/plot_TGI_PK_{get_timestamp()}.{plot_type}",
+    bg = "transparent"
   ),
   width = 9, height = 6,
   bg = "transparent")
