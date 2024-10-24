@@ -25,26 +25,24 @@ doseplotr::file_copy_to_dir(PK_path, output_directory)
 dir.create(input_directory, showWarnings = FALSE)
 dir.create(output_directory, showWarnings = FALSE)
 # import, preprocess and report data-----------------------------------------------
-raw_TGI_data <- readxl::read_excel(
+all_TGI_data <- readxl::read_excel(
   str_glue("{input_directory}/{input_filename}"),
-  na = "NA" # interpret existing string "NA" as NA
-)
-
-plot_TGI_data <- raw_TGI_data |>
-  mutate(volume = as.numeric(volume),
+  # interpret existing string "NA" as NA
+  na = "NA") |>
+  dplyr::mutate(volume = as.numeric(volume),
          body_weight_percent = as.numeric(body_weight_percent) * 100,
          day = as.numeric(day),
-         treatment = fct_inorder(as.factor(treatment))) |> 
-  # if >1 measurement in a group timepoint is NA, remove the whole timepoint
-  dplyr::group_by(treatment, day) |> 
-  dplyr::mutate(na_count = sum(is.na(volume))) |> 
-  dplyr::ungroup() |> 
-  dplyr::filter(na_count < 2) |> 
-  select(-na_count)
+         treatment = fct_inorder(as.factor(treatment)),
+         hit_endpoint = tumor_length_mm > 20 | is.na(tumor_length_mm))
 
-  # propagate data forward after death instead of NA
-  # arrange(animal, day) |> 
-  # tidyr::fill(any_of(c("volume", "body_weight_percent")))
+plot_TGI_data <- all_TGI_data |>
+  # remove timepoints after too many subjects hit endpoint
+  # if >1 measurement in a group timepoint hits endpoint, remove the whole timepoint
+  dplyr::group_by(treatment, day) |> 
+  dplyr::mutate(endpoint_count = sum(hit_endpoint)) |> 
+  dplyr::ungroup() |> 
+  dplyr::filter(endpoint_count < 2) |> 
+  select(-endpoint_count)
 
 dosing_data <- readxl::read_excel(
   str_glue("{input_directory}/{dosing_filename}"),
@@ -56,7 +54,7 @@ PK_data <- readxl::read_excel(
   dplyr::mutate(measurement = fct_inorder(as.factor(measurement)),
                 treatment = fct_inorder(as.factor(treatment)))
 # report raw TGI data
-write_csv(raw_TGI_data,
+write_csv(all_TGI_data,
           fs::path(output_directory,
                    str_glue("raw_data_TGI_{get_timestamp()}.csv")))
 
@@ -88,28 +86,27 @@ plot_measurement <- function(measurement_data,
       fun = "mean",
       geom = "line"
     ) +
-    # todo: add label for implantation time
-    # geom_label(x = 0, y = 500, label = "test") +
+    # dosing period rectangles
     # todo: truncate dosing period data to available measurement data
     # scale_x_continuous(limits = c(x_min, x_max),
     #                    expand = expansion(mult = c(0.05, 0.1))) +
-    geom_rect(data = interval_data,
-              inherit.aes = FALSE,
-              aes(xmin = dosing_start,
-                  xmax = dosing_end, #todo: pmin(dosing_end, x_max),
-                  ymin = -Inf,
-                  ymax = Inf,
-                  fill = "dosing period"),
-              alpha = 0.1) +
+    # geom_rect(data = interval_data,
+    #           inherit.aes = FALSE,
+    #           aes(xmin = dosing_start,
+    #               xmax = dosing_end, #todo: pmin(dosing_end, x_max),
+    #               ymin = -Inf,
+    #               ymax = Inf,
+    #               fill = "dosing period"),
+    #           alpha = 0.1) +
     scale_color_manual(values = color_map_treatments) +
     scale_shape_manual(values = shape_map_treatments) +
-    scale_fill_manual(values = c("dosing period" = "black"), name = NULL) +
+    # scale_fill_manual(values = c("dosing period" = "black"), name = NULL) +
     theme_prism() +
     theme(legend.title = element_text(), # reinstate legend label
           plot.background = element_blank()) + # transparent background
-    guides(color = guide_legend(order = 1),
-           shape = guide_legend(order = 1),
-           fill = guide_legend(order = 2)) +
+    # guides(color = guide_legend(order = 1),
+    #        shape = guide_legend(order = 1),
+    #        fill = guide_legend(order = 2)) +
     labs(x = "days since start of dosing",
          y = y_label,
          title = plot_title,
@@ -149,21 +146,24 @@ plot_measurement_individual <- function(measurement_data,
                group = animal)) +
     geom_point(size = 2) +
     geom_line() +
-    geom_rect(data = interval_data,
-              inherit.aes = FALSE,
-              aes(xmin = dosing_start,
-                  xmax = dosing_end, #todo: pmin(dosing_end, x_max),
-                  ymin = -Inf,
-                  ymax = Inf,
-                  fill = "dosing period"),
-              alpha = 0.1) +
+    # dosing period rectangles
+    # geom_rect(data = interval_data,
+    #           inherit.aes = FALSE,
+    #           aes(xmin = dosing_start,
+    #               xmax = dosing_end, #todo: pmin(dosing_end, x_max),
+    #               ymin = -Inf,
+    #               ymax = Inf,
+    #               fill = "dosing period"),
+    #           alpha = 0.1) +
     scale_color_manual(values = pals::cols25(8)) +
     scale_shape_manual(values = doseplotr::shape_scale_default()) +
-    scale_fill_manual(values = c("dosing period" = "black")) +
-    guides(color = "none", shape = "none",
-           fill = guide_legend())+
+    # dosing period rectangle stuff
+    # scale_fill_manual(values = c("dosing period" = "black")) +
+    # guides(color = "none", shape = "none",
+    #        fill = guide_legend())+
     theme_prism() +
-    theme(plot.background = element_blank()) + # transparent background
+    theme(plot.background = element_blank(), # transparent background
+          legend.position = "none") + # remove legend entirely
     labs(x = "days since start of dosing",
          y = y_label,
          title = plot_title,
@@ -171,49 +171,66 @@ plot_measurement_individual <- function(measurement_data,
   return(plot)
 }
 # plot individual tumor vol and body weight-------------------------------------
-for (trt in unique(raw_TGI_data$treatment)){
-  raw_TGI_data |> 
-    dplyr::filter(treatment == trt) |> 
+for (trt in unique(all_TGI_data$treatment)){
+  trt_data <- all_TGI_data |> 
+    dplyr::filter(treatment == trt)
+  trt_name <- janitor::make_clean_names(trt) # remove special chars from trt
+  trt_data |> 
     plot_measurement_individual(
                  interval_data = dosing_data, 
                  measurement = "volume",
                  y_label = "tumor volume (mm³)",
-                 #y_label = expression(bold(tumor~volume~(mm^3))),
                  plot_title = str_glue("Tumor volume, {trt}"))
   ggsave(
     str_glue(
-      "{output_directory}/plot_TGI_individual_{janitor::make_clean_names(trt)}_{get_timestamp()}.{plot_type}"
+      "{output_directory}/plot_TGI_individual_vol_{trt_name}_{get_timestamp()}.{plot_type}"
     ),
-    width = 8, height = 4,
+    width = 6, height = 4,
+    bg = "transparent")
+  
+  trt_data |> 
+    plot_measurement_individual(
+      interval_data = dosing_data, 
+      measurement = "body_weight_percent",
+      y_label = "body weight (%)",
+      plot_title = str_glue("Body weight, {trt}"))
+  ggsave(
+    str_glue(
+      "{output_directory}/plot_TGI_individual_weight_{trt_name}_{get_timestamp()}.{plot_type}"
+    ),
+    width = 6, height = 4,
     bg = "transparent")
 }
 # plot Kaplan-Meier survival curve by group-------------------------------------
-plot_survival_data <- raw_TGI_data |> 
+plot_survival_data <- all_TGI_data |> 
   dplyr::group_by(treatment, day) |> 
-  dplyr::summarize(n_living = sum(!is.na(volume))) # count living animals
+  dplyr::summarize(n_living = sum(hit_endpoint == FALSE)) # count living animals
 plot_survival_data |> 
   ggplot(aes(x = day, y = n_living, color = treatment)) +
   # horizontal step first means line goes down on day when mouse is missing
   geom_step(direction = "hv",
-            linewidth = 1) +
+            linewidth = 1,
+            position = position_jitter(width = 1, height = 0)) +
   # dosing interval rectangles
-  geom_rect(data = dosing_data,
-            inherit.aes = FALSE,
-            aes(xmin = dosing_start,
-                xmax = dosing_end, #todo: pmin(dosing_end, x_max),
-                ymin = -Inf,
-                ymax = Inf,
-                fill = "dosing period"),
-            alpha = 0.1) +
+  # geom_rect(data = dosing_data,
+  #           inherit.aes = FALSE,
+  #           aes(xmin = dosing_start,
+  #               xmax = dosing_end, #todo: pmin(dosing_end, x_max),
+  #               ymin = -Inf,
+  #               ymax = Inf,
+  #               fill = "dosing period"),
+  #           alpha = 0.1) +
+  # start x axis at start of dosing
+  scale_x_continuous(limits = c(0, NA)) +
   # start y axis at 0 mice
   scale_y_continuous(limits = c(0, NA)) +
   scale_color_manual(values = color_map_treatments) +
-  scale_fill_manual(values = c("dosing period" = "black"), name = NULL) +
+  # scale_fill_manual(values = c("dosing period" = "black"), name = NULL) +
   theme_prism() +
   theme(legend.title = element_text(), # reinstate legend label
         plot.background = element_blank()) + # for transparent background
-  guides(color = guide_legend(order = 1),
-         fill = guide_legend(order = 2)) +
+  # guides(color = guide_legend(order = 1),
+  #        fill = guide_legend(order = 2)) +
   labs(x = "days since start of dosing",
        y = "surviving mice",
        title = "Survival",
@@ -222,7 +239,7 @@ ggsave(
   str_glue(
     "{output_directory}/plot_TGI_survival_{get_timestamp()}.{plot_type}"
   ),
-  width = 8, height = 4,
+  width = 7, height = 4,
   bg = "transparent")
 # plot PK data-----------------------------------------------------------------
 PK_data |> 
