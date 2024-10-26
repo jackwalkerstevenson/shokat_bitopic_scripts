@@ -24,11 +24,11 @@ dir.create(output_directory, showWarnings = FALSE)
 # import, preprocess and report data-----------------------------------------------
 # function to remove duplicate suffixes from values that used to be colnames
 remove_dup_suffix <- function(text){
-  # if string contains an underscore and then a numeral, remove it
+  # if string ends in an underscore and then a numeral, remove it
   stringr::str_replace(text, "_\\d+$", "")
 }
 raw_data <- input_path |> 
-  excel_sheets() |> 
+  readxl::excel_sheets() |> 
   set_names() |> 
   purrr::map(function(sheet_name){
     # split merged colname cells into duplicates, not treating them as colnames
@@ -69,25 +69,42 @@ raw_data <- input_path |>
 write_csv(raw_data,
           fs::path(output_directory,
                    str_glue("nanobret_raw_data_{get_timestamp()}.csv")))
-# plot just one target as a test-------------------------------------------
-data <- raw_data |>
-  filter_trt_tgt(trt = "x_asciminib_bodipy_n_m", tgt = "dmso")
-x_min <- floor(min(data$log_dose))
-x_max <- ceiling(max(data$log_dose))
+# sadly reimplementing some doseplotr to handle nonnormalized data--------------
+trt_display_name = display_names_treatments[test_trt]
+tgt_display_name = display_names_targets[test_tgt]
+test_plot_data <- raw_data |>
+  filter_trt_tgt(trt = test_trt, tgt = test_tgt)
+x_min <- floor(min(test_plot_data$log_dose))
+x_max <- ceiling(max(test_plot_data$log_dose))
 x_limits <- c(x_min, x_max)
-data_summary <- data |>
-  dplyr::group_by(.data$treatment, .data$log_dose) |> # group by treatment
+test_data_summary <- test_plot_data |>
+  dplyr::group_by(.data$target, .data$log_dose) |> # group by target
   doseplotr::summarize_response()
-# this doesn't work rn
-model_predictions <- data |>
+model_predictions <- test_plot_data |>
   dplyr::group_by(.data$treatment, .data$log_dose) |>
-  summarize_models(response_col = response_col, rigid = TRUE) |>
-  get_predictions(response_col = "mean_response") # name for plotting
-test_plot_data |>
-  ggplot(aes(x = log_dose, y = response)) +
-  geom_point() +
+  summarize_models(response_col = "response", bounded=FALSE) |>
+  get_predictions(response_col = "response") # name for plotting
+test_data_summary |>
+  ggplot(aes(x = log_dose, y = mean_response, color = target, shape = target)) +
+  geom_point(size = 3) +
+  geom_errorbar(ggplot2::aes(ymax = .data$mean_response + .data$sem,
+                                    ymin = .data$mean_response - .data$sem,
+                                    width = .data$w)) +
+  # ggprism guide to end at last tick
+  scale_x_continuous(guide = ggprism::guide_prism_offset_minor(),
+                     breaks = scales::breaks_width(1),
+                     minor_breaks = minor_breaks_log(x_limits[1],
+                                                     x_limits[2])) +
+  # ggprism guide to end at last tick
+  scale_y_continuous(guide = ggprism::guide_prism_offset()) +
+  scale_shape_manual(values = shape_map_targets,
+                              name = "competitor") +
+                              # labels = legend_labels) +
+  scale_color_manual(values = color_map_targets,
+                              name = "competitor") +
   theme_prism() +
-  theme(legend.title = element_text()) +
-  labs(x = "[asciminib-BODIPY tracer] (logmolar)",
+  theme(plot.background = element_blank(), # transparent
+        legend.title = element_text()) +
+  labs(x = str_glue("log10[{trt_display_name}] (M)"),
        y = "BRET ratio (mBU)",
-       title = "DMSO")
+       title = str_glue("{tgt_display_name}"))
