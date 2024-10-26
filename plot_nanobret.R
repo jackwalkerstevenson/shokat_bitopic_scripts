@@ -77,19 +77,21 @@ test_plot_data <- raw_data |>
 x_min <- floor(min(test_plot_data$log_dose))
 x_max <- ceiling(max(test_plot_data$log_dose))
 x_limits <- c(x_min, x_max)
+test_model_simplest <- doseplotr::get_drda(test_plot_data, bounded = FALSE)
+test_model_summarize <- summarize_models(test_plot_data, response_col = "response", bounded = FALSE)
 test_data_summary <- test_plot_data |>
-  dplyr::group_by(.data$target, .data$log_dose) |> # group by target
+  dplyr::group_by(.data$target, .data$log_dose) |>
   doseplotr::summarize_response()
 model_predictions <- test_plot_data |>
-  dplyr::group_by(.data$treatment, .data$log_dose) |>
   summarize_models(response_col = "response", bounded=FALSE) |>
-  get_predictions(response_col = "response") # name for plotting
+  get_predictions(response_col = "response")
 test_data_summary |>
   ggplot(aes(x = log_dose, y = mean_response, color = target, shape = target)) +
   geom_point(size = 3) +
-  geom_errorbar(ggplot2::aes(ymax = .data$mean_response + .data$sem,
-                                    ymin = .data$mean_response - .data$sem,
-                                    width = .data$w)) +
+  geom_errorbar(aes(ymax = .data$mean_response + .data$sem,
+                    ymin = .data$mean_response - .data$sem,
+                    width = .data$w)) +
+  geom_line(data = model_predictions, aes(y = response), linewidth = .75, alpha = 0.8) +
   # ggprism guide to end at last tick
   scale_x_continuous(guide = ggprism::guide_prism_offset_minor(),
                      breaks = scales::breaks_width(1),
@@ -98,10 +100,11 @@ test_data_summary |>
   # ggprism guide to end at last tick
   scale_y_continuous(guide = ggprism::guide_prism_offset()) +
   scale_shape_manual(values = shape_map_targets,
-                              name = "competitor") +
-                              # labels = legend_labels) +
+                              name = "competitor",
+                              labels = display_names_targets) +
   scale_color_manual(values = color_map_targets,
-                              name = "competitor") +
+                     name = "competitor",
+                     labels = display_names_targets) +
   theme_prism() +
   theme(plot.background = element_blank(), # transparent
         legend.title = element_text()) +
