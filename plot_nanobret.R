@@ -69,7 +69,8 @@ raw_data <- input_path |>
 write_csv(raw_data,
           fs::path(output_directory,
                    str_glue("nanobret_raw_data_{get_timestamp()}.csv")))
-# sadly reimplementing some doseplotr to handle nonnormalized data--------------
+# plot a single treatment and target as a test----------------------------------
+# sadly reimplementing some doseplotr to handle nonnormalized data
 trt_display_name = display_names_treatments[test_trt]
 tgt_display_name = display_names_targets[test_tgt]
 test_plot_data <- raw_data |>
@@ -111,3 +112,47 @@ test_data_summary |>
   labs(x = str_glue("log10[{trt_display_name}] (M)"),
        y = "BRET ratio (mBU)",
        title = str_glue("{tgt_display_name}"))
+# plot all targets of a treatment-----------------------------------------------
+trt_display_name = display_names_treatments[test_trt]
+trt_data <- raw_data |>
+  filter_trt_tgt(trt = test_trt) |> 
+  filter(target %in% test_targets)
+trt_tgts <- unique(trt_data$target)
+# tgt_display_names = display_names_targets[trt_tgts] # not working
+x_min <- floor(min(trt_data$log_dose))
+x_max <- ceiling(max(trt_data$log_dose))
+x_limits <- c(x_min, x_max)
+trt_data_summary <- trt_data |> 
+  group_by(target, log_dose) |> 
+  summarize_response()
+model_predictions <- trt_data |>
+  group_by(target, log_dose) |> 
+  summarize_models(response_col="response", bounded=FALSE) |>
+  get_predictions(response_col="response")
+trt_data_summary |>
+  ggplot(aes(x = log_dose, y = mean_response, color = target, shape = target)) +
+  geom_point(size = 3) +
+  geom_errorbar(aes(ymax = .data$mean_response + .data$sem,
+                    ymin = .data$mean_response - .data$sem,
+                    width = .data$w)) +
+  geom_line(data = model_predictions, aes(y = response), linewidth = .75, alpha = 0.8) +
+  # ggprism guide to end at last tick
+  scale_x_continuous(guide = ggprism::guide_prism_offset_minor(),
+                     breaks = scales::breaks_width(1),
+                     minor_breaks = minor_breaks_log(x_limits[1],
+                                                     x_limits[2])) +
+  # ggprism guide to end at last tick
+  scale_y_continuous(guide = ggprism::guide_prism_offset()) +
+  scale_shape_manual(values = shape_map_targets,
+                     name = "competitor",
+                     labels = display_names_targets) +
+  scale_color_manual(values = color_map_targets,
+                     name = "competitor",
+                     labels = display_names_targets) +
+  theme_prism() +
+  theme(plot.background = element_blank(), # transparent
+        legend.title = element_text()) +
+  labs(x = str_glue("log10[{trt_display_name}] (M)"),
+       y = "BRET ratio (mBU)",
+       title = str_glue("{tgt_display_name}"))
+
