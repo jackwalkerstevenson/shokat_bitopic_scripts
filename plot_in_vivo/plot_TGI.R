@@ -209,8 +209,7 @@ plot_survival_data |>
   ggplot(aes(x = day, y = n_living, color = treatment)) +
   # horizontal step first means line goes down on day when mouse is missing
   geom_step(direction = "hv",
-            linewidth = 1,
-            position = position_jitter(width = 1, height = 0)) +
+            linewidth = 1) +
   # dosing interval rectangles
   # geom_rect(data = dosing_data,
   #           inherit.aes = FALSE,
@@ -232,8 +231,8 @@ plot_survival_data |>
   # guides(color = guide_legend(order = 1),
   #        fill = guide_legend(order = 2)) +
   labs(x = "days since start of dosing",
-       y = "surviving mice",
-       title = "Survival",
+       y = "mice below tumor size limit",
+       title = "Time to tumor size limit",
        caption = animal_caption)
 ggsave(
   str_glue(
