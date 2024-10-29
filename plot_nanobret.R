@@ -114,6 +114,14 @@ plot_nanobret_trt_tgts <- function(data, trt, tgts, plot_title){
          title = str_glue("{plot_title}"))
   return(plot_output)
 }
+# function to remove parenthetical portion of string----------------------------
+remove_parentheses <- function(str){
+  # Pattern matches: space followed by opening parenthesis, 
+  # any characters inside, and closing parenthesis at the end
+  # thanks Claude
+  pattern <- " \\([^)]*\\)$"
+  str_replace(str, pattern, "")
+}
 # function to plot each target of a treatment along with control----------------
 plot_nanobret_trt <- function(data, trt){
   trt_display_name = display_names_treatments[trt]
@@ -125,9 +133,10 @@ plot_nanobret_trt <- function(data, trt){
   for(tgt in noncontrol_targets){
     plot_nanobret_trt_tgts(data, trt=trt,
                            tgts = c(control_target, tgt),
-                           plot_title = display_names_targets[tgt]) |> 
+                           plot_title = remove_parentheses(display_names_targets[tgt])) |> 
       doseplotr::save_plot(
-        filename=str_glue("{output_directory}/plot_nanobret_trt_{janitor::make_clean_names(trt)}_tgt_{janitor::make_clean_names(tgt)}_{get_timestamp()}.{plot_type}")
+        filename=str_glue("{output_directory}/plot_nanobret_trt_{janitor::make_clean_names(trt)}_tgt_{janitor::make_clean_names(tgt)}_{get_timestamp()}.{plot_type}"),
+        legend_len=longest(as.character(trt_tgts))
         )
   }
 }
