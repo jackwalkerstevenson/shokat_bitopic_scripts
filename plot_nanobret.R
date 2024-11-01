@@ -69,6 +69,14 @@ raw_data <- input_path |>
 write_csv(raw_data,
           fs::path(output_directory,
                    str_glue("nanobret_raw_data_{get_timestamp()}.csv")))
+# fit models and report model parameters----------------------------------------
+model_summary <- summarize_models(raw_data,
+                                  response_col = "response",
+                                  bounded = FALSE) |>
+  dplyr::select(-model) |>  # remove actual model from report
+  mutate(across(where(is.numeric), \(x){signif(x, digits = 4)}))
+write_csv(model_summary,
+          str_glue("output/nanobret_model_summary_{get_timestamp()}.csv"))
 # function to plot specified targets of a treatment-----------------------------------------------
 plot_nanobret_trt_tgts <- function(data, trt, tgts, plot_title){
   trt_display_name = display_names_treatments[trt]
