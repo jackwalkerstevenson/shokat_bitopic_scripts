@@ -42,7 +42,7 @@ plot_TGI_data <- all_TGI_data |>
   dplyr::mutate(endpoint_count = sum(hit_endpoint)) |> 
   dplyr::ungroup() |> 
   dplyr::filter(endpoint_count < 2) |> 
-  select(-endpoint_count)
+  dplyr::select(-endpoint_count)
 
 dosing_data <- readxl::read_excel(
   str_glue("{input_directory}/{dosing_filename}"),
