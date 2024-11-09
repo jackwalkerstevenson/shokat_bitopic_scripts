@@ -20,7 +20,8 @@ dir.create("output/", showWarnings = FALSE) # silently create output directory
 fusion_data <- readr::read_csv(fusions_filename,
                                name_repair = "universal") |> 
   # drop unneeded columns
-  dplyr::select(all_of(c("Cell.Line", "Left.Gene", "Right.Gene"))) |> 
+  dplyr::select(all_of(
+    c("Cell.Line", "Left.Gene", "Right.Gene", "Disease.Subtype"))) |> 
   # boolean for fusions that include BCR
   # note BCR sometimes left, sometimes right. seems inconsistent, so taking all
   dplyr::mutate(BCR_fusion = Left.Gene == "BCR" | Right.Gene == "BCR") |> 
@@ -44,6 +45,12 @@ DRC_data <- readr::read_csv(input_filename) |>
   # annotate all ABL1 fusions
   dplyr::mutate(ABL1_fusion = Left.Gene == "ABL1" | Right.Gene == "ABL1") |>
   dplyr::mutate(NUP214_fusion = Left.Gene == "NUP214" | Right.Gene == "NUP214") |>
+  # annotate disease subtype
+  dplyr::mutate(disease_subtype = ifelse(
+    Disease.Subtype %in% names(subtypes_to_label),
+    subtypes_to_label[Disease.Subtype],
+    "other") |> 
+      factor(levels = subtypes_to_label)) |>
   # annotate BCR::ABL1 or NUP214::ABL1
   dplyr::mutate(fusion_type = case_when(
     ABL1_fusion == TRUE & BCR_fusion == TRUE ~ "BCR::ABL1",
@@ -105,9 +112,11 @@ for (trt in treatments){
          width = 8, height = 6)
 }
 # set parameters for jitter plots-----------------------------------------------
-jitter_height = 0.3
-alpha_emphasis = 1
-alpha_background = 0.6
+jitter_height <-  0.3
+alpha_emphasis <-  1
+alpha_background <-  0.4
+jitter_plot_width <- 11.5
+jitter_plot_height <- 5.5
 # jitter plot of cell line sensitivity by BCR/NUP214::ABL1----------------------
 set.seed(random_seed) # set a manual random seed so output always the same
 DRC_data |> 
@@ -119,7 +128,7 @@ DRC_data |>
              alpha = fusion_type)) +
   geom_jitter(width = 0, height = jitter_height) + # only vertical jitter
   scale_x_continuous(limits = c(1,0), transform = "reverse") + # flip axis
-  scale_y_discrete(labels = display_names_treatments) +
+  scale_y_discrete(labels = display_names_treatments, limits=rev) +
   # have to set all the scales so the legend will combine into one
   scale_color_manual(values = c("BCR::ABL1" = "red",
                                 "NUP214::ABL1" = "pink",
@@ -138,8 +147,7 @@ DRC_data |>
     title = "Sensitivity of PRISM cell lines to treatments")
 ggsave(str_glue("{output_dir}/jitter_BCR_NUP214_seed_{random_seed}_{doseplotr::get_timestamp()}.{plot_type}"),
        bg = "transparent",
-       width = 10, height = 3)
-
+       width = jitter_plot_width, height = jitter_plot_height)
 # jitter plot of cell line sensitivity by BCR fusion only-----------------------
 set.seed(random_seed)
 DRC_data |> 
@@ -151,7 +159,7 @@ DRC_data |>
              alpha = BCR_fusion)) +
   geom_jitter(width = 0, height = jitter_height) + # only vertical jitter
   scale_x_continuous(limits = c(1,0), transform = "reverse") +
-  scale_y_discrete(labels = display_names_treatments) +
+  scale_y_discrete(labels = display_names_treatments, limits=rev) +
   scale_alpha_manual(values = c("TRUE" = alpha_emphasis,
                                 "FALSE" = alpha_background),
                      labels = c("TRUE" = "BCR::ABL1",
@@ -172,7 +180,7 @@ DRC_data |>
     title = "Sensitivity of PRISM cell lines to treatments")
 ggsave(str_glue("{output_dir}/jitter_BCR_seed_{random_seed}_{doseplotr::get_timestamp()}.{plot_type}"),
        bg = "transparent",
-       width = 10, height = 3)
+       width = jitter_plot_width, height = jitter_plot_height)
 
 # jitter plot of cell line sensitivity by BCR::ABL1 or NUP214::ABL1-------------
 set.seed(random_seed)
@@ -187,7 +195,7 @@ DRC_data |>
                                         height = jitter_height,
                                         seed = random_seed)) +
   scale_x_continuous(limits = c(1,0), transform = "reverse") +
-  scale_y_discrete(labels = display_names_treatments) +
+  scale_y_discrete(labels = display_names_treatments, limits=rev) +
   scale_alpha_manual(values = c("TRUE" = alpha_emphasis,
                                 "FALSE" = alpha_background),
                      labels = c("TRUE" = "BCR::ABL1 or NUP214::ABL1",
@@ -208,7 +216,54 @@ DRC_data |>
     title = "Sensitivity of PRISM cell lines to treatments")
 ggsave(str_glue("{output_dir}/jitter_BCR_or_NUP214_seed_{random_seed}_{doseplotr::get_timestamp()}.{plot_type}"),
        bg = "transparent",
-       width = 11, height = 3)
+       width = jitter_plot_width, height = jitter_plot_height)
+# jitter plot of cell line sensitivity Riemann by CML, ALL, TLL-----------------
+set.seed(random_seed)
+subtype_legend_title = "disease of origin\n(with ABL1 driver)"
+DRC_data |> 
+  dplyr::arrange(desc(disease_subtype)) |>
+  ggplot(aes(x = auc_riemann,
+             y = treatment,
+             color = disease_subtype,
+             shape = disease_subtype,
+             alpha = disease_subtype,
+             size = disease_subtype)) +
+  geom_point(position = position_jitter(width = 0, # only vertical jitter
+                                        height = jitter_height,
+                                        seed = random_seed)) +
+  scale_x_continuous(limits = c(1,0), transform = "reverse") +
+  scale_y_discrete(labels = display_names_treatments, limits=rev) +
+  scale_alpha_manual(values = c("CML" = alpha_emphasis,
+                                "ALL" = alpha_emphasis,
+                                "TLL" = alpha_emphasis,
+                                "other" = alpha_background)) +
+  scale_color_manual(values = c("CML" = "royalblue1",
+                                "ALL" = "purple",
+                                "TLL" = "orchid2",
+                                "other" = "black")) +
+  scale_shape_manual(values = c("CML" = "diamond",
+                                "ALL" = "square",
+                                "TLL" = "triangle",
+                                "other" = "circle")) +
+  scale_size_manual(values = c("CML" = 5,
+                               "ALL" = 5,
+                               "TLL" = 5,
+                               "other" = 2)) +
+  theme_prism() +
+  theme(legend.title = element_text(),
+        plot.background = element_blank()) + # for transparent background
+  labs(
+    x = "AUC (Riemann)",
+    y = "treatment",
+    title = "Sensitivity of PRISM cell lines to treatments",
+    alpha = subtype_legend_title,
+    color = subtype_legend_title,
+    shape = subtype_legend_title,
+    size = subtype_legend_title,
+  )
+ggsave(str_glue("{output_dir}/jitter_subtype_riemann_seed_{random_seed}_{doseplotr::get_timestamp()}.{plot_type}"),
+       bg = "transparent",
+       width = jitter_plot_width, height = jitter_plot_height)
 
 # waterfall plot of cell line sensitivity by curve fit AUC--------------------
 DRC_data |> 
