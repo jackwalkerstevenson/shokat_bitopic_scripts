@@ -76,16 +76,17 @@ filtered_data |>
                geom = "point",
                size = 3,
                alpha = 0.7) +
-  scale_color_manual(values = color_map_display_names) +
-  scale_shape_manual(values = shape_map_display_names) +
-  scale_linetype_manual(values = linetype_map_display_names) +
+  scale_color_manual(values = color_map_display_names, name = "treatment") +
+  scale_shape_manual(values = shape_map_display_names, name = "treatment") +
+  scale_linetype_manual(values = linetype_map_display_names, name = "treatment") +
   theme_prism() +
-  theme(plot.background = element_blank()) +
-  labs(y = "relative growth of cell pool",
-       title = "Growth of mutant library")
+  theme(plot.background = element_blank(),
+        legend.title = element_text()) +
+  labs(y = "relative cell growth (fold change)",
+       title = "Potency against BCR::ABL1 mutant library")
 
 ggsave(str_glue("{output_dir}/sat_mut_growth_rate_{doseplotr::get_timestamp()}.{plot_type}"),
-       width = 10, height = 6)
+       width = 9, height = 5)
 # # working on line plot of growth by treatment with broken y axis---------------------------
 # test_treatment <- "ponatinib"
 # filtered_data |>
