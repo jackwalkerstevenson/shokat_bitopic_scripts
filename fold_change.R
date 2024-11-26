@@ -12,7 +12,16 @@ params_path <- "parameters/parameters_fold_change.R"
 scales_path <- "parameters/manual_scales.R"
 source(params_path)
 source(scales_path)
+input_path <- str_glue("{input_directory}{input_filename}")
 data <- read_csv(input_path)
+# write timestamped params to output
+doseplotr::file_copy_to_dir(params_path, output_directory)
+# write timestamped code to output
+doseplotr::file_copy_to_dir("fold_change.R", output_directory)
+# write timestamped input file to output
+doseplotr::file_copy_to_dir(input_path, output_directory)
+# write timestamped scales file to output
+doseplotr::file_copy_to_dir(scales_path, output_directory)
 # process data---------------------------------------------------------------
 if(exists("treatments")){
   data <- filter_validate_reorder(data, "treatment", treatments)
@@ -28,10 +37,7 @@ wt_IC50s <- data |>
 data <- data |> 
   left_join(wt_IC50s, by = "treatment") |> 
   mutate(fold_vs_wt_IC50 = IC50_nM/wt_IC50_nM)
-# write input data, parameters and report of fold changes-----------------------------------
-doseplotr::file_copy_to_dir(input_path, output_directory)
-doseplotr::file_copy_to_dir(params_path, output_directory)
-doseplotr::file_copy_to_dir(scales_path, output_directory)
+# write report of fold changes-----------------------------------
 report_data <- data |>
   mutate(fold_vs_wt_IC50 = fold_vs_wt_IC50 |> signif(3),
          IC50_nM = IC50_nM |> signif(3)) |> 
@@ -206,7 +212,7 @@ p <- data |>
   ggplot(aes(y = treatment, x = IC50_nM,
              color = target)) +
   geom_point(size = 4, alpha = 0.8) +
-  scale_x_continuous(trans = c("log10", "reverse"),
+  scale_x_continuous(trans = c("log10"), #, "reverse"),
                      guide = "prism_minor", # end at last tick
                      breaks = breaks_x,
                      labels = label_comma(accuracy = 1, big.mark = ""),
