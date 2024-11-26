@@ -37,7 +37,8 @@ all_data <- all_data |>
                          dose_nM = "dose",
                          theoretical_count = "log_count"))) |> 
   dplyr::mutate(combo_asc_dose_nM = asc_dose_key_nM[library],
-                treatment = treatments[treatment]) |> 
+                treatment = treatments[treatment],
+                relative_growth = theoretical_count / start_live_cell_count) |> 
   # create display names for treatments
   # if combo asc, change treatment name to + asciminib
   # if combo asc, display name dose is original dose + combo asc dose
@@ -63,9 +64,9 @@ doseplotr::file_copy_to_dir("pritchard growth screens/plot_growth_rate.R", outpu
 filtered_data |>
   dplyr::group_by(display_name, day) |> 
   ggplot(aes(x = day,
-             y = theoretical_count,
-             color = treatment,
-             shape = treatment,
+             y = relative_growth,
+             color = display_name,
+             shape = display_name,
              linetype = display_name)) +
   stat_summary(fun.data = "mean_se",
                geom = "errorbar") +
@@ -75,22 +76,21 @@ filtered_data |>
                geom = "point",
                size = 3,
                alpha = 0.7) +
-  scale_color_manual(values = color_map_treatments) +
-  scale_shape_manual(values = shape_map_treatments) +
+  scale_color_manual(values = color_map_display_names) +
+  scale_shape_manual(values = shape_map_display_names) +
   scale_linetype_manual(values = linetype_map_display_names) +
   theme_prism() +
-  guides(color = guide_legend(order = 1),
-         shape = guide_legend(order = 1),
-         linetype = guide_legend(order = 2)) +
   theme(plot.background = element_blank()) +
-  labs(y = "total theoretical live cell count",
+  labs(y = "relative growth of cell pool",
        title = "Growth of mutant library")
 
 ggsave(str_glue("{output_dir}/sat_mut_growth_rate_{doseplotr::get_timestamp()}.{plot_type}"),
-       width = 12, height = 7)
-# # line plot of growth with broken y axis----------------------------------------------------------
+       width = 10, height = 6)
+# # working on line plot of growth by treatment with broken y axis---------------------------
+# test_treatment <- "ponatinib"
 # filtered_data |>
-#   dplyr::group_by(display_name, day) |> 
+#   dplyr::filter(treatment == test_treatment) |> 
+#   dplyr::group_by(display_name, day) |>
 #   ggplot(aes(x = day,
 #              y = theoretical_count,
 #              color = treatment,
@@ -104,7 +104,7 @@ ggsave(str_glue("{output_dir}/sat_mut_growth_rate_{doseplotr::get_timestamp()}.{
 #                geom = "point",
 #                size = 3,
 #                alpha = 0.7) +
-#   scale_y_break(breaks = c(1000, 20000),
+#   scale_y_break(breaks = c(80, 300),
 #                 scales = .5
 #                 ) +
 #   scale_color_manual(values = color_map_treatments) +
@@ -118,5 +118,5 @@ ggsave(str_glue("{output_dir}/sat_mut_growth_rate_{doseplotr::get_timestamp()}.{
 #   labs(y = "total theoretical live cell count",
 #        title = "Growth of mutant library")
 # 
-# ggsave(str_glue("{output_dir}/sat_mut_growth_rate_{doseplotr::get_timestamp()}.{plot_type}"),
+# ggsave(str_glue("{output_dir}/sat_mut_growth_rate_trt_{doseplotr::get_timestamp()}.{plot_type}"),
 #        width = 12, height = 7)
