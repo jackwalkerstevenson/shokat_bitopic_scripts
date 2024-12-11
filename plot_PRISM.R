@@ -274,9 +274,11 @@ DRC_data |>
   # rank order within treatment from highest to lowest AUC
   dplyr::group_by(treatment) |>
   dplyr::mutate(plot_rank = dplyr::row_number(-1 * auc)) |>
-  ggplot(aes(x = plot_rank, y = auc, color = treatment)) +
+  ggplot(aes(x = plot_rank, y = auc, color = treatment, shape = treatment)) +
   geom_point() +
   scale_color_manual(values = color_map_treatments,
+                     labels = display_names_treatments) +
+  scale_shape_manual(values = shape_map_treatments,
                      labels = display_names_treatments) +
   theme_prism() +
   theme(legend.title = element_text(), # reinstate legend label
@@ -287,16 +289,18 @@ DRC_data |>
 ggsave(str_glue(
     "{output_dir}/waterfall_auc_{doseplotr::get_timestamp()}.{plot_type}"),
     bg = "transparent",
-    width = 8, height = 4)
+    width = 9, height = 5)
 
 # waterfall plot of cell line sensitivity by Riemann AUC----------------------
 DRC_data |> 
   # rank order within treatment from highest to lowest Riemann AUC
   dplyr::group_by(treatment) |>
   dplyr::mutate(plot_rank = dplyr::row_number(-1 * auc_riemann)) |>
-  ggplot(aes(x = plot_rank, y = auc_riemann, color = treatment)) +
+  ggplot(aes(x = plot_rank, y = auc_riemann, color = treatment, shape = treatment)) +
   geom_point() +
   scale_color_manual(values = color_map_treatments,
+                     labels = display_names_treatments) +
+  scale_shape_manual(values = shape_map_treatments,
                      labels = display_names_treatments) +
   theme_prism() +
   theme(legend.title = element_text(), # reinstate legend label
@@ -306,4 +310,4 @@ DRC_data |>
        title = "Sensitivity of PRISM cell lines to treatments")
 ggsave(str_glue("{output_dir}/waterfall_auc_riemann_{doseplotr::get_timestamp()}.{plot_type}"),
        bg = "transparent",
-       width = 8, height = 4)
+       width = 9, height = 5)
