@@ -6,8 +6,10 @@ library(doseplotr) # you bet
 library(scales) # for nice breaks
 library(ggprism) # for prism theme
 library(ggrepel) # for labeling points
+library(pracma) # for trapezoidal integral approximation
 # clear environment-----------------------------------------------
 rm(list = ls())
+source("parameters/manual_scales.R")
 # set up input and output directories------------------------------------------
 input_dir <- "input"
 output_dir <- "output"
@@ -67,7 +69,7 @@ kinase_plot_data <- raw_single_pt_data |>
 write_csv(raw_single_pt_data,
           fs::path(output_dir,
                    str_glue("raw_single_pt_data{get_timestamp()}.csv")))
-doseplotr::file_copy_to_dir("plot_kinmap.R", output_dir)
+doseplotr::file_copy_to_dir("plot_selectscreen/plot_selectscreen_panel.R", output_dir)
 # add KinMap directive parameters----------------------------------------------
 avg_single_pt_data <- avg_single_pt_data |> 
   dplyr::mutate(
@@ -131,3 +133,91 @@ kinase_plot_data |>
         plot.margin = margin(10, 20, 10, 10))
 ggsave(str_glue("{output_dir}/scatter_plot_{get_timestamp()}.pdf"),
        width = 7, height = 7)
+# calculate Gini selectivity coefficients----------------------------------------
+gini_preprocess <- function(data, trt){
+  trt_data <- data |> 
+    dplyr::filter(treatment == trt) |> 
+    dplyr::arrange(pct_inhibition) |>
+    dplyr::mutate(
+      position = row_number(),
+      pct_inhibition_capped = dplyr::case_when(
+        pct_inhibition > 100 ~ 100,
+        pct_inhibition < 0 ~ 0,
+        .default = pct_inhibition),
+      )
+  total_targets <- trt_data$target |> length()
+  total_inhibition <- trt_data$pct_inhibition_capped |> sum()
+  trt_data |> 
+    dplyr::mutate(
+      cumulative_sample_frac = position / total_targets,
+      cumulative_pct_inhib_capped = cumsum(pct_inhibition_capped),
+      inhibition_frac = pct_inhibition_capped / total_inhibition,
+      cumulative_inhibition_frac = cumulative_pct_inhib_capped / total_inhibition
+    )
+}
+get_gini_coefficient <- function(trt_data){
+  AUC <- pracma::trapz(trt_data$cumulative_sample_frac,
+                       trt_data$cumulative_inhibition_frac)
+  return(1 - 2 * AUC)
+}
+gini_data_pona_asc <- gini_preprocess(avg_single_pt_data, "ponatinib + asciminib")
+gini_data_PL2 <- gini_preprocess(avg_single_pt_data, "PonatiLink-2-7-10")
+gini_coeff_pona_asc_test <- get_gini_coefficient(gini_data_pona_asc)
+gini_coeff_PL2_test <- get_gini_coefficient(gini_data_PL2)
+# plot inhibition rank order curves for Gini coefficient reference-----------------------------------------
+plot_inhibition <- function(data){
+  data |>
+    ggplot(aes(x = cumulative_sample_frac, y = pct_inhibition_capped, color = treatment, shape = treatment)) +
+    geom_point() +
+    geom_line() +
+    scale_color_manual(values = color_map_treatments) +
+    scale_shape_manual(values = shape_map_treatments) +
+    labs(
+      x = "cumulative fraction of kinases",
+      y = "percent inhibition (capped)",
+      title = "Raw inhibition"
+    ) +
+    theme_prism() +
+    theme(plot.background = element_blank())
+}
+plot_inhibition(bind_rows(gini_data_pona_asc, gini_data_PL2))
+ggsave(fs::path(output_dir, str_glue("inhibition_{get_timestamp()}.pdf")),
+       width = 7, height = 5)
+# plot fraction of inhibition rank order curves for Gini coefficient reference-----------------------------------------
+plot_frac_inhibition <- function(data){
+  data |>
+    ggplot(aes(x = cumulative_sample_frac, y = inhibition_frac, color = treatment, shape = treatment)) +
+    geom_point() +
+    geom_line() +
+    scale_color_manual(values = color_map_treatments) +
+    scale_shape_manual(values = shape_map_treatments) +
+    labs(
+      x = "cumulative fraction of kinases",
+      y = "fraction of total inhibition",
+      title = "Fraction of total inhibition"
+    ) +
+    theme_prism() +
+    theme(plot.background = element_blank())
+}
+plot_frac_inhibition(bind_rows(gini_data_pona_asc, gini_data_PL2))
+ggsave(fs::path(output_dir, str_glue("frac_inhibition_{get_timestamp()}.pdf")),
+       width = 7, height = 5)
+# plot Lorenz curves for Gini coefficient reference-----------------------------------------
+plot_lorenz <- function(data){
+  data |>
+    ggplot(aes(x = cumulative_sample_frac, y = cumulative_inhibition_frac, color = treatment, shape = treatment)) +
+    geom_point() +
+    geom_line() +
+    scale_color_manual(values = color_map_treatments) +
+    scale_shape_manual(values = shape_map_treatments) +
+    labs(
+      x = "cumulative fraction of kinases",
+      y = "cumulative fraction of total inhibition",
+      title = "Lorenz curves"
+    ) +
+    theme_prism() +
+    theme(plot.background = element_blank())
+}
+plot_lorenz(bind_rows(gini_data_pona_asc, gini_data_PL2))
+ggsave(fs::path(output_dir, str_glue("lorenz_{get_timestamp()}.pdf")),
+       width = 7, height = 5)
