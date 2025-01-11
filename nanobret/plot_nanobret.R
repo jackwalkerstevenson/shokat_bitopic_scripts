@@ -15,7 +15,7 @@ input_path <- str_glue("{input_directory}{input_filename}")
 # write timestamped params to output
 doseplotr::file_copy_to_dir(params_path, output_directory)
 # write timestamped code to output
-doseplotr::file_copy_to_dir("plot_nanobret.R", output_directory)
+doseplotr::file_copy_to_dir("nanobret/plot_nanobret.R", output_directory)
 # write timestamped input file to output
 doseplotr::file_copy_to_dir(input_path, output_directory)
 # set up input and output directories
@@ -75,6 +75,12 @@ model_summary <- summarize_models(raw_data,
                                   bounded = FALSE) |>
   dplyr::select(-model) |>  # remove actual model from report
   mutate(across(where(is.numeric), \(x){signif(x, digits = 4)}))
+model_summary_with_model <- summarize_models(raw_data,
+                                  response_col = "response",
+                                  bounded = FALSE) |>
+  # dplyr::select(-model) |>  # remove actual model from report
+  mutate(across(where(is.numeric), \(x){signif(x, digits = 4)}))
+test_model_asc_dmso <- model_summary_with_model$model[[1]]
 write_csv(model_summary,
           str_glue("output/nanobret_model_summary_{get_timestamp()}.csv"))
 # function to plot specified targets of a treatment-----------------------------------------------
@@ -86,6 +92,7 @@ plot_nanobret_trt_tgts <- function(data, trt, tgts, plot_title){
   x_min <- floor(min(trt_data$log_dose))
   x_max <- ceiling(max(trt_data$log_dose))
   x_limits <- c(x_min, x_max)
+  y_limits <- c(0, NA) # manual lower y limit of 0
   trt_data_summary <- trt_data |> 
     group_by(target, log_dose) |> 
     doseplotr::summarize_response()
@@ -103,6 +110,7 @@ plot_nanobret_trt_tgts <- function(data, trt, tgts, plot_title){
     scale_x_continuous(breaks = scales::breaks_width(1),
                        minor_breaks = minor_breaks_log(x_limits[1],
                                                        x_limits[2])) +
+    scale_y_continuous(limits = y_limits) +
     scale_shape_manual(values = shape_map_targets,
                        name = "competitor",
                        labels = display_names_targets) +
@@ -137,6 +145,7 @@ plot_nanobret_trt <- function(data, trt){
     doseplotr::filter_trt_tgt(trt=trt)
   trt_tgts <- unique(trt_data$target) # names of all targets
   noncontrol_targets <- trt_tgts[trt_tgts != control_target]
+  print("noncontrol targets:")
   print(noncontrol_targets)
   for(tgt in noncontrol_targets){
     plot_nanobret_trt_tgts(data, trt=trt,
@@ -144,7 +153,7 @@ plot_nanobret_trt <- function(data, trt){
                            plot_title = remove_parentheses(display_names_targets[tgt])) |> 
       doseplotr::save_plot(
         filename=str_glue("{output_directory}/plot_nanobret_trt_{janitor::make_clean_names(trt)}_tgt_{janitor::make_clean_names(tgt)}_{get_timestamp()}.{plot_type}"),
-        legend_len=longest(as.character(trt_tgts))
+        legend_len=longest(display_names_targets[tgt])
         )
   }
 }
