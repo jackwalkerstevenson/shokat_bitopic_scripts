@@ -34,7 +34,8 @@ IC50_data <- readxl::read_excel(IC50_path) |>
   )
 IC50_ABL1_data <- IC50_data |> 
   dplyr::filter(
-    variant == "ABL1 wt"
+    variant == "ABL1 wt",
+    assay %in% c("SelectScreen", "Kinomescan")
   )
     
 atomwise_data <- raw_data |> 
@@ -124,5 +125,19 @@ compoundwise_data |>
   )
 ggsave(str_glue(
   "{output_dir}/RMSF_vs_IC50_Kinomescan_{doseplotr::get_timestamp()}.{plot_type}"),
+  bg = "transparent",
+  width = 9, height = 5)
+# plot mean RMSF vs linker length-----------------------------------------------
+compoundwise_data |> 
+  ggplot(aes(x = linker_length_atoms, y = mean_linker_rmsf, color = compound_name_full)) +
+  geom_point(size = 3) +
+  scale_color_manual(values = color_map_treatments) +
+  theme_prism() +
+  labs(
+    x = "linker length (heavy atom count)",
+    y = "mean RMSF of linker (heavy atoms)"
+  )
+ggsave(str_glue(
+  "{output_dir}/linker_length_vs_RMSF_{doseplotr::get_timestamp()}.{plot_type}"),
   bg = "transparent",
   width = 9, height = 5)
