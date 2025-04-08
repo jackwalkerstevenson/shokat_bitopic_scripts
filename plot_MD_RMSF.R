@@ -25,6 +25,9 @@ dir.create(input_dir, showWarnings = FALSE)
 dir.create(output_dir, showWarnings = FALSE)
 # import, preprocess and report data-----------------------------------------------
 raw_data <- readxl::read_excel(input_path)
+if(exists("treatments")){
+  raw_data <- filter_validate_reorder(raw_data, "compound_name_full", treatments)
+}
 IC50_data <- readxl::read_excel(IC50_path) |> 
   dplyr::mutate(
     IC50_nM = as.numeric(IC50_nM)
@@ -95,7 +98,7 @@ ggsave(str_glue(
 compoundwise_data |> 
   dplyr::filter(assay == "SelectScreen") |> 
   ggplot(aes(x = mean_linker_rmsf, y = IC50_nM, color = compound_name_full)) +
-  geom_point() +
+  geom_point(size = 3) +
   scale_y_log10() +
   scale_color_manual(values = color_map_treatments) +
   theme_prism() +
@@ -111,7 +114,7 @@ ggsave(str_glue(
 compoundwise_data |> 
   dplyr::filter(assay == "Kinomescan") |> 
   ggplot(aes(x = mean_linker_rmsf, y = IC50_nM, color = compound_name_full)) +
-  geom_point() +
+  geom_point(size = 3) +
   scale_y_log10() +
   scale_color_manual(values = color_map_treatments) +
   theme_prism() +
