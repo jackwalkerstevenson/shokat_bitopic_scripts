@@ -51,12 +51,12 @@ survival_data <- last_days |>
   dplyr::select(-last_day)
 
 # trim data for plotting: remove group after too many subjects hit endpoint
-# if >1 measurement in a group timepoint hits endpoint, remove the whole timepoint
+# if >0 measurement in a group timepoint hits endpoint, remove the whole timepoint
 plot_TGI_data <- all_TGI_data |>
   dplyr::group_by(treatment, day) |> 
   dplyr::mutate(endpoint_count = sum(hit_endpoint)) |> 
   dplyr::ungroup() |> 
-  dplyr::filter(endpoint_count < 2) |> 
+  dplyr::filter(endpoint_count < 1) |> # choice of how many endpoints can appear
   dplyr::select(-endpoint_count)
 
 dosing_data <- readxl::read_excel(
@@ -164,7 +164,8 @@ plot_survival_data |>
   scale_x_continuous(limits = c(0, NA)) +
   # start y axis at 0 mice
   scale_y_continuous(limits = c(0, NA)) +
-  scale_color_manual(values = color_map_treatments) +
+  scale_color_manual(values = color_map_treatments,
+                     labels = display_names_treatments) +
   # scale_fill_manual(values = c("dosing period" = "black"), name = NULL) +
   theme_prism() +
   theme(legend.title = element_text(), # reinstate legend label
@@ -179,7 +180,8 @@ ggsave(
   str_glue(
     "{output_directory}/plot_TGI_survival_{get_timestamp()}.{plot_type}"
   ),
-  width = 7, height = 4,
+  # WARNING manual width adjust 2025-04-17
+  width = 9, height = 4,
   bg = "transparent")
 # function to plot mean/SEM of a type of measurement over time----------------------------
 plot_measurement <- function(measurement_data,
@@ -221,8 +223,10 @@ plot_measurement <- function(measurement_data,
                   ymax = Inf,
                   fill = "dosing period"),
               alpha = 0.1) +
-    scale_color_manual(values = color_map_treatments) +
-    scale_shape_manual(values = shape_map_treatments) +
+    scale_color_manual(values = color_map_treatments,
+                       labels = display_names_treatments) +
+    scale_shape_manual(values = shape_map_treatments,
+                       labels = display_names_treatments) +
     scale_fill_manual(values = c("dosing period" = "black"), name = NULL) +
     theme_prism() +
     theme(legend.title = element_text(), # reinstate legend label
