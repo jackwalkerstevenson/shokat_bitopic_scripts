@@ -67,7 +67,8 @@ atomwise_data |>
   ggplot(aes(x = relative_linker_atom_num, y = rmsf, color = compound_name_full)) +
   geom_point() +
   geom_line() +
-  scale_color_manual(values = color_map_treatments) +
+  scale_color_manual(values = color_map_treatments,
+                     labels = display_names_treatments) +
   theme_prism() +
   theme(plot.background = element_blank()) + # transparent
         # legend.title = element_text()) +
@@ -84,7 +85,8 @@ atomwise_data |>
   ggplot(aes(x = normalized_linker_atom_num, y = rmsf, color = compound_name_full)) +
   geom_point() +
   geom_line() +
-  scale_color_manual(values = color_map_treatments) +
+  scale_color_manual(values = color_map_treatments,
+                     labels = display_names_treatments) +
   theme_prism() +
   theme(plot.background = element_blank()) + # transparent
   # legend.title = element_text()) +
@@ -101,7 +103,8 @@ compoundwise_data |>
   ggplot(aes(x = mean_linker_rmsf, y = IC50_nM, color = compound_name_full)) +
   geom_point(size = 3) +
   scale_y_log10() +
-  scale_color_manual(values = color_map_treatments) +
+  scale_color_manual(values = color_map_treatments,
+                     labels = display_names_treatments) +
   theme_prism() +
   labs(
     x = "mean RMSF of linker (heavy atoms)",
@@ -117,7 +120,8 @@ compoundwise_data |>
   ggplot(aes(x = mean_linker_rmsf, y = IC50_nM, color = compound_name_full)) +
   geom_point(size = 3) +
   scale_y_log10() +
-  scale_color_manual(values = color_map_treatments) +
+  scale_color_manual(values = color_map_treatments,
+                     labels = display_names_treatments) +
   theme_prism() +
   labs(
     x = "mean RMSF of linker (heavy atoms)",
@@ -131,7 +135,8 @@ ggsave(str_glue(
 compoundwise_data |> 
   ggplot(aes(x = linker_length_atoms, y = mean_linker_rmsf, color = compound_name_full)) +
   geom_point(size = 3) +
-  scale_color_manual(values = color_map_treatments) +
+  scale_color_manual(values = color_map_treatments,
+                     labels = display_names_treatments) +
   theme_prism() +
   labs(
     x = "linker length (heavy atom count)",
