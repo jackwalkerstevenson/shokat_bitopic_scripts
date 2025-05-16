@@ -250,7 +250,7 @@ plot_measurement <- function(measurement_data,
 plot_measurement(measurement_data = plot_TGI_data,
                  interval_data = dosing_data, 
                  measurement = "volume",
-                 y_label = "tumor volume (mm^3)",
+                 y_label = "tumor volume (mm³)",
                  plot_title = "Tumor volume")
 plot_measurement(measurement_data = plot_TGI_data,
                  interval_data = dosing_data, 
