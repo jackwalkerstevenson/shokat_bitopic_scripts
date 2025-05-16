@@ -20,7 +20,7 @@ dir.create(output_dir, showWarnings = FALSE)
 # import, preprocess and report data-----------------------------------------------
 read_dat_with_id <- function(file_path) {
   # extract ID from filename
-  id <- stringr::str_extract(base::basename(file_path), "^[^_]+")
+  id <- stringr::str_extract(base::basename(file_path), "^.*(?=_rms\\.dat$)")
   # read data
   data <- readr::read_table(file_path, comment = "#", col_names = FALSE) |> 
     dplyr::rename(frame = X1, rmsd = X2) |> 
