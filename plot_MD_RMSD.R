@@ -18,30 +18,33 @@ doseplotr::file_copy_to_dir("plot_MD_RMSD.R", output_dir)
 dir.create(input_dir, showWarnings = FALSE)
 dir.create(output_dir, showWarnings = FALSE)
 # import, preprocess and report data-----------------------------------------------
-read_dat_with_id <- function(file_path) {
-  # extract ID from filename
-  id <- stringr::str_extract(base::basename(file_path), "^.*(?=_rms\\.dat$)")
+read_rms_file <- function(file_path) {
+  # extract info from filenames of the form "m19_run1_rms.dat"
+  matches <- stringr::str_match(basename(file_path), "^(m\\d+)_run(\\d+)_rms\\.dat$")
+  compound <- matches[,2]  # "m19"
+  run <- matches[,3]       # "1" 
   # read data
   data <- readr::read_table(file_path, comment = "#", col_names = FALSE) |> 
     dplyr::rename(frame = X1, rmsd = X2) |> 
-    dplyr::mutate(id = id, # add id column extracted from filename
+    dplyr::mutate(compound = compound, # compound extracted from filename
+                  run = run, # run extracted from filename
                   time_ns = frame * .004) # Kenneth uses 4 ps = .004 ns per frame
 }
 
 dat_files <- list.files(path = input_dir, pattern = "*_rms\\.dat$", full.names = TRUE)
 all_data <- dat_files |> 
-  purrr::map_dfr(read_dat_with_id)
+  purrr::map_dfr(read_rms_file)
 
 # report processed data
 write_csv(all_data,
           fs::path(output_dir,
-                   str_glue("MD_RMSD_all_data{get_timestamp()}.csv")))
+                   str_glue("MD_RMSD_all_data_{get_timestamp()}.csv")))
 # plot RMSD by compound-----------------------------------------------
-sparse_sample_factor <- 10
+sparse_sample_factor <- 20
 all_data |>
   # sparse sampling
   dplyr::filter(frame %% sparse_sample_factor == 0) |> 
-  ggplot(aes(x = time_ns, y = rmsd, color = id)) +
+  ggplot(aes(x = time_ns, y = rmsd, color = compound, linetype = run)) +
   geom_line(alpha = 0.4) +
   geom_smooth(alpha = 0.7) +
   # scale_color_viridis(option = "turbo") +
