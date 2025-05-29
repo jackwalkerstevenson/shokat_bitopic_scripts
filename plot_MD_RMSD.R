@@ -39,7 +39,7 @@ all_data <- dat_files |>
 write_csv(all_data,
           fs::path(output_dir,
                    str_glue("MD_RMSD_all_data_{get_timestamp()}.csv")))
-# plot RMSD by compound-----------------------------------------------
+# plot RMSD by compound and run-----------------------------------------------
 sparse_sample_factor <- 20
 all_data |>
   # sparse sampling
