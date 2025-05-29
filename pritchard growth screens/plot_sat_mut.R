@@ -152,4 +152,4 @@ seq_plot <- function(){
    # scale_fill_discrete(type = pals::glasbey()) +
    seq_plot()) |>
   save_plot(str_glue("output/cell_variant_proportion_{get_timestamp()}.{plot_type}"),
-            width = 10, height = 6)
+            width = 10, height = 5)
