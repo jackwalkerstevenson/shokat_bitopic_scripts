@@ -21,12 +21,12 @@ dir.create(output_dir, showWarnings = FALSE)
 read_rms_file <- function(file_path) {
   # extract info from filenames of the form "m19_run1_rms.dat"
   matches <- stringr::str_match(basename(file_path), "^(m\\d+)_run(\\d+)_rms\\.dat$")
-  compound <- matches[,2]  # "m19"
+  kenneth_id <- matches[,2]  # "m19"
   run <- matches[,3]       # "1" 
   # read data
   data <- readr::read_table(file_path, comment = "#", col_names = FALSE) |> 
     dplyr::rename(frame = X1, rmsd = X2) |> 
-    dplyr::mutate(compound = compound, # compound extracted from filename
+    dplyr::mutate(kenneth_id = kenneth_id, # kenneth_id extracted from filename
                   run = run, # run extracted from filename
                   time_ns = frame * .004) # Kenneth uses 4 ps = .004 ns per frame
 }
@@ -39,12 +39,12 @@ all_data <- dat_files |>
 write_csv(all_data,
           fs::path(output_dir,
                    str_glue("MD_RMSD_all_data_{get_timestamp()}.csv")))
-# plot RMSD by compound and run-----------------------------------------------
+# plot RMSD by kenneth_id and run-----------------------------------------------
 sparse_sample_factor <- 20
 all_data |>
   # sparse sampling
   dplyr::filter(frame %% sparse_sample_factor == 0) |> 
-  ggplot(aes(x = time_ns, y = rmsd, color = compound, linetype = run)) +
+  ggplot(aes(x = time_ns, y = rmsd, color = kenneth_id, linetype = run)) +
   geom_line(alpha = 0.4) +
   geom_smooth(alpha = 0.7) +
   # scale_color_viridis(option = "turbo") +
