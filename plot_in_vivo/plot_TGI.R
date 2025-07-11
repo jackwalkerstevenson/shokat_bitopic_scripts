@@ -188,7 +188,8 @@ plot_measurement <- function(measurement_data,
                              interval_data, 
                              measurement,
                              y_label,
-                             plot_title){
+                             plot_title,
+                             width = 8){
   x_min = min(measurement_data$day)
   x_max = max(measurement_data$day)
   measurement_data |> 
@@ -242,21 +243,23 @@ plot_measurement <- function(measurement_data,
     str_glue(
       "{output_directory}/plot_TGI_{measurement}_{get_timestamp()}.{plot_type}"
     ),
-    # WARNING manual width adjust 2025-04-17
-    width = 10, height = 4,
+    width = width, height = 4,
     bg = "transparent")
 }
 # plot tumor volume and body weight---------------------------------------------
+if(!exists("group_plot_width")){group_plot_width <-  8} # default width
 plot_measurement(measurement_data = plot_TGI_data,
                  interval_data = dosing_data, 
                  measurement = "volume",
                  y_label = "tumor volume (mm³)",
-                 plot_title = "Tumor volume")
+                 plot_title = "Tumor volume",
+                 width = group_plot_width)
 plot_measurement(measurement_data = plot_TGI_data,
                  interval_data = dosing_data, 
                  measurement = "body_weight_percent",
                  y_label = "body weight (%)",
-                 plot_title = "Body weight")
+                 plot_title = "Body weight",
+                 width = group_plot_width)
 
 # function to plot individual traces of measurement-------------------
 plot_measurement_individual <- function(measurement_data,
