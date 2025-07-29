@@ -14,7 +14,7 @@ source(params_path)
 dir.create(input_dir, showWarnings = FALSE)
 dir.create(output_dir, showWarnings = FALSE)
 # write timestamped code to output
-doseplotr::file_copy_to_dir("plot_MD_RMSF.R", output_dir)
+doseplotr::file_copy_to_dir("plot_MD/plot_MD_RMSF.R", output_dir)
 # write timestamped params to output
 doseplotr::file_copy_to_dir(params_path, output_dir)
 
@@ -101,22 +101,19 @@ atomwise_data |>
   stat_summary(
     fun.data = "mean_se",
     geom = "errorbar",
+    width = 0.9,
     alpha = 0.2) +
   stat_summary(
     fun = "mean",
     geom = "point",
-    size = 2
-  ) +
+    size = 2) +
   stat_summary(
     fun = "mean",
-    geom = "line",
-    # size = 2
-  ) +
+    geom = "line") +
   scale_color_manual(values = color_map_treatments,
                      labels = display_names_treatments) +
   theme_prism() +
   theme(plot.background = element_blank()) + # transparent
-        # legend.title = element_text()) +
   labs(x = "relative linker atom position",
        y = "root mean square fluctuation (Å)",
        title ="Linker fluctuation (heavy atoms)")
@@ -131,22 +128,19 @@ atomwise_data |>
   stat_summary(
     fun.data = "mean_se",
     geom = "errorbar",
+    width = 0.01,
     alpha = 0.2) +
   stat_summary(
     fun = "mean",
     geom = "point",
-    size = 2
-  ) +
+    size = 2) +
   stat_summary(
     fun = "mean",
-    geom = "line",
-    # size = 2
-  ) +
+    geom = "line") +
   scale_color_manual(values = color_map_treatments,
                      labels = display_names_treatments) +
   theme_prism() +
   theme(plot.background = element_blank()) + # transparent
-  # legend.title = element_text()) +
   labs(x = "normalized linker atom position",
        y = "root mean square fluctuation (Å)",
        title ="Linker fluctuation (heavy atoms)")
