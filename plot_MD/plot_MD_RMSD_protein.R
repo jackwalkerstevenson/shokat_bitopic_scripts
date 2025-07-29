@@ -56,7 +56,7 @@ all_data |>
   # scale_color_viridis(option = "turbo") +
   scale_color_manual(values = pals::cols25()) +
   labs(x = "time (ns)",
-       y = "global RMSD (Å)",
+       y = "protein RMSD (Å)",
        title = "RMSD of protein from starting position") +
   theme_prism()
 ggsave(str_glue(
