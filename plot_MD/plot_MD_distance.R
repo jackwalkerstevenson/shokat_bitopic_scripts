@@ -8,7 +8,7 @@ library(viridis) # for color palette
 # set up-----------------------------------------------
 rm(list = ls()) # clear environment
 # read parameter file
-params_path <- "parameters/parameters_plot_MD_distance.R"
+params_path <- "parameters/parameters_plot_MD.R"
 source(params_path)
 # write timestamped params to output
 doseplotr::file_copy_to_dir(params_path, output_dir)
