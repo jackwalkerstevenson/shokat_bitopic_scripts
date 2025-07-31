@@ -85,7 +85,9 @@ compoundwise_data <- atomwise_data |>
     mean_linker_rmsf = mean(rmsf),
     linker_length_atoms = mean(linker_length_atoms) # dumb workaround
   ) |>
-  dplyr::left_join(IC50_ABL1_data, by = join_by("compound_name_full" == "treatment"))
+  dplyr::left_join(IC50_ABL1_data,
+                   by = join_by("compound_name_full" == "treatment")) |> 
+  doseplotr::filter_validate_reorder("compound_name_full", compounds)
 
 # report processed data
 write_csv(atomwise_data,
@@ -96,7 +98,6 @@ write_csv(compoundwise_data,
                    str_glue("compoundwise_data_{get_timestamp()}.csv")))
 # plot atomwise fluctuation, centered atom position----------------------------
 atomwise_data |> 
-  dplyr::group_by(compound_name_full) |> 
   ggplot(aes(x = relative_linker_atom_num, y = rmsf, color = compound_name_full)) +
   stat_summary(
     fun.data = "mean_se",
@@ -123,7 +124,6 @@ ggsave(str_glue(
   width = 9, height = 5)
 # plot atomwise fluctuation, normalized atom position----------------------------
 atomwise_data |> 
-  dplyr::group_by(compound_name_full) |> 
   ggplot(aes(x = normalized_linker_atom_num, y = rmsf, color = compound_name_full)) +
   stat_summary(
     fun.data = "mean_se",
