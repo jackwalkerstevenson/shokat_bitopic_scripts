@@ -26,17 +26,7 @@ key_path <- str_glue("{input_dir}{key_filename}")
 # write timestamped key file to output
 doseplotr::file_copy_to_dir(key_path, output_dir)
 # import, preprocess and report data-----------------------------------------------
-IC50_data <- readxl::read_excel(IC50_path) |> # import previously measured IC50 data
-  dplyr::mutate(
-    IC50_nM = as.numeric(IC50_nM)
-  )
-IC50_ABL1_data <- IC50_data |> # filter data for just ABL1 wt
-  dplyr::filter(
-    variant == "ABL1 wt",
-    assay %in% c("SelectScreen", "Kinomescan")
-  )
-
-# function to read atomwise RMSF data files and get info from filenames
+# function to read an atomwise RMSF data file and get info from the filename
 read_rmsf_file <- function(file_path) {
   # extract info from filenames of the form "m19_run1_fluct_lig.apf"
   matches <- stringr::str_match(basename(file_path), "^(m\\d+)_run(\\d+)_fluct_lig\\.apf$")
@@ -55,38 +45,50 @@ all_data <- rmsf_files |>
   purrr::map(read_rmsf_file) |> # read each file into a dataframe, making a list
   purrr::list_rbind()  # bind the list by rows into a single big dataframe
 
-key_data <- readxl::read_excel(key_path) |> 
+key_data <- readxl::read_excel(key_path) |>  # read compound key and preprocess
   dplyr::mutate(orthosteric_end_linker_atom_num = as.numeric(orthosteric_end_linker_atom_num),
-                allosteric_end_linker_atom_num = as.numeric(allosteric_end_linker_atom_num))
+                allosteric_end_linker_atom_num = as.numeric(allosteric_end_linker_atom_num),
+                linker_length_atoms = abs(allosteric_end_linker_atom_num - orthosteric_end_linker_atom_num),
+                middle_relative_linker_atom = linker_length_atoms / 2 |> floor())
+
 # add compound data from key
-all_data <- all_data |> 
+atomwise_data <- all_data |> 
   dplyr::left_join(key_data, by = join_by(kenneth_id)) |> 
   doseplotr::filter_validate_reorder("compound_name_full", compounds) |> 
   # filter for atoms in linker range. use pmin to get min/max for current row
   dplyr::filter(atom >= pmin(orthosteric_end_linker_atom_num,
-                            allosteric_end_linker_atom_num) & atom <= pmax(allosteric_end_linker_atom_num,
-                                                                          orthosteric_end_linker_atom_num))
-
-# true/false reversed linker numbering
-
-atomwise_data <- all_data |>
+                            allosteric_end_linker_atom_num) &
+                  atom <= pmax(allosteric_end_linker_atom_num,
+                               orthosteric_end_linker_atom_num)) |> 
   dplyr::mutate(
-    linker_length_atoms =  abs(allosteric_end_linker_atom_num - orthosteric_end_linker_atom_num),
-    middle_relative_linker_atom = linker_length_atoms / 2 |> floor(),
     linker_atom_num = case_when(
       !reversed_linker_numbering ~ atom - orthosteric_end_linker_atom_num,
       reversed_linker_numbering ~ orthosteric_end_linker_atom_num - atom),
     relative_linker_atom_num = linker_atom_num - middle_relative_linker_atom,
     normalized_linker_atom_num = linker_atom_num / linker_length_atoms
   )
-compoundwise_data <- atomwise_data |>
+
+mean_rmsf_data <- atomwise_data |> 
   dplyr::group_by(compound_name_full) |>
-  dplyr::summarize(
-    mean_linker_rmsf = mean(rmsf),
-    linker_length_atoms = mean(linker_length_atoms) # dumb workaround
-  ) |>
-  dplyr::left_join(IC50_ABL1_data,
-                   by = join_by("compound_name_full" == "treatment")) |> 
+  dplyr::summarize(mean_linker_rmsf = mean(rmsf))
+
+# import IC50 data from other experiments
+IC50_data_all <- readxl::read_excel(IC50_path) |>
+  dplyr::mutate(
+    IC50_nM = as.numeric(IC50_nM),
+    linker_length_PEG = as.numeric(linker_length_PEG)
+  )
+IC50_ABL1_data <- IC50_data_all |> # filter for just ABL1 wt and desired assays
+  dplyr::filter(
+    variant == "ABL1 wt",
+    assay %in% c("SelectScreen", "Kinomescan")
+  )
+
+# join compoundwise data sources
+compoundwise_data <- key_data |> 
+  dplyr::left_join(mean_rmsf_data, by = join_by(compound_name_full)) |> 
+  dplyr::left_join(IC50_ABL1_data, by = join_by("compound_name_full" == "treatment",
+                                                "linker_length_PEG" == "linker_length_PEG")) |> 
   doseplotr::filter_validate_reorder("compound_name_full", compounds)
 
 # report processed data
@@ -96,7 +98,7 @@ write_csv(atomwise_data,
 write_csv(compoundwise_data,
           fs::path(output_dir,
                    str_glue("compoundwise_data_{get_timestamp()}.csv")))
-# plot atomwise fluctuation, centered atom position----------------------------
+# plot atomwise fluctuation mean ± SE, centered atom position----------------------------
 atomwise_data |> 
   ggplot(aes(x = relative_linker_atom_num, y = rmsf, color = compound_name_full)) +
   stat_summary(
@@ -122,7 +124,38 @@ ggsave(str_glue(
   "{output_dir}/atomwise_RMSF_relative_position_{doseplotr::get_timestamp()}.{plot_type}"),
   bg = "transparent",
   width = 9, height = 5)
-# plot atomwise fluctuation, normalized atom position----------------------------
+# plot atomwise fluctuation mean and separate runs, centered atom position----------------------------
+atomwise_data |> 
+  ggplot(aes(x = relative_linker_atom_num, y = rmsf, color = compound_name_full)) +
+  geom_point(alpha = 0.2, size = 1) +
+  # geom_line() +
+  # geom_line(aes(group = run)) +
+  geom_line(aes(group = group_by(compound_name_full, run))) +
+  # geom_line(data = atomwise_data |> group_by(compound_name_full), aes(group = run), alpha = 0.2, linewidth = 0.5) +
+  stat_summary(
+    fun.data = "mean_se",
+    geom = "errorbar",
+    width = 0.9,
+    alpha = 0.2) +
+  stat_summary(
+    fun = "mean",
+    geom = "point",
+    size = 2) +
+  stat_summary(
+    fun = "mean",
+    geom = "line") +
+  scale_color_manual(values = color_map_treatments,
+                     labels = display_names_treatments) +
+  theme_prism() +
+  theme(plot.background = element_blank()) + # transparent
+  labs(x = "relative linker atom position",
+       y = "root mean square fluctuation (Å)",
+       title ="Linker fluctuation (heavy atoms)")
+ggsave(str_glue(
+  "{output_dir}/atomwise_RMSF_relative_position_{doseplotr::get_timestamp()}.{plot_type}"),
+  bg = "transparent",
+  width = 9, height = 5)
+# plot atomwise fluctuation mean ± SE, normalized atom position----------------------------
 atomwise_data |> 
   ggplot(aes(x = normalized_linker_atom_num, y = rmsf, color = compound_name_full)) +
   stat_summary(
