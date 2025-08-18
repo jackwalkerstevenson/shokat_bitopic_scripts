@@ -69,8 +69,9 @@ atomwise_data <- all_data |>
   )
 
 mean_rmsf_data <- atomwise_data |> 
-  dplyr::group_by(compound_name_full) |>
+  dplyr::group_by(compound_name_full, run) |>
   dplyr::summarize(mean_linker_rmsf = mean(rmsf))
+
 
 # import IC50 data from other experiments
 IC50_data_all <- readxl::read_excel(IC50_path) |>
@@ -84,20 +85,26 @@ IC50_ABL1_data <- IC50_data_all |> # filter for just ABL1 wt and desired assays
     assay %in% c("SelectScreen", "Kinomescan")
   )
 
-# join compoundwise data sources
-compoundwise_data <- key_data |> 
-  dplyr::left_join(mean_rmsf_data, by = join_by(compound_name_full)) |> 
+# join data sources
+run_plus_IC50_data <- mean_rmsf_data |> 
+  dplyr::left_join(key_data, by = join_by(compound_name_full)) |> 
   dplyr::left_join(IC50_ABL1_data, by = join_by("compound_name_full" == "treatment",
                                                 "linker_length_PEG" == "linker_length_PEG")) |> 
   doseplotr::filter_validate_reorder("compound_name_full", compounds)
+
+# compoundwise_data <- key_data |> 
+#   dplyr::left_join(mean_rmsf_data, by = join_by(compound_name_full)) |> 
+#   dplyr::left_join(IC50_ABL1_data, by = join_by("compound_name_full" == "treatment",
+#                                                 "linker_length_PEG" == "linker_length_PEG")) |> 
+#   doseplotr::filter_validate_reorder("compound_name_full", compounds)
 
 # report processed data
 write_csv(atomwise_data,
           fs::path(output_dir,
                    str_glue("MD_RMSF_atomwise_data_{get_timestamp()}.csv")))
-write_csv(compoundwise_data,
+write_csv(mean_rmsf_data,
           fs::path(output_dir,
-                   str_glue("compoundwise_data_{get_timestamp()}.csv")))
+                   str_glue("MD_RMSF_runwise_mean_rmsf_data_{get_timestamp()}.csv")))
 # plot atomwise fluctuation mean ± SE, centered atom position----------------------------
 atomwise_data |> 
   ggplot(aes(x = relative_linker_atom_num, y = rmsf, color = compound_name_full)) +
@@ -127,23 +134,25 @@ ggsave(str_glue(
 # plot atomwise fluctuation mean and separate runs, centered atom position----------------------------
 atomwise_data |> 
   ggplot(aes(x = relative_linker_atom_num, y = rmsf, color = compound_name_full)) +
-  geom_point(alpha = 0.2, size = 1) +
-  # geom_line() +
-  # geom_line(aes(group = run)) +
-  geom_line(aes(group = group_by(compound_name_full, run))) +
-  # geom_line(data = atomwise_data |> group_by(compound_name_full), aes(group = run), alpha = 0.2, linewidth = 0.5) +
-  stat_summary(
-    fun.data = "mean_se",
-    geom = "errorbar",
-    width = 0.9,
-    alpha = 0.2) +
+  # geom_point(alpha = 0.2, size = 1) +
+  # geom_line() + # makes a zigzag between all the runs
+  # geom_line(aes(group = run)) + # makes a zigzag between run1 but for all compounds, and another one for run2, etc
+  # geom_line(aes(group = group_by(compound_name_full, run))) + # throws an error: "no applicable method for 'group_by' applied to an object of class "factor""
+  # geom_line(data = atomwise_data |> group_by(compound_name_full), aes(group = run), linewidth = 0.5) + # same as aes(group = run) option above
+  geom_line(aes(group = interaction(compound_name_full, run)), alpha = .7, linewidth = .5) +
+  # stat_summary(
+  #   fun.data = "mean_se",
+  #   geom = "errorbar",
+  #   width = 0.9,
+  #   alpha = 0.2) +
   stat_summary(
     fun = "mean",
     geom = "point",
-    size = 2) +
+    size = 1.5) +
   stat_summary(
     fun = "mean",
-    geom = "line") +
+    geom = "line",
+    linewidth = .5) +
   scale_color_manual(values = color_map_treatments,
                      labels = display_names_treatments) +
   theme_prism() +
@@ -152,7 +161,7 @@ atomwise_data |>
        y = "root mean square fluctuation (Å)",
        title ="Linker fluctuation (heavy atoms)")
 ggsave(str_glue(
-  "{output_dir}/atomwise_RMSF_relative_position_{doseplotr::get_timestamp()}.{plot_type}"),
+  "{output_dir}/atomwise_RMSF_relative_position_separate_{doseplotr::get_timestamp()}.{plot_type}"),
   bg = "transparent",
   width = 9, height = 5)
 # plot atomwise fluctuation mean ± SE, normalized atom position----------------------------
@@ -182,43 +191,72 @@ ggsave(str_glue(
   bg = "transparent",
   width = 9, height = 5)
 # plot mean RMSF vs selectscreen IC50-----------------------------------------------
-compoundwise_data |> 
+run_plus_IC50_data |> 
   dplyr::filter(assay == "SelectScreen") |> 
-  ggplot(aes(x = mean_linker_rmsf, y = IC50_nM, color = compound_name_full)) +
-  geom_point(size = 3) +
-  scale_y_log10() +
+  ggplot(aes(y = mean_linker_rmsf, x = IC50_nM, color = compound_name_full)) +
+  geom_point(size = 1, alpha = 0.5) +
+  stat_summary(
+    fun.data = "mean_se",
+    geom = "errorbar",
+    # width = 2,
+    alpha = 0.5) +
+  stat_summary(
+    fun = "mean",
+    geom = "point",
+    size = 3) +
+  scale_x_log10() +
   scale_color_manual(values = color_map_treatments,
                      labels = display_names_treatments) +
   theme_prism() +
   labs(
-    x = "mean RMSF of linker (heavy atoms)",
-    y = "SelectScreen ABL1 IC50 (nM)"
-    )
+    y = "mean RMSF of linker (heavy atoms)",
+    x = "SelectScreen ABL1 IC50 (nM)"
+    ) +
+  coord_flip()
 ggsave(str_glue(
   "{output_dir}/RMSF_vs_IC50_SelectScreen_{doseplotr::get_timestamp()}.{plot_type}"),
   bg = "transparent",
   width = 9, height = 5)
 # plot mean RMSF vs Kinomescan IC50-----------------------------------------------
-compoundwise_data |> 
+run_plus_IC50_data |> 
   dplyr::filter(assay == "Kinomescan") |> 
-  ggplot(aes(x = mean_linker_rmsf, y = IC50_nM, color = compound_name_full)) +
-  geom_point(size = 3) +
-  scale_y_log10() +
+  ggplot(aes(y = mean_linker_rmsf, x = IC50_nM, color = compound_name_full)) +
+  geom_point(size = 1, alpha = 0.5) +
+  stat_summary(
+    fun.data = "mean_se",
+    geom = "errorbar",
+    # width = 2,
+    alpha = 0.5) +
+  stat_summary(
+    fun = "mean",
+    geom = "point",
+    size = 3) +
+  scale_x_log10() +
   scale_color_manual(values = color_map_treatments,
                      labels = display_names_treatments) +
   theme_prism() +
   labs(
-    x = "mean RMSF of linker (heavy atoms)",
-    y = "Kinomescan ABL1 IC50 (nM)"
-  )
+    y = "mean RMSF of linker (heavy atoms)",
+    x = "Kinomescan ABL1 IC50 (nM)"
+  ) +
+  coord_flip()
 ggsave(str_glue(
   "{output_dir}/RMSF_vs_IC50_Kinomescan_{doseplotr::get_timestamp()}.{plot_type}"),
   bg = "transparent",
   width = 9, height = 5)
 # plot mean RMSF vs linker length-----------------------------------------------
-compoundwise_data |> 
+run_plus_IC50_data |> 
   ggplot(aes(x = linker_length_atoms, y = mean_linker_rmsf, color = compound_name_full)) +
-  geom_point(size = 3) +
+  geom_point(size = 1, alpha = 0.5) +
+  stat_summary(
+    fun.data = "mean_se",
+    geom = "errorbar",
+    # width = 2,
+    alpha = 0.5) +
+  stat_summary(
+    fun = "mean",
+    geom = "point",
+    size = 3) +
   scale_color_manual(values = color_map_treatments,
                      labels = display_names_treatments) +
   theme_prism() +
