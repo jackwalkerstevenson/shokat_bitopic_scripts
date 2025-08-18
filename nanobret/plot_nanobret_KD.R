@@ -4,7 +4,7 @@ library(tidyverse) # for tidy data handling
 library(ggprism)  # for pretty prism-like plots
 library(scales) # for axis labels
 library(doseplotr) # you bet
-# import precalculated IC50 table-----------------------------------------------
+# import precalculated EC50 table-----------------------------------------------
 rm(list = ls()) # clear environment
 params_path <- "parameters/parameters_plot_nanobret_KD.R"
 scales_path <- "parameters/manual_scales.R"
@@ -24,7 +24,9 @@ if(exists("targets")){
 doseplotr::file_copy_to_dir(input_path, output_directory)
 doseplotr::file_copy_to_dir(params_path, output_directory)
 doseplotr::file_copy_to_dir(scales_path, output_directory)
-# strip plot of raw IC50s-----------------------------------------------
+# write timestamped code to output
+doseplotr::file_copy_to_dir("nanobret/plot_nanobret_KD.R", output_directory)
+# strip plot of raw EC50s-----------------------------------------------
 # # x_min <- floor(min(log10(data$IC50_nM)))
 # x_min <- data$IC50_nM |> na.omit() |> log10() |> min() |> floor()
 # # x_max <- ceiling(max(log10(data$IC50_nM)))
@@ -37,10 +39,10 @@ p <- data |>
              x = EC50_nM,
              color = target,
              shape = target)) +
-  geom_point(size = 4, alpha = 1, stroke = 1) +
+  geom_point(size = 5, alpha = 1, stroke = 1) +
   scale_x_continuous(#trans = c("log10"), #"reverse"),
                      guide = "prism_minor", # end at last tick
-                     limits = c(10, 250),
+                     # limits = c(10, 250),
                      breaks = breaks_width(50),
                      # labels = label_comma(accuracy = 1, big.mark = ""),
                      # minor_breaks = minor_x,
@@ -61,7 +63,7 @@ p <- data |>
                                         linewidth = 0.1,
                                         linetype = "dotted")) +
   theme(plot.background = element_blank()) + # need for transparent background
-  labs(x = bquote(bold(K[D]^apparent~"(nM) of dasatinib-based nanoBRET tracer")), # WARNING MAGIC NAME
+  labs(x = bquote(bold(K[D]^apparent~"(nM) of" ~ .(tracer_name))), # WARNING MAGIC NAME
        y = "treatment")
 save_plot(p, str_glue("output/nanobret_EC50_dot_{get_timestamp()}.{plot_type}"),
           width = 9, height = .5*length(targets) + 0.75)
