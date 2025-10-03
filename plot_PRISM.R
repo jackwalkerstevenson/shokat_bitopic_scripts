@@ -115,8 +115,8 @@ for (trt in treatments){
 jitter_height <-  0.3
 alpha_emphasis <-  1
 alpha_background <-  0.4
-jitter_plot_width <- 11.5
-jitter_plot_height <- 5.5
+jitter_plot_width <- 10.5
+jitter_plot_height <- 4.5
 # jitter plot of cell line sensitivity by BCR/NUP214::ABL1----------------------
 set.seed(random_seed) # set a manual random seed so output always the same
 DRC_data |> 
@@ -144,7 +144,7 @@ DRC_data |>
   labs(
     x = "AUC",
     y = "treatment",
-    title = "Sensitivity of PRISM cell lines to treatments")
+    title = "Inhibition of PRISM cell lines")
 ggsave(str_glue("{output_dir}/jitter_BCR_NUP214_seed_{random_seed}_{doseplotr::get_timestamp()}.{plot_type}"),
        bg = "transparent",
        width = jitter_plot_width, height = jitter_plot_height)
@@ -177,7 +177,7 @@ DRC_data |>
   labs(
     x = "AUC",
     y = "treatment",
-    title = "Sensitivity of PRISM cell lines to treatments")
+    title = "Inhibition of PRISM cell lines")
 ggsave(str_glue("{output_dir}/jitter_BCR_seed_{random_seed}_{doseplotr::get_timestamp()}.{plot_type}"),
        bg = "transparent",
        width = jitter_plot_width, height = jitter_plot_height)
@@ -213,7 +213,7 @@ DRC_data |>
   labs(
     x = "AUC",
     y = "treatment",
-    title = "Sensitivity of PRISM cell lines to treatments")
+    title = "Inhibition of PRISM cell lines")
 ggsave(str_glue("{output_dir}/jitter_BCR_or_NUP214_seed_{random_seed}_{doseplotr::get_timestamp()}.{plot_type}"),
        bg = "transparent",
        width = jitter_plot_width, height = jitter_plot_height)
@@ -255,7 +255,7 @@ DRC_data |>
   labs(
     x = "AUC (Riemann)",
     y = "treatment",
-    title = "Sensitivity of PRISM cell lines to treatments",
+    title = "Inhibition of PRISM cell lines",
     alpha = subtype_legend_title,
     color = subtype_legend_title,
     shape = subtype_legend_title,
@@ -265,6 +265,9 @@ ggsave(str_glue("{output_dir}/jitter_subtype_riemann_seed_{random_seed}_{doseplo
        bg = "transparent",
        width = jitter_plot_width, height = jitter_plot_height)
 
+# parameters for waterfall plots-----------------------------------------------
+waterfall_width <- 8
+waterfall_height <- 4
 # waterfall plot of cell line sensitivity by curve fit AUC--------------------
 DRC_data |> 
   # only cell lines present for all treatments
@@ -285,11 +288,11 @@ DRC_data |>
         plot.background = element_blank()) + # for transparent background
   labs(x = "rank order of sensitivity",
        y = "AUC",
-       title = "Sensitivity of PRISM cell lines to treatments")
+       title = "Inhibition of PRISM cell lines")
 ggsave(str_glue(
     "{output_dir}/waterfall_auc_{doseplotr::get_timestamp()}.{plot_type}"),
     bg = "transparent",
-    width = 9, height = 5)
+    width = waterfall_width, height = waterfall_height)
 
 # waterfall plot of cell line sensitivity by Riemann AUC----------------------
 DRC_data |> 
@@ -307,7 +310,7 @@ DRC_data |>
         plot.background = element_blank()) + # for transparent background
   labs(x = "rank order of sensitivity",
        y = "AUC (Riemann)",
-       title = "Sensitivity of PRISM cell lines to treatments")
+       title = "Inhibition of PRISM cell lines")
 ggsave(str_glue("{output_dir}/waterfall_auc_riemann_{doseplotr::get_timestamp()}.{plot_type}"),
        bg = "transparent",
-       width = 9, height = 5)
+       width = waterfall_width, height = waterfall_height)
