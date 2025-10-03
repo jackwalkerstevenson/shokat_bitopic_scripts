@@ -181,7 +181,7 @@ ggsave(
     "{output_directory}/plot_TGI_survival_{get_timestamp()}.{plot_type}"
   ),
   # WARNING manual width adjust 2025-04-17
-  width = 9, height = 4,
+  width = 10.75, height = 4,
   bg = "transparent")
 # function to plot mean/SEM of a type of measurement over time----------------------------
 plot_measurement <- function(measurement_data,
@@ -252,7 +252,7 @@ plot_measurement(measurement_data = plot_TGI_data,
                  interval_data = dosing_data, 
                  measurement = "volume",
                  y_label = "tumor volume (mm³)",
-                 plot_title = "Tumor volume",
+                 plot_title = str_glue("Tumor volume ({tumor_model_name})"),
                  width = group_plot_width)
 plot_measurement(measurement_data = plot_TGI_data,
                  interval_data = dosing_data, 
