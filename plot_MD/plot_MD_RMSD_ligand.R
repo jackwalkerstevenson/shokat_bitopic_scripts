@@ -17,7 +17,13 @@ doseplotr::file_copy_to_dir("plot_MD/plot_MD_RMSD.R", output_dir)
 # set up input and output directories
 dir.create(input_dir, showWarnings = FALSE)
 dir.create(output_dir, showWarnings = FALSE)
+key_path <- fs::path(input_dir, key_filename)
+# write timestamped key file to output
+doseplotr::file_copy_to_dir(key_path, output_dir)
 # import, preprocess and report data-----------------------------------------------
+key_data <- readxl::read_excel(key_path) |> 
+  doseplotr::filter_validate_reorder("compound_name_full", treatments)
+
 read_rms_file <- function(file_path) {
   # extract info from filenames of the form "m19_run1_rms.lig.dat"
   matches <- stringr::str_match(basename(file_path), "^(m\\d+)_run(\\d+)_rms\\.lig\\.dat$")
@@ -33,32 +39,29 @@ read_rms_file <- function(file_path) {
 
 dat_files <- list.files(path = input_dir, pattern = "*_rms\\.lig\\.dat$", full.names = TRUE)
 all_data <- dat_files |> 
-  purrr::map_dfr(read_rms_file)
-
-# report processed data
-write_csv(all_data,
-          fs::path(output_dir,
-                   str_glue("MD_RMSD_ligand_all_data_{get_timestamp()}.csv")))
+  purrr::map_dfr(read_rms_file) |> 
+  left_join(key_data, by = join_by(kenneth_id))
 # count and report number of frames for each run--------------------------------
 frame_summary <- all_data |>
   dplyr::count(kenneth_id, run)
 write_csv(frame_summary,
           fs::path(output_dir,
                    str_glue("MD_RMSD_ligand_frames_{get_timestamp()}.csv")))
-# plot RMSD by kenneth_id and run-----------------------------------------------
+# plot RMSD by compound_name_full and run-----------------------------------------------
 sparse_sample_factor <- 20
 all_data |>
   # sparse sampling
   dplyr::filter(frame %% sparse_sample_factor == 0) |> 
-  ggplot(aes(x = time_ns, y = rmsd, color = kenneth_id, linetype = run)) +
-  geom_line(alpha = 0.4) +
+  ggplot(aes(x = time_ns, y = rmsd, color = compound_name_full, linetype = run)) +
+  # geom_line(alpha = 0.4) +
   geom_smooth(alpha = 0.7) +
-  # scale_color_viridis(option = "turbo") +
   scale_color_manual(values = pals::cols25()) +
   labs(x = "time (ns)",
        y = "ligand RMSD (Å)",
-       title = "RMSD of ligand from starting position") +
-  theme_prism()
+       title = "RMSD of ligand from starting position",
+       color = "compound") +
+  theme_prism() +
+  theme(legend.title = element_text())
 ggsave(str_glue(
   "{output_dir}/RMSD_ligand_{doseplotr::get_timestamp()}.{plot_type}"),
   bg = "transparent",
