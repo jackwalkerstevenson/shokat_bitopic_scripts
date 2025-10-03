@@ -17,11 +17,6 @@ dir.create(output_dir, showWarnings = FALSE)
 doseplotr::file_copy_to_dir("plot_MD/plot_MD_RMSF.R", output_dir)
 # write timestamped params to output
 doseplotr::file_copy_to_dir(params_path, output_dir)
-
-IC50_path <- str_glue("{input_dir}{IC50_filename}")
-# write timestamped IC50 file to output
-doseplotr::file_copy_to_dir(IC50_path, output_dir)
-
 key_path <- str_glue("{input_dir}{key_filename}")
 # write timestamped key file to output
 doseplotr::file_copy_to_dir(key_path, output_dir)
@@ -71,32 +66,6 @@ atomwise_data <- all_data |>
 mean_rmsf_data <- atomwise_data |> 
   dplyr::group_by(compound_name_full, run) |>
   dplyr::summarize(mean_linker_rmsf = mean(rmsf))
-
-
-# import IC50 data from other experiments
-IC50_data_all <- readxl::read_excel(IC50_path) |>
-  dplyr::mutate(
-    IC50_nM = as.numeric(IC50_nM),
-    linker_length_PEG = as.numeric(linker_length_PEG)
-  )
-IC50_ABL1_data <- IC50_data_all |> # filter for just ABL1 wt and desired assays
-  dplyr::filter(
-    variant == "ABL1 wt",
-    assay %in% c("SelectScreen", "Kinomescan")
-  )
-
-# join data sources
-run_plus_IC50_data <- mean_rmsf_data |> 
-  dplyr::left_join(key_data, by = join_by(compound_name_full)) |> 
-  dplyr::left_join(IC50_ABL1_data, by = join_by("compound_name_full" == "treatment",
-                                                "linker_length_PEG" == "linker_length_PEG")) |> 
-  doseplotr::filter_validate_reorder("compound_name_full", compounds)
-
-# compoundwise_data <- key_data |> 
-#   dplyr::left_join(mean_rmsf_data, by = join_by(compound_name_full)) |> 
-#   dplyr::left_join(IC50_ABL1_data, by = join_by("compound_name_full" == "treatment",
-#                                                 "linker_length_PEG" == "linker_length_PEG")) |> 
-#   doseplotr::filter_validate_reorder("compound_name_full", compounds)
 
 # report processed data
 write_csv(atomwise_data,
