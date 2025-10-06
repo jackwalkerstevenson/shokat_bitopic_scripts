@@ -89,6 +89,8 @@ atomwise_data |>
   stat_summary(
     fun = "mean",
     geom = "line") +
+  scale_y_continuous(limits = y_limits,
+                     expand = expansion(mult = c(0, 0.1))) +
   scale_color_manual(values = color_map_treatments,
                      labels = display_names_treatments) +
   theme_prism() +
@@ -122,6 +124,8 @@ atomwise_data |>
     fun = "mean",
     geom = "line",
     linewidth = .5) +
+  scale_y_continuous(limits = y_limits,
+                     expand = expansion(mult = c(0, 0.1))) +
   scale_color_manual(values = color_map_treatments,
                      labels = display_names_treatments) +
   theme_prism() +
@@ -148,6 +152,8 @@ atomwise_data |>
   stat_summary(
     fun = "mean",
     geom = "line") +
+  scale_y_continuous(limits = y_limits,
+                     expand = expansion(mult = c(0, 0.1))) +
   scale_color_manual(values = color_map_treatments,
                      labels = display_names_treatments) +
   theme_prism() +
