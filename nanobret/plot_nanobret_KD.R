@@ -40,30 +40,31 @@ p <- data |>
              color = target,
              shape = target)) +
   geom_point(size = 5, alpha = 1, stroke = 1) +
-  scale_x_continuous(#trans = c("log10"), #"reverse"),
-                     guide = "prism_minor", # end at last tick
-                     # limits = c(10, 250),
-                     breaks = breaks_width(50),
+  scale_x_continuous(transform = "log10",
+                     # guide = "prism_minor", # end at last tick
+                     guide = guide_axis_logticks(long = 1, mid = 0.5, short = 0.5),
+                     limits = x_limits) +
+                     # breaks = breaks_width(50),
                      # labels = label_comma(accuracy = 1, big.mark = ""),
                      # minor_breaks = minor_x,
-                     expand = expansion(mult = .1)) +
-  scale_y_discrete(limits = rev, labels = display_names_targets) +
-                   # name = "competitor") +
+                     # expand = expansion(mult = .1)) +
+  scale_y_discrete(limits = rev, labels = display_names_targets,
+                   name = "competitor") +
   scale_color_manual(values = color_map_targets,
-                     labels = display_names_targets) +
-                     # name = "competitor") +
+                     labels = display_names_targets,
+                     name = "competitor") +
   scale_shape_manual(values = shape_map_targets,
-                     labels = display_names_targets) +
-                     # name = "competitor") +
-  theme_prism()+ #base_size = 16) +
-  theme(legend.title = element_text(),
+                     labels = display_names_targets,
+                     name = "competitor") +
+  theme_prism() +
+  theme(#legend.title = element_text(),
         legend.position = "none", # remove legend entirely
         panel.grid = element_line(color = "black", linewidth = 0.1),
         panel.grid.minor = element_line(color = "black",
                                         linewidth = 0.1,
                                         linetype = "dotted")) +
   theme(plot.background = element_blank()) + # need for transparent background
-  labs(x = bquote(bold(K[D]^apparent~"(nM) of" ~ .(tracer_name))), # WARNING MAGIC NAME
+  labs(x = bquote(bold(K[D]^apparent~"(nM) of" ~ .(tracer_name))),
        y = "treatment")
 save_plot(p, str_glue("output/nanobret_EC50_dot_{get_timestamp()}.{plot_type}"),
           width = 9, height = .5*length(targets) + 0.75)
