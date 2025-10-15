@@ -40,7 +40,8 @@ read_rms_file <- function(file_path) {
 dat_files <- list.files(path = input_dir, pattern = "*_rms\\.lig\\.dat$", full.names = TRUE)
 all_data <- dat_files |> 
   purrr::map_dfr(read_rms_file) |> 
-  left_join(key_data, by = join_by(kenneth_id))
+  left_join(key_data, by = join_by(kenneth_id)) |> 
+  doseplotr::filter_validate_reorder("compound_name_full", treatments)
 
 downsample_factor <- 20 # integer factor by which to downsample
 # report processed data, downsampled
@@ -61,6 +62,7 @@ downsampled_data |>
   ggplot(aes(x = time_ns, y = rmsd, color = compound_name_full, linetype = run)) +
   # geom_line(alpha = 0.4) +
   geom_smooth(alpha = 0.7) +
+  scale_y_continuous(limits = y_limits) +
   scale_color_manual(values = pals::cols25()) +
   labs(x = "time (ns)",
        y = "ligand RMSD (Å)",
