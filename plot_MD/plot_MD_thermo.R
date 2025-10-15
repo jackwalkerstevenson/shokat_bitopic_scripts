@@ -38,6 +38,7 @@ runwise_data <- readxl::read_excel(key_path) |>
 
 # import IC50 data from other experiments
 IC50_ABL1_data <- readxl::read_excel(IC50_path) |>
+  mutate(across(where(is.character), ~na_if(.x, "NA"))) |> # all "NA" -> NA
   dplyr::mutate(
     IC50_nM = as.numeric(IC50_nM),
     linker_length_PEG = as.numeric(linker_length_PEG)) |> 
@@ -65,6 +66,8 @@ small_scatter_plot_width <- 6
 small_scatter_plot_height <- 3.75
 point_size_mean <- 3
 point_size_individual <- 1
+entropy_per_atom_label <- "compound entropy / atom (cal/mol-K-atom)"
+mean_linker_rmsf_label <- "mean linker atom fluctuation (Å)"
 # plot entropy per atom vs. linker length by series------------------------------
 runwise_data |> 
   dplyr::group_by(compound_name_full) |> 
@@ -79,10 +82,30 @@ runwise_data |>
   theme(plot.background = element_blank(), # transparent
         legend.title = element_text()) +
   labs(x = "linker length (atoms)",
-       y = "cpd. entropy / atom (cal/mol-K-atom)",
+       y = entropy_per_atom_label,
        title ="Entropy per atom vs. linker length")
 ggsave(str_glue(
   "{output_dir}/entropy_per_atom_vs_linker_atoms_{doseplotr::get_timestamp()}.{plot_type}"),
+  bg = "transparent",
+  width = scatter_plot_width, height = scatter_plot_height)
+# plot mean linker RMSF vs. linker length by series------------------------------
+runwise_data |> 
+  dplyr::group_by(compound_name_full) |> 
+  ggplot(aes(x = linker_length_atoms, y = mean_linker_rmsf, color = series)) +
+  stat_summary(
+    fun = "mean",
+    geom = "point",
+    size = point_size_mean) +
+  geom_point(size = point_size_individual) +
+  scale_color_manual(values = color_map_series) +
+  theme_prism() +
+  theme(plot.background = element_blank(), # transparent
+        legend.title = element_text()) +
+  labs(x = "linker length (atoms)",
+       y = mean_linker_rmsf_label,
+       title ="Linker fluctuation vs. linker length")
+ggsave(str_glue(
+  "{output_dir}/mean_linker_rmsf_vs_linker_atoms_{doseplotr::get_timestamp()}.{plot_type}"),
   bg = "transparent",
   width = scatter_plot_width, height = scatter_plot_height)
 # plot entropy per atom vs. SelectScreen potency by series------------------------------
@@ -103,11 +126,36 @@ thermo_potency_data |>
   theme_prism() +
   theme(plot.background = element_blank(), # transparent
         legend.title = element_text()) +
-  labs(x = "cpd. entropy / atom (cal/mol-K-atom)",
+  labs(x = entropy_per_atom_label,
        y = "ABL1 IC50 (nM)",
        title ="Entropy per atom vs. ABL1 inhibition")
 ggsave(str_glue(
   "{output_dir}/entropy_per_atom_vs_selectscreen_IC50_{doseplotr::get_timestamp()}.{plot_type}"),
+  bg = "transparent",
+  width = small_scatter_plot_width, height = small_scatter_plot_height)
+# plot mean linker RMSF vs. SelectScreen potency by series------------------------------
+thermo_potency_data |> 
+  dplyr::filter(assay == "SelectScreen") |> 
+  dplyr::group_by(compound_name_full) |> 
+  ggplot(aes(x = mean_linker_rmsf, y = IC50_nM, color = series)) +
+  stat_summary(
+    fun = "mean",
+    orientation = "y", # for variation on x axis
+    geom = "point",
+    size = point_size_mean) +
+  geom_point(size = point_size_individual) +
+  scale_y_continuous(transform = "log10",
+                     guide = guide_axis_logticks(long = 1, mid = 0.5, short = 0.5)
+  ) +
+  scale_color_manual(values = color_map_series) +
+  theme_prism() +
+  theme(plot.background = element_blank(), # transparent
+        legend.title = element_text()) +
+  labs(x = mean_linker_rmsf_label,
+       y = "ABL1 IC50 (nM)",
+       title ="Linker fluctuation vs. ABL1 inhibition")
+ggsave(str_glue(
+  "{output_dir}/mean_linker_rmsf_vs_selectscreen_IC50_{doseplotr::get_timestamp()}.{plot_type}"),
   bg = "transparent",
   width = small_scatter_plot_width, height = small_scatter_plot_height)
 # plot entropy per atom vs. mean linker RMSF by series w/R^2------------------------------
@@ -140,7 +188,7 @@ runwise_data |>
   theme_prism() +
   theme(plot.background = element_blank(), # transparent
         legend.title = element_text()) +
-  labs(x = "cpd. entropy / atom (cal/mol-K-atom)",
+  labs(x = entropy_per_atom_label,
        y = "mean linker atom fluctuation (Å)",
        title ="Entropy per atom vs. linker fluctuation")
 ggsave(str_glue(
