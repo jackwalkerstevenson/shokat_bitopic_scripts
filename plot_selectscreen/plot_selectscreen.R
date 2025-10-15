@@ -17,6 +17,7 @@ source(params_path)
 dir.create(input_directory, showWarnings = FALSE)
 dir.create(output_directory, showWarnings = FALSE)
 plot_data <- import_selectscreen(input_filename)
+doseplotr::file_copy_to_dir(input_filename, output_directory) # write timestamped input file
 # filter and validate imported data---------------------------------------------
 if(exists("treatments")){
   plot_data <- plot_data |> filter_validate_reorder("treatment", treatments)
