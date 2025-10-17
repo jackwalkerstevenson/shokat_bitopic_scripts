@@ -50,7 +50,7 @@ downsampled_data <- all_data |>
   dplyr::filter(frame %% downsample_factor == 0)
 write_csv(downsampled_data,
           fs::path(output_dir,
-                   str_glue("MD_RMSD_ligand_all_data_{get_timestamp()}.csv")))
+                   str_glue("MD_RMSD_ligand_downsampled_data_{get_timestamp()}.csv")))
 # count and report number of frames for each run--------------------------------
 frame_summary <- all_data |>
   dplyr::count(kenneth_id, run)
@@ -63,7 +63,10 @@ downsampled_data |>
   # geom_line(alpha = 0.4) +
   geom_smooth(alpha = 0.7) +
   scale_y_continuous(limits = y_limits) +
-  scale_color_manual(values = pals::cols25()) +
+  scale_color_manual(values = pals::cols25(),
+                     labels = display_names_treatments) +
+  guides(color = guide_legend(order = 1),
+         linetype = guide_legend(order = 2)) +
   labs(x = "time (ns)",
        y = "ligand RMSD (Å)",
        title = "RMSD of ligand from starting position",

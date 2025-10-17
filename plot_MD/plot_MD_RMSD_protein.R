@@ -50,20 +50,23 @@ downsampled_data <- all_data |>
   dplyr::filter(frame %% downsample_factor == 0)
 write_csv(downsampled_data,
           fs::path(output_dir,
-                   str_glue("MD_RMSD_protein_all_data_{get_timestamp()}.csv")))
+                   str_glue("MD_RMSD_protein_downsampled_data_{get_timestamp()}.csv")))
 # count and report number of frames for each run--------------------------------
 frame_summary <- all_data |>
   dplyr::count(kenneth_id, run)
 write_csv(frame_summary,
           fs::path(output_dir,
                    str_glue("MD_RMSD_protein_frames_{get_timestamp()}.csv")))
-# plot RMSD by kenneth_id and run-----------------------------------------------
+# plot RMSD by compound_name_full and run-----------------------------------------------
 downsampled_data |> 
   ggplot(aes(x = time_ns, y = rmsd, color = compound_name_full, linetype = run)) +
   # geom_line(alpha = 0.4) +
   geom_smooth(alpha = 0.7) +
   scale_y_continuous(limits = y_limits) +
-  scale_color_manual(values = pals::cols25()) +
+  scale_color_manual(values = pals::cols25(),
+                     labels = display_names_treatments) +
+  guides(color = guide_legend(order = 1),
+         linetype = guide_legend(order = 2)) +
   labs(x = "time (ns)",
        y = "protein RMSD (Å)",
        title = "RMSD of protein from starting position",
