@@ -76,7 +76,10 @@ write_csv(mean_rmsf_data,
                    str_glue("MD_RMSF_runwise_mean_rmsf_data_{get_timestamp()}.csv")))
 # plot atomwise fluctuation mean ± SE, centered atom position----------------------------
 atomwise_data |> 
-  ggplot(aes(x = relative_linker_atom_num, y = rmsf, color = compound_name_full)) +
+  ggplot(aes(x = relative_linker_atom_num,
+             y = rmsf,
+             color = compound_name_full,
+             shape = compound_name_full)) +
   stat_summary(
     fun.data = "mean_se",
     geom = "errorbar",
@@ -93,6 +96,8 @@ atomwise_data |>
                      expand = expansion(mult = c(0, 0.1))) +
   scale_color_manual(values = color_map_treatments,
                      labels = display_names_treatments) +
+  scale_shape_manual(values = shape_map_treatments,
+                     labels = display_names_treatments) +
   theme_prism() +
   theme(plot.background = element_blank()) + # transparent
   labs(x = "relative linker atom position",
@@ -104,7 +109,10 @@ ggsave(str_glue(
   width = 9, height = 5)
 # plot atomwise fluctuation mean and separate runs, centered atom position----------------------------
 atomwise_data |> 
-  ggplot(aes(x = relative_linker_atom_num, y = rmsf, color = compound_name_full)) +
+  ggplot(aes(x = relative_linker_atom_num,
+             y = rmsf,
+             color = compound_name_full,
+             shape = compound_name_full)) +
   # geom_point(alpha = 0.2, size = 1) +
   # geom_line() + # makes a zigzag between all the runs
   # geom_line(aes(group = run)) + # makes a zigzag between run1 but for all compounds, and another one for run2, etc
@@ -128,6 +136,8 @@ atomwise_data |>
                      expand = expansion(mult = c(0, 0.1))) +
   scale_color_manual(values = color_map_treatments,
                      labels = display_names_treatments) +
+  scale_shape_manual(values = shape_map_treatments,
+                     labels = display_names_treatments) +
   theme_prism() +
   theme(plot.background = element_blank()) + # transparent
   labs(x = "relative linker atom position",
@@ -139,7 +149,10 @@ ggsave(str_glue(
   width = 9, height = 5)
 # plot atomwise fluctuation mean ± SE, normalized atom position----------------------------
 atomwise_data |> 
-  ggplot(aes(x = normalized_linker_atom_num, y = rmsf, color = compound_name_full)) +
+  ggplot(aes(x = normalized_linker_atom_num,
+             y = rmsf,
+             color = compound_name_full,
+             shape = compound_name_full)) +
   stat_summary(
     fun.data = "mean_se",
     geom = "errorbar",
@@ -155,6 +168,8 @@ atomwise_data |>
   scale_y_continuous(limits = y_limits,
                      expand = expansion(mult = c(0, 0.1))) +
   scale_color_manual(values = color_map_treatments,
+                     labels = display_names_treatments) +
+  scale_shape_manual(values = shape_map_treatments,
                      labels = display_names_treatments) +
   theme_prism() +
   theme(plot.background = element_blank()) + # transparent
