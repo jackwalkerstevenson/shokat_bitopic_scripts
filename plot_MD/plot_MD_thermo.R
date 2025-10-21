@@ -71,13 +71,17 @@ mean_linker_rmsf_label <- "mean linker atom fluctuation (Å)"
 # plot entropy per atom vs. linker length by series------------------------------
 runwise_data |> 
   dplyr::group_by(compound_name_full) |> 
-  ggplot(aes(x = linker_length_atoms, y = entropy_per_atom, color = series)) +
+  ggplot(aes(x = linker_length_atoms,
+             y = entropy_per_atom,
+             color = series,
+             shape = series)) +
   stat_summary(
     fun = "mean",
     geom = "point",
     size = point_size_mean) +
   geom_point(size = point_size_individual) +
   scale_color_manual(values = color_map_series) +
+  scale_shape_manual(values = shape_map_series) +
   theme_prism() +
   theme(plot.background = element_blank(), # transparent
         legend.title = element_text()) +
@@ -91,13 +95,17 @@ ggsave(str_glue(
 # plot mean linker RMSF vs. linker length by series------------------------------
 runwise_data |> 
   dplyr::group_by(compound_name_full) |> 
-  ggplot(aes(x = linker_length_atoms, y = mean_linker_rmsf, color = series)) +
+  ggplot(aes(x = linker_length_atoms,
+             y = mean_linker_rmsf,
+             color = series,
+             shape = series)) +
   stat_summary(
     fun = "mean",
     geom = "point",
     size = point_size_mean) +
   geom_point(size = point_size_individual) +
   scale_color_manual(values = color_map_series) +
+  scale_shape_manual(values = shape_map_series) +
   theme_prism() +
   theme(plot.background = element_blank(), # transparent
         legend.title = element_text()) +
@@ -112,7 +120,7 @@ ggsave(str_glue(
 thermo_potency_data |> 
   dplyr::filter(assay == "SelectScreen") |> 
   dplyr::group_by(compound_name_full) |> 
-  ggplot(aes(x = entropy_per_atom, y = IC50_nM, color = series)) +
+  ggplot(aes(x = entropy_per_atom, y = IC50_nM, color = series, shape = series)) +
   stat_summary(
     fun = "mean",
     orientation = "y", # for variation on x axis
@@ -123,6 +131,7 @@ thermo_potency_data |>
                      guide = guide_axis_logticks(long = 1, mid = 0.5, short = 0.5)
                      ) +
   scale_color_manual(values = color_map_series) +
+  scale_shape_manual(values = shape_map_series) +
   theme_prism() +
   theme(plot.background = element_blank(), # transparent
         legend.title = element_text()) +
@@ -137,7 +146,10 @@ ggsave(str_glue(
 thermo_potency_data |> 
   dplyr::filter(assay == "SelectScreen") |> 
   dplyr::group_by(compound_name_full) |> 
-  ggplot(aes(x = mean_linker_rmsf, y = IC50_nM, color = series)) +
+  ggplot(aes(x = mean_linker_rmsf,
+             y = IC50_nM,
+             color = series,
+             shape = series)) +
   stat_summary(
     fun = "mean",
     orientation = "y", # for variation on x axis
@@ -148,6 +160,7 @@ thermo_potency_data |>
                      guide = guide_axis_logticks(long = 1, mid = 0.5, short = 0.5)
   ) +
   scale_color_manual(values = color_map_series) +
+  scale_shape_manual(values = shape_map_series) +
   theme_prism() +
   theme(plot.background = element_blank(), # transparent
         legend.title = element_text()) +
@@ -167,9 +180,13 @@ annotation_df <- data.frame(
                   cor_pearson$p.value)
 )
 runwise_data |> 
-  ggplot(aes(x = entropy_per_atom, y = mean_linker_rmsf, color = series)) +
+  ggplot(aes(x = entropy_per_atom,
+             y = mean_linker_rmsf,
+             color = series,
+             shape = series)) +
   geom_point(size = point_size_mean) +
   scale_color_manual(values = color_map_series) +
+  scale_shape_manual(values = shape_map_series) +
   # geom_text(data = annotation_df,
   #           aes(x = x, y = y, label = label),
   #           hjust = -0.1, vjust = 1.5,
