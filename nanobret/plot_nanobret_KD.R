@@ -1,4 +1,4 @@
-# plot apparent KD values from a model summary output by plot_nanobret
+# plot apparent Kd values from a model summary output by plot_nanobret
 # load libraries----------------------------------------------------------------
 library(tidyverse) # for tidy data handling
 library(ggprism)  # for pretty prism-like plots
@@ -6,7 +6,7 @@ library(scales) # for axis labels
 library(doseplotr) # you bet
 # import precalculated EC50 table-----------------------------------------------
 rm(list = ls()) # clear environment
-params_path <- "parameters/parameters_plot_nanobret_KD.R"
+params_path <- "parameters/parameters_plot_nanobret_Kd.R"
 scales_path <- "parameters/manual_scales.R"
 source(params_path)
 source(scales_path)
@@ -25,7 +25,7 @@ doseplotr::file_copy_to_dir(input_path, output_directory)
 doseplotr::file_copy_to_dir(params_path, output_directory)
 doseplotr::file_copy_to_dir(scales_path, output_directory)
 # write timestamped code to output
-doseplotr::file_copy_to_dir("nanobret/plot_nanobret_KD.R", output_directory)
+doseplotr::file_copy_to_dir("nanobret/plot_nanobret_Kd.R", output_directory)
 # strip plot of raw EC50s-----------------------------------------------
 # # x_min <- floor(min(log10(data$IC50_nM)))
 # x_min <- data$IC50_nM |> na.omit() |> log10() |> min() |> floor()
@@ -64,7 +64,7 @@ p <- data |>
                                         linewidth = 0.1,
                                         linetype = "dotted")) +
   theme(plot.background = element_blank()) + # need for transparent background
-  labs(x = bquote(bold(K[D]^apparent~"(nM) of" ~ .(tracer_name))),
+  labs(x = bquote(bold(K[d]^apparent~"(nM) of" ~ .(tracer_name))),
        y = "treatment")
 save_plot(p, str_glue("output/nanobret_EC50_dot_{get_timestamp()}.{plot_type}"),
           width = 9, height = .5*length(targets) + 0.75)
