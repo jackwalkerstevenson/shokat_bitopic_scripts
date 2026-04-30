@@ -80,4 +80,4 @@ all_data %>%
   theme(plot.background = element_blank()) # need for transparent background
 
 ggsave(str_glue("output/half_life_{get_timestamp()}.{plot_type}"),
-       bg = "transparent", width = 7, height = 4)
+       bg = "transparent", width = 7, height = 3)
