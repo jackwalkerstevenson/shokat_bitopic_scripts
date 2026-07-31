@@ -81,7 +81,6 @@ shape_map_treatments <- c(
 # specify targets to rename in plots. "old_name" = "new_name"
 display_names_targets <- c(
   "K562 T315I" = "K562 BE-T315I",
-  "K562 CRISPRi nt" = "K562 CRISPRi non-targeting",
   "K562 pUltra control" = "control",
   # "K562 pUltra BCR-ABL1 wt" = "K562 pU BCR::ABL1 wt",
   "K562 pUltra BCR-ABL1 wt" = "wt",
