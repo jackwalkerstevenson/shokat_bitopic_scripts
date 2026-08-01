@@ -205,6 +205,17 @@ summary_data_with_stats |>
                     ymax = mean_count_normalized_percent + sem_count_normalized_percent),
                 width = 0.5,
                 position = position_dodge(width = .9)) +
+  geom_point(
+    data = all_data |> dplyr::filter(treatment == "DMSO" | dose_nm == 1000),
+    aes(x = treatment, y = count_normalized_percent, fill = measurement),
+    inherit.aes = FALSE,
+    alpha = 0.5,
+    size = 2,
+    show.legend = FALSE,
+    position = position_jitterdodge(jitter.width = 0.15,
+                                    dodge.width  = 0.9,
+                                    seed = 1)
+  ) +
   # stat_summary(fun = "mean",
   #              geom = "col",
   #              position = "dodge") +
@@ -238,6 +249,17 @@ summary_data_with_stats |>
                     ymax = mean_count_normalized_percent + sem_count_normalized_percent),
                 width = 0.5,
                 position = position_dodge(width = .9)) +
+  geom_point(
+    data = all_data |> dplyr::filter(treatment == "DMSO" | dose_nm == 10000),
+    aes(x = treatment, y = count_normalized_percent, fill = measurement),
+    inherit.aes = FALSE,
+    alpha = 0.5,
+    size = 2,
+    show.legend = FALSE,
+    position = position_jitterdodge(jitter.width = 0.15,
+                                    dodge.width  = 0.9,
+                                    seed = 1)
+  ) +
   # stat_summary(fun = "mean",
   #              geom = "col",
   #              position = "dodge") +
