@@ -5,6 +5,7 @@
 #'script for analyzing Thermo SelectScreen data
 #'copied updates from plot_CTG.R 2023-08-09
 # load required libraries------------------------------------------------------
+rm(list = ls()) # clear environment
 library(tidyverse) # for tidy data handling
 library(ggprism)  # for pretty prism-like plots
 library(viridis) # for color schemes
@@ -48,7 +49,7 @@ if(override_x_lim){
 model_summary <- summarize_models(plot_data,
                                   response_col = "response",
                                   rigid = rigid) |> # use global rigid parameter
-  select(-model) |>  # remove actual model from report
+  dplyr::select(-model) |>  # remove actual model from report
   mutate(across(where(is.numeric), \(x){signif(x, digits = 4)}))
 write_csv(model_summary,
           str_glue("output/selectscreen_model_summary_{get_timestamp()}.csv"))
@@ -61,7 +62,8 @@ for (trt in treatments){
     trt_targets <- Vectorize(get_display_name, vectorize.args = "name")(
       trt_targets, display_names_targets, TRUE)}
   plot_treatment(plot_data, trt, rigid = rigid, grid = grid,
-                 no_legend = no_legend,
+                 no_legend = no_legend, plot_errorbars = plot_errorbars,
+                 plot_individual_points = plot_individual_points,
                  color_map = get_if(color_map_targets,
                                     manually_recolor_targets),
                  shape_map = get_if(shape_map_targets,
@@ -92,6 +94,8 @@ for (tgt in targets){
   plot_target(plot_data, tgt,
               rigid = rigid, # global rigid low-dose asymptote parameter
               grid = grid, # global grid plotting parameter
+              plot_errorbars = plot_errorbars,
+              plot_individual_points = plot_individual_points,
               no_legend = no_legend,
               x_limits = get_if(x_limits, global_x_lim),
               response_col = "response", # selectscreen uses response

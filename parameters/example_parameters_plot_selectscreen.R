@@ -17,6 +17,8 @@ global_x_lim <- TRUE # whether all plots should use the same x limits
 override_x_lim <- FALSE
 rigid <- FALSE # whether to use rigid low-dose asymptote
 grid <- FALSE # whether to plot a background grid
+plot_errorbars <- FALSE # whether to plot error bars ± SEM
+plot_individual_points <- TRUE # whether to plot individual points as well as summary
 input_filename <- "example_input_dir/example_input_filename.csv"
 # the order of treatments and targets is the order they will be plotted
 treatments <- c(
