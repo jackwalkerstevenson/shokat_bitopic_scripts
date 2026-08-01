@@ -166,6 +166,7 @@ for (trt in treatments){
     save_plot(
       str_glue("output/CTG_treatment_{trt}_{get_timestamp()}.{plot_type}"),
       # width = 7,
+      height = 3.5,
       legend_len = if(no_legend) 0 else{
         longest(c(trt_targets, target_legend_title))})
 }  
