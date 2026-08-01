@@ -170,7 +170,7 @@ thermo_potency_data |>
 ggsave(str_glue(
   "{output_dir}/mean_linker_rmsf_vs_selectscreen_IC50_{doseplotr::get_timestamp()}.{plot_type}"),
   bg = "transparent",
-  width = small_scatter_plot_width, height = small_scatter_plot_height)
+  width = scatter_plot_width, height = scatter_plot_height)
 # plot entropy per atom vs. mean linker RMSF by series w/R^2------------------------------
 annotation_df <- data.frame(
   x = -Inf,
