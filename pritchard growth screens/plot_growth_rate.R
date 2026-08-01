@@ -68,8 +68,10 @@ filtered_data |>
              color = display_name,
              shape = display_name,
              linetype = display_name)) +
-  stat_summary(fun.data = "mean_se",
-               geom = "errorbar") +
+  geom_point(alpha = 0.5,
+             show.legend = FALSE) +
+  # stat_summary(fun.data = "mean_se",
+  #              geom = "errorbar") +
   stat_summary(fun = "mean",
                geom = "line") +
   stat_summary(fun = "mean",
