@@ -1,5 +1,5 @@
 #' ---
-#'title: "plateplotr kinomescan"
+#'title: "plot kinomescan"
 #'author: "Jack Stevenson"
 #'date: "2023-07-20"
 #' ---
@@ -68,6 +68,8 @@ for (trt in treatments){
                  rigid = rigid, # global param: rigid low-dose asymptote
                  grid = grid, # global param: background grid on plot
                  no_legend = no_legend, # global param: whether to omit legend
+                 plot_errorbars = plot_errorbars,
+                 plot_individual_points = plot_individual_points,
                  x_limits = get_if(x_limits, global_x_lim),
                  response_col = "response_norm",
                  ylab = "signal (% of untreated)",
@@ -110,6 +112,8 @@ for (tgt in targets){
               response_col = "response_norm",
               ylab = "signal (% of untreated)",
               legend_title = treatment_legend_title,
+              plot_errorbars = plot_errorbars,
+              plot_individual_points = plot_individual_points,
               # if relabeling treatments, get display names for legend
               legend_labels = get_if(display_names_treatments,
                                      manually_relabel_treatments,
