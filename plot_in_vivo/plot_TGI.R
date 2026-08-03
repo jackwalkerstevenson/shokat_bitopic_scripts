@@ -173,8 +173,8 @@ plot_survival_data |>
   # guides(color = guide_legend(order = 1),
   #        fill = guide_legend(order = 2)) +
   labs(x = "days since start of dosing",
-       y = "mice below tumor size limit",
-       title = "Time to tumor size limit",
+       y = "mice below tumor size endpoint",
+       title = "Time to tumor size endpoint",
        caption = animal_caption)
 ggsave(
   str_glue(
