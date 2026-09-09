@@ -25,7 +25,7 @@ doseplotr::file_copy_to_dir(input_path, output_directory)
 doseplotr::file_copy_to_dir(params_path, output_directory)
 doseplotr::file_copy_to_dir(scales_path, output_directory)
 # write timestamped code to output
-doseplotr::file_copy_to_dir("nanobret/plot_nanobret_Kd.R", output_directory)
+doseplotr::file_copy_to_dir("plot_nanobret/plot_nanobret_Kd.R", output_directory)
 # strip plot of raw EC50s-----------------------------------------------
 # # x_min <- floor(min(log10(data$IC50_nM)))
 # x_min <- data$IC50_nM |> na.omit() |> log10() |> min() |> floor()
