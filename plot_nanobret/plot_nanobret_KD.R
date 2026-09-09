@@ -42,7 +42,8 @@ p <- data |>
   geom_point(size = 5, alpha = 1, stroke = 1) +
   scale_x_continuous(transform = "log10",
                      # guide = "prism_minor", # end at last tick
-                     guide = guide_axis_logticks(long = 1, mid = 0.5, short = 0.5),
+                     breaks = c(25, 50, 100, 200),
+                     # guide = guide_axis_logticks(long = 1, mid = 0.5, short = 0.5),
                      limits = x_limits) +
                      # breaks = breaks_width(50),
                      # labels = label_comma(accuracy = 1, big.mark = ""),
