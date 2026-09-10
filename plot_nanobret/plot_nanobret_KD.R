@@ -68,4 +68,4 @@ p <- data |>
   labs(x = bquote(bold(K[d]^apparent~"(nM) of" ~ .(tracer_name))),
        y = "treatment")
 save_plot(p, str_glue("output/nanobret_EC50_dot_{get_timestamp()}.{plot_type}"),
-          width = 9, height = .5*length(targets) + 0.75)
+          width = 8, height = .5*length(targets) + 0.75)
